@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './Login';
-import AdminPanel from './AdminPanel';
-import Home from './Home';
+
+import Login from './components/Login/Login';
+import Home from './pages/Home';
+import AdminPanel from './pages/AdminPanel';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
