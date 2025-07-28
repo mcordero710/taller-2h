@@ -1,0 +1,40 @@
+.pagination-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1rem 0;
+    font-size: 0.95rem;
+    color: #2d3748;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .pagination-footer button {
+    padding: 0.4rem 0.8rem;
+    font-size: 1rem;
+    background-color: #2b6cb0;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .pagination-footer button:disabled {
+    background-color: #cbd5e0;
+    color: white;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  .pagination-footer button:hover:not(:disabled) {
+    background-color: #2c5282;
+  }
+  
+  .pagination-footer span {
+    font-weight: 500;
+    min-width: 120px;
+    text-align: center;
+  }
+  
