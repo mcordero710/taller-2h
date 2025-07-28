@@ -5,7 +5,6 @@ import { collection, addDoc, onSnapshot } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import Pagination from '../components/Pagination/Pagination';
 
-
 const Clientes = () => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -17,6 +16,7 @@ const Clientes = () => {
   });
   const [clientes, setClientes] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const clientsPerPage = 10;
 
   useEffect(() => {
@@ -27,15 +27,28 @@ const Clientes = () => {
     return () => unsubscribe();
   }, []);
 
+  // ✅ Solo permite números en cédula y teléfono + limita longitud
+  const handleNumberOnlyChange = (e) => {
+    const { name, value } = e.target;
+    const maxLengths = { cedula: 9, telefono: 8 };
+    let numericValue = value.replace(/\D/g, '');
+    if (maxLengths[name]) {
+      numericValue = numericValue.slice(0, maxLengths[name]);
+    }
+    setFormData({ ...formData, [name]: numericValue });
+  };
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.cedula || !formData.nombre || !formData.telefono) {
+      toast.error('Por favor, completa los campos obligatorios: cédula, nombre y teléfono.');
+      return;
+    }
+
     try {
       await addDoc(collection(db, 'clientes'), formData);
       setFormData({ cedula: '', nombre: '', apellido: '', telefono: '', correo: '' });
@@ -47,17 +60,38 @@ const Clientes = () => {
     }
   };
 
-  // 🔢 Lógica de paginación
+  // 🔍 Filtrar clientes por cualquier campo
+  const filteredClients = clientes.filter((cliente) =>
+    Object.values(cliente).some((valor) =>
+      typeof valor === 'string' &&
+      valor.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
+  // 🔢 Paginación
   const indexOfLastClient = currentPage * clientsPerPage;
   const indexOfFirstClient = indexOfLastClient - clientsPerPage;
-  const currentClients = clientes.slice(indexOfFirstClient, indexOfLastClient);
+  const currentClients = filteredClients.slice(indexOfFirstClient, indexOfLastClient);
 
   return (
     <div className="clientes-layout clientes-expandido">
       <h2>Gestión de Clientes</h2>
-      <button className="boton-agregar" onClick={() => setShowModal(true)}>
-        + Agregar Cliente
-      </button>
+
+      <div className="barra-superior">
+        <div className="contenedor-busqueda">
+          <span className="icono-lupa">🔍</span>
+          <input
+            type="text"
+            className="input-busqueda"
+            placeholder="Buscar cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <button className="boton-agregar" onClick={() => setShowModal(true)}>
+          + Agregar Cliente
+        </button>
+      </div>
 
       <table className="tabla-clientes">
         <thead>
@@ -82,16 +116,13 @@ const Clientes = () => {
         </tbody>
       </table>
 
-      {/* Paginación */}
       <Pagination
         currentPage={currentPage}
-        totalItems={clientes.length}
+        totalItems={filteredClients.length}
         itemsPerPage={clientsPerPage}
         onPageChange={setCurrentPage}
       />
 
-
-      {/* Modal para nuevo cliente */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -102,7 +133,7 @@ const Clientes = () => {
                 name="cedula"
                 placeholder="Cédula"
                 value={formData.cedula}
-                onChange={handleChange}
+                onChange={handleNumberOnlyChange}
                 required
               />
               <input
@@ -119,14 +150,13 @@ const Clientes = () => {
                 placeholder="Apellido"
                 value={formData.apellido}
                 onChange={handleChange}
-                required
               />
               <input
                 type="text"
                 name="telefono"
                 placeholder="Teléfono"
                 value={formData.telefono}
-                onChange={handleChange}
+                onChange={handleNumberOnlyChange}
                 required
               />
               <input
