@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './Clientes.css';
 import { db } from '../firebase/firebase';
-import { collection, addDoc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import Pagination from '../components/Pagination/Pagination';
 
 const Clientes = () => {
   const [showModal, setShowModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState(null);
   const [formData, setFormData] = useState({
     cedula: '',
     nombre: '',
@@ -27,7 +29,6 @@ const Clientes = () => {
     return () => unsubscribe();
   }, []);
 
-  // ✅ Solo permite números en cédula y teléfono + limita longitud
   const handleNumberOnlyChange = (e) => {
     const { name, value } = e.target;
     const maxLengths = { cedula: 9, telefono: 8 };
@@ -42,33 +43,59 @@ const Clientes = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleEdit = (cliente) => {
+    setFormData({
+      cedula: cliente.cedula,
+      nombre: cliente.nombre,
+      apellido: cliente.apellido,
+      telefono: cliente.telefono,
+      correo: cliente.correo,
+    });
+    setSelectedClientId(cliente.id);
+    setEditMode(true);
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!formData.cedula || !formData.nombre || !formData.telefono) {
       toast.error('Por favor, completa los campos obligatorios: cédula, nombre y teléfono.');
       return;
     }
 
     try {
-      await addDoc(collection(db, 'clientes'), formData);
+      if (editMode) {
+        const clienteRef = doc(db, 'clientes', selectedClientId);
+        await updateDoc(clienteRef, formData);
+        toast.success('¡Cliente actualizado con éxito!');
+      } else {
+        await addDoc(collection(db, 'clientes'), formData);
+        toast.success('¡Cliente agregado con éxito!');
+      }
+
       setFormData({ cedula: '', nombre: '', apellido: '', telefono: '', correo: '' });
+      setEditMode(false);
+      setSelectedClientId(null);
       setShowModal(false);
-      toast.success('¡Cliente agregado con éxito!');
     } catch (error) {
       console.error('Error al guardar el cliente:', error);
       toast.error('Error al guardar el cliente');
     }
   };
 
-  // 🔍 Filtrar clientes por cualquier campo
-  const filteredClients = clientes.filter((cliente) =>
+  const filteredClients = clientes
+  .filter((cliente) =>
     Object.values(cliente).some((valor) =>
       typeof valor === 'string' &&
       valor.toLowerCase().includes(searchTerm.toLowerCase())
     )
+  )
+  .sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
   );
 
-  // 🔢 Paginación
+
   const indexOfLastClient = currentPage * clientsPerPage;
   const indexOfFirstClient = indexOfLastClient - clientsPerPage;
   const currentClients = filteredClients.slice(indexOfFirstClient, indexOfLastClient);
@@ -88,7 +115,11 @@ const Clientes = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="boton-agregar" onClick={() => setShowModal(true)}>
+        <button className="boton-agregar" onClick={() => {
+          setEditMode(false);
+          setFormData({ cedula: '', nombre: '', apellido: '', telefono: '', correo: '' });
+          setShowModal(true);
+        }}>
           + Agregar Cliente
         </button>
       </div>
@@ -105,7 +136,11 @@ const Clientes = () => {
         </thead>
         <tbody>
           {currentClients.map((cliente) => (
-            <tr key={cliente.id}>
+            <tr
+              key={cliente.id}
+              onDoubleClick={() => handleEdit(cliente)}
+              style={{ cursor: 'pointer' }}
+            >
               <td>{cliente.cedula}</td>
               <td>{cliente.nombre}</td>
               <td>{cliente.apellido}</td>
@@ -126,7 +161,7 @@ const Clientes = () => {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>Nuevo Cliente</h3>
+            <h3>{editMode ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
             <form onSubmit={handleSubmit} className="formulario">
               <input
                 type="text"
@@ -167,8 +202,19 @@ const Clientes = () => {
                 onChange={handleChange}
               />
               <div className="acciones">
-                <button type="submit">Guardar</button>
-                <button type="button" onClick={() => setShowModal(false)} className="cancelar">
+                <button type="submit">
+                  {editMode ? 'Guardar cambios' : 'Guardar'}
+                </button>
+                <button
+                  type="button"
+                  className="cancelar"
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditMode(false);
+                    setFormData({ cedula: '', nombre: '', apellido: '', telefono: '', correo: '' });
+                    setSelectedClientId(null);
+                  }}
+                >
                   Cancelar
                 </button>
               </div>
