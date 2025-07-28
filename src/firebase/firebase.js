@@ -1,6 +1,7 @@
 // src/firebase.js
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore'; // ← Agregá esto
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -15,7 +16,9 @@ const firebaseConfig = {
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 
-// Obtener la instancia de autenticación
+// Obtener instancias de Firebase
 const auth = getAuth(app);
+const db = getFirestore(app); // ← Agregá esto
 
-export { auth, signInWithEmailAndPassword };  // Exporta para usar en el login
+// Exportar
+export { auth, signInWithEmailAndPassword, db };
