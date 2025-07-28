@@ -130,3 +130,38 @@
   background-color: #2b6cb0;
   color: white;
 }
+
+.barra-superior {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.contenedor-busqueda {
+  position: relative;
+  width: 250px; /* puedes ajustar el tamaño aquí */
+}
+
+.icono-lupa {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: #718096;
+  pointer-events: none;
+}
+
+.input-busqueda {
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  padding-left: 2rem; /* espacio para el ícono */
+  font-size: 0.95rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+}
+
+
+
