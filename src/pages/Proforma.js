@@ -1,0 +1,222 @@
+import React, { useState, useEffect } from 'react';
+import './Proforma.css';
+import { db } from '../firebase/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import logo from '../assets/logo.png';
+import { FaTrashAlt } from 'react-icons/fa';
+
+const Proforma = () => {
+  const [cedula, setCedula] = useState('');
+  const [cliente, setCliente] = useState(null);
+  const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', anio: '', color: '' });
+  const [reparaciones, setReparaciones] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [ivaChecked, setIvaChecked] = useState(false);
+  const [ivaAmount, setIvaAmount] = useState(0);
+
+  const handleBuscarCliente = async (cedulaInput) => {
+    const q = query(collection(db, 'clientes'), where('cedula', '==', cedulaInput));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      setCliente(snapshot.docs[0].data());
+    } else {
+      setCliente(null);
+    }
+  };
+
+  useEffect(() => {
+    if (cedula.length === 9) {
+      handleBuscarCliente(cedula);
+    } else {
+      setCliente(null);
+    }
+  }, [cedula]);
+
+  const handleReparacionChange = (index, field, value) => {
+    const nuevas = [...reparaciones];
+    nuevas[index][field] = field === 'precio' ? Number(value) : value;  // Solo se maneja 'precio' como número
+    setReparaciones(nuevas);
+  };
+
+  const agregarReparacion = () => {
+    setReparaciones([...reparaciones, { concepto: '', precio: 0 }]);
+  };
+
+  const eliminarReparacion = (index) => {
+    const nuevas = [...reparaciones];
+    nuevas.splice(index, 1);
+    setReparaciones(nuevas);
+  };
+
+  const handleIvaChange = () => {
+    setIvaChecked(!ivaChecked);
+  };
+
+  useEffect(() => {
+    let suma = reparaciones.reduce((acc, r) => acc + r.precio, 0);
+    if (ivaChecked) {
+      const iva = suma * 0.13;
+      setIvaAmount(iva);  // Calculamos el IVA
+      suma += iva;  // Sumamos el IVA al total
+    } else {
+      setIvaAmount(0);  // Si no está marcado, el IVA es 0
+    }
+    setTotal(suma);
+  }, [reparaciones, ivaChecked]);
+
+  return (
+    <div className="proforma-wrapper">
+      <header className="proforma-header">
+        <div className="proforma-top">
+          <div className="proforma-logo">
+            <img src={logo} alt="Logo Taller 2H" className="logo" />
+          </div>
+
+          <div className="proforma-contact">
+            <p><strong>Tel:</strong> (506) 2222-2222</p>
+            <p><strong>Email:</strong> info@taller2h.com</p>
+            <p><strong>Dirección:</strong> San José, Costa Rica</p>
+          </div>
+        </div>
+        <h1>PROFORMA</h1>
+      </header>
+
+      <section className="proforma-info">
+        <div className="factura-detalle">
+          <p><strong>N° Proforma:</strong> __________</p>
+          <p><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
+        </div>
+        <div className="cliente-detalle">
+          <input
+            type="text"
+            className="cedula-input"
+            placeholder="Cédula del cliente"
+            value={cedula}
+            onChange={(e) => setCedula(e.target.value.replace(/\D/g, '').slice(0, 9))}
+          />
+
+          {cliente && (
+            <div className="cliente-info">
+              <p><strong>Nombre:</strong> {cliente.nombre} {cliente.apellido}</p>
+              <p><strong>Teléfono:</strong> {cliente.telefono}</p>
+              <p><strong>Correo:</strong> {cliente.correo}</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="vehiculo-detalle">
+        <input
+          type="text"
+          placeholder="# Placa"
+          value={vehiculo.placa}
+          onChange={(e) => setVehiculo({ ...vehiculo, placa: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Marca"
+          value={vehiculo.marca}
+          onChange={(e) => setVehiculo({ ...vehiculo, marca: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Año"
+          value={vehiculo.anio}
+          onChange={(e) => setVehiculo({ ...vehiculo, anio: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Color"
+          value={vehiculo.color}
+          onChange={(e) => setVehiculo({ ...vehiculo, color: e.target.value })}
+        />
+      </section>
+
+      <table className="proforma-tabla">
+        <thead>
+          <tr>
+            <th>Descripción</th>
+            <th>Monto</th>
+            <th>Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {reparaciones.map((r, index) => (
+            <tr key={index}>
+              <td>
+                <input
+                  type="text"
+                  value={r.concepto}
+                  onChange={(e) => handleReparacionChange(index, 'concepto', e.target.value)}
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  value={r.precio}
+                  onChange={(e) => handleReparacionChange(index, 'precio', e.target.value)}
+                />
+              </td>
+              <td>₡{(r.precio).toFixed(2)}</td>
+              <td>
+                <button className="boton-eliminar" onClick={() => eliminarReparacion(index)}>
+                  <FaTrashAlt /> {/* Ícono de basurero */}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="proforma-actions">
+        <button onClick={agregarReparacion}>+ Agregar Reparación</button>
+      </div>
+
+      {/* Checkbox de IVA */}
+      <section className="iva-section">
+        <label>
+          <input
+            type="checkbox"
+            checked={ivaChecked}
+            onChange={handleIvaChange}
+          />
+          Factura Electrónica (13%)
+        </label>
+      </section>
+
+      <div className="proforma-totales">
+        <p><strong>Subtotal:</strong> ₡{total.toFixed(2)}</p>
+        {ivaChecked && (
+          <p>
+            <strong>IVA (13%):</strong> ₡{ivaAmount.toFixed(2)}
+          </p>
+        )}
+        <p><strong>Total:</strong> ₡{(total + ivaAmount).toFixed(2)}</p>
+      </div>
+
+      <footer className="proforma-footer">
+        <div className="proforma-nota">
+          <h4>Nota:</h4>
+          <ol>
+            <li>No nos responsabilizamos por trabajos realizados en otros talleres.</li>
+            <li>No ofrecemos garantía en reparaciones de piezas plásticas.</li>
+            <li>Durante la reparación, pueden surgir costos adicionales no contemplados en el presupuesto.</li>
+          </ol>
+        </div>
+        <div className="proforma-info-adicional">
+          <h4>Información Adicional:</h4>
+          <ol>
+            <li>Condiciones de pago: 50% pago adelantado y 50% contra entrega.</li>
+            <li>En caso de necesitar algún repuesto adicional, se le indicará una vez procedamos con el desarme del vehículo.</li>
+            <li>Monto de repuestos por tiempo limitado y sujeto a cambio por parte de la agencia vendedora (en caso de ser requerido).</li>
+            <li>Validez de la oferta: 10 días.</li>
+          </ol>
+        </div>
+        <p className="proforma-gracias">Gracias por su preferencia</p>
+      </footer>
+    </div>
+  );
+};
+
+export default Proforma;

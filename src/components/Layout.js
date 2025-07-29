@@ -1,9 +1,8 @@
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import { FaUsers, FaTruck, FaBoxes, FaTools } from 'react-icons/fa';
+import { FaUsers, FaTruck, FaBoxes, FaTools, FaFileAlt } from 'react-icons/fa';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
 import './Layout.css';
 import logo from '../assets/logo.png';
 
@@ -21,6 +20,12 @@ const Layout = () => {
               <Link to="/clientes">
                 <FaUsers className="menu-icon" />
                 <span>Clientes</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/proforma">
+                <FaFileAlt className="menu-icon" />
+                <span>Proforma</span>
               </Link>
             </li>
             <li>
