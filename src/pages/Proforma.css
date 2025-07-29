@@ -1,0 +1,51 @@
+.proforma-container {
+    max-width: 1000px;
+    margin: auto;
+    padding: 2rem;
+  }
+  
+  .busqueda-cliente,
+  .vehiculo-form {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .vehiculo-form input {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .tabla-reparaciones {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+  
+  .tabla-reparaciones th,
+  .tabla-reparaciones td {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+  }
+  
+  .tabla-reparaciones input {
+    width: 100%;
+  }
+  
+  .boton-agregar-fila,
+  .boton-imprimir {
+    background-color: #3f6eb5;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 1rem;
+  }
+  
+  .total-proforma {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+  }
+  

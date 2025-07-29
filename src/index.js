@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import AdminPanel from './pages/AdminPanel';
 import Clientes from './pages/Clientes';
 import Layout from './components/Layout';
+import Proforma from './pages/Proforma';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -19,6 +20,7 @@ root.render(
         <Route path="home" element={<Home />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="admin" element={<AdminPanel />} />
+        <Route path="/proforma" element={<Proforma />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
