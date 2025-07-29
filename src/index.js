@@ -8,7 +8,7 @@ import Home from './pages/Home';
 import AdminPanel from './pages/AdminPanel';
 import Clientes from './pages/Clientes';
 import Layout from './components/Layout';
-import Proforma from './pages/Proforma';
+import Proforma from './pages/CrearProforma';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 

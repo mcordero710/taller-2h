@@ -25,7 +25,7 @@ const Layout = () => {
             <li>
               <Link to="/proforma">
                 <FaFileAlt className="menu-icon" />
-                <span>Proforma</span>
+                <span>Crear Proforma</span>
               </Link>
             </li>
             <li>

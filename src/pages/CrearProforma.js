@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './Proforma.css';
+import './CrearProforma.css';
 import { db } from '../firebase/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import logo from '../assets/logo.png';
