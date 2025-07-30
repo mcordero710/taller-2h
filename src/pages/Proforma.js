@@ -17,6 +17,7 @@ const Proforma = () => {
   const [ivaAmount, setIvaAmount] = useState(0);
   const [numeroProforma, setNumeroProforma] = useState(null);
   const [isClienteLoaded, setIsClienteLoaded] = useState(false);
+  const [isProformaSaved, setIsProformaSaved] = useState(false);  // Estado para verificar si la proforma ya fue guardada
 
 
   // Función para buscar cliente por cédula
@@ -26,18 +27,16 @@ const Proforma = () => {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         setCliente(snapshot.docs[0].data());
-        setIsClienteLoaded(true);  // Establecer a true cuando el cliente se haya encontrado
+        setIsClienteLoaded(true);  // Habilitar el botón si se encuentra el cliente
       } else {
         setCliente(null);
-        setIsClienteLoaded(false);  // Establecer a false si no se encuentra el cliente
-        toast.error('La cédula del cliente ingresada no existe.');  // Mostrar mensaje de error
+        setIsClienteLoaded(false);  // Deshabilitar el botón si no se encuentra el cliente
+        toast.error('La cédula del cliente ingresada no existe.');
       }
-    } else {
-      setCliente(null);
-      setIsClienteLoaded(false);  // Asegurarse de deshabilitar el botón si la cédula no es válida
     }
   };
-  
+
+
   // Llamar a la función de búsqueda cada vez que la cédula cambia
   useEffect(() => {
     handleBuscarCliente(cedula);
@@ -90,7 +89,6 @@ const Proforma = () => {
     setTotal(suma);
   }, [reparaciones, ivaChecked]);
 
-  // Función para guardar la proforma
   const handleGuardarProforma = async () => {
     const nuevaProforma = {
       numero: numeroProforma,
@@ -111,18 +109,14 @@ const Proforma = () => {
     // Mostrar el mensaje de éxito
     toast.success('¡Proforma guardada con éxito!');
   
-    // Limpiar los campos después de guardar la proforma
-    setCedula('');
-    setCliente(null);
-    setVehiculo({ placa: '', marca: '', anio: '', color: '' });
-    setReparaciones([]);
-    setTotal(0);
-    setIvaChecked(false);
-    setIvaAmount(0);
-    setNumeroProforma(null); // Limpiar el número de la proforma
-    setIsClienteLoaded(false);  // Restablecer el estado a false para deshabilitar el botón
+    // No limpiar los campos aún, solo deshabilitar el botón
+    setIsProformaSaved(true);  // Marcar que la proforma ha sido guardada
+  
+    // Dejar los campos intactos para generar el PDF
   };
   
+
+
 
   // Descargar PDF
   const handleDescargarPDF = () => {
@@ -157,11 +151,18 @@ const Proforma = () => {
             <button
               className="boton-guardar"
               onClick={handleGuardarProforma}
-              disabled={!isClienteLoaded}  // Deshabilitar si el cliente no está cargado
+              disabled={!isClienteLoaded || isProformaSaved}  // Deshabilitar si el cliente no está cargado o si ya está guardada
             >
               Guardar Proforma
             </button>
-            <button className="boton-nueva" onClick={handleNuevaProforma}>
+
+
+
+            <button
+              className="boton-nueva"
+              onClick={handleNuevaProforma}
+              disabled={numeroProforma !== null}  // Deshabilitar si ya hay un número de proforma
+            >
               Nueva Proforma
             </button>
           </div>
