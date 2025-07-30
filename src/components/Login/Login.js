@@ -1,8 +1,6 @@
-// src/Login.js
 import React, { useState } from 'react';
 import { auth, signInWithEmailAndPassword } from '../../firebase/firebase';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/logo.png';
 import './Login.css';
 
 const Login = () => {
@@ -32,8 +30,6 @@ const Login = () => {
         return 'Ocurrió un error. Intenta nuevamente.';
     }
   }
-  
-  
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -50,10 +46,6 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      <div className="header">
-        <img src={logo} alt="Taller 2H Logo" className="logo" />
-      </div>
-
       <div className="login-container">
         <h2>TALLER 2H</h2>
         <form onSubmit={handleLogin}>
