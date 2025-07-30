@@ -319,40 +319,32 @@
   /* Sombra al enfocarse */
 }
 
-/* Botón Descargar PDF */
+ /* Botón Descargar PDF */
 .boton-descargar {
   background-color: #2c3e50;
-  /* Fondo oscuro */
   color: white;
-  /* Texto blanco */
-  font-size: 1rem;
-  /* Tamaño de fuente */
+  font-size: 0.9rem; /* Tamaño adecuado */
   font-weight: bold;
-  /* Texto en negrita */
-  padding: 0.5rem 1rem;
-  /* Espaciado interno */
+  padding: 0.4rem 1rem; /* Tamaño ajustado */
   border: none;
-  /* Sin bordes */
   border-radius: 4px;
-  /* Bordes redondeados */
   cursor: pointer;
-  /* Cambia el cursor al pasar sobre el botón */
   transition: background-color 0.3s ease, transform 0.2s ease;
-  /* Transiciones suaves */
+  display: inline-block; /* Esto hace que no ocupe todo el ancho */
+  margin-top: 10px; /* Espaciado entre la dirección y el botón */
 }
 
 .boton-descargar:hover {
   background-color: #1abc9c;
-  /* Cambia a verde en hover */
   transform: scale(1.05);
-  /* Efecto de agrandamiento */
 }
 
 .boton-descargar:focus {
   outline: none;
   box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
-  /* Sombra verde al enfocarse */
 }
+
+
 
 @media print {
 
@@ -379,38 +371,4 @@
     display: none !important;
   }
 
-  /* Botón Descargar PDF */
-  .boton-descargar {
-    background-color: #2c3e50;
-    /* Fondo oscuro */
-    color: white;
-    /* Texto blanco */
-    font-size: 1rem;
-    /* Tamaño de fuente */
-    font-weight: bold;
-    /* Texto en negrita */
-    padding: 0.5rem 1rem;
-    /* Espaciado interno */
-    border: none;
-    /* Sin bordes */
-    border-radius: 4px;
-    /* Bordes redondeados */
-    cursor: pointer;
-    /* Cambia el cursor al pasar sobre el botón */
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    /* Transiciones suaves */
-  }
-
-  .boton-descargar:hover {
-    background-color: #1abc9c;
-    /* Cambia a verde en hover */
-    transform: scale(1.05);
-    /* Efecto de agrandamiento */
-  }
-
-  .boton-descargar:focus {
-    outline: none;
-    box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
-    /* Sombra verde al enfocarse */
-  }
 }

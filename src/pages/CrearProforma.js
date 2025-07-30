@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import './CrearProforma.css';
-import { db } from '../firebase/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../firebase/firebase'; // Asegúrate de importar correctamente la referencia de Firebase
+import { collection, getDocs, query, where, addDoc } from 'firebase/firestore'; // Importar addDoc para agregar documentos
 import logo from '../assets/logo.png';
 import { FaTrashAlt } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js'; // Importa la librería html2pdf
 
-const Proforma = () => {
+const CrearProforma = () => {
   const [cedula, setCedula] = useState('');
   const [cliente, setCliente] = useState(null);
   const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', anio: '', color: '' });
@@ -65,6 +65,32 @@ const Proforma = () => {
     setTotal(suma);
   }, [reparaciones, ivaChecked]);
 
+  // Función para guardar la proforma en Firestore
+  const handleGuardarProforma = async () => {
+    try {
+      // Referencia a la colección 'proformas' en Firestore
+      const proformasRef = collection(db, 'proformas');
+      
+      // Agregar la nueva proforma a la base de datos
+      const docRef = await addDoc(proformasRef, {
+        cedula,
+        clienteNombre: `${cliente.nombre} ${cliente.apellido}`,
+        vehiculo,
+        reparaciones,
+        total,
+        ivaChecked,
+        ivaAmount,
+        fecha: new Date(),  // Guarda la fecha actual
+      });
+
+      // Mostrar un mensaje de éxito o notificación
+      alert(`Proforma guardada con ID: ${docRef.id}`);
+    } catch (e) {
+      console.error('Error al guardar la proforma: ', e);
+    }
+  };
+
+  // Función para manejar la descarga del PDF
   const handleDescargarPDF = () => {
     // Clonamos el contenido de la proforma para evitar modificar el DOM original
     const element = document.getElementById('proformaContent').cloneNode(true);
@@ -90,9 +116,7 @@ const Proforma = () => {
     // Generamos el PDF usando html2pdf.js
     html2pdf(element, options); // Esto generará el PDF sin el botón de agregar reparación
   };
-  
-  
-  
+
   return (
     <div className="proforma-wrapper">
       <header className="proforma-header">
@@ -104,15 +128,13 @@ const Proforma = () => {
             <p><strong>Tel:</strong> (506) 2222-2222</p>
             <p><strong>Email:</strong> info@taller2h.com</p>
             <p><strong>Dirección:</strong> San José, Costa Rica</p>
-
-            {/* El botón de imprimir ha sido eliminado */}
-            
-            {/* Botón para descargar el PDF */}
-            <button className="boton-descargar" onClick={handleDescargarPDF}>
-              Descargar PDF
-            </button>
           </div>
         </div>
+
+        {/* Botón Descargar PDF (ubicado debajo de la dirección) */}
+        <button className="boton-descargar" onClick={handleDescargarPDF}>
+          Descargar PDF
+        </button>
         <h1>PROFORMA</h1>
       </header>
 
@@ -231,7 +253,7 @@ const Proforma = () => {
               checked={ivaChecked}
               onChange={handleIvaChange}
             />
-            Factura Electrónica
+            Factura Electrónica (13%)
           </label>
         </section>
 
@@ -243,6 +265,13 @@ const Proforma = () => {
             </p>
           )}
           <p><strong>Total:</strong> ₡{(total + ivaAmount).toFixed(2)}</p>
+        </div>
+
+        {/* Botón Guardar */}
+        <div className="proforma-actions">
+          <button className="boton-descargar" onClick={handleGuardarProforma}>
+            Guardar Proforma
+          </button>
         </div>
 
         <footer className="proforma-footer">
@@ -270,4 +299,4 @@ const Proforma = () => {
   );
 };
 
-export default Proforma;
+export default CrearProforma;
