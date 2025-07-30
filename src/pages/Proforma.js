@@ -21,7 +21,6 @@ const Proforma = () => {
   const [isClienteLoaded, setIsClienteLoaded] = useState(false);
   const [proformaGuardada, setProformaGuardada] = useState(false);
 
-
   const handleBuscarCliente = async (cedulaInput) => {
     if (cedulaInput.length === 9) {
       const q = query(collection(db, 'clientes'), where('cedula', '==', cedulaInput));
@@ -38,7 +37,11 @@ const Proforma = () => {
   };
 
   useEffect(() => {
-    handleBuscarCliente(cedula);
+    if (cedula === '') {
+      setCliente(null); // Limpiar la información del cliente cuando la cédula esté vacía
+    } else {
+      handleBuscarCliente(cedula);
+    }
   }, [cedula]);
 
   useEffect(() => {
@@ -150,6 +153,12 @@ const Proforma = () => {
     const eliminarBotones = element.querySelectorAll(".boton-eliminar");
     eliminarBotones.forEach(btn => btn.style.display = 'none'); // Oculta los botones de eliminar
   
+    // Eliminar la sección de factura electrónica
+    const ivaSection = element.querySelector(".iva-section");
+    if (ivaSection) {
+      ivaSection.style.display = 'none'; // Oculta la sección de Factura Electrónica
+    }
+  
     // Ahora generamos el PDF con el contenido modificado
     const options = {
       margin: 10,
@@ -157,10 +166,22 @@ const Proforma = () => {
       html2canvas: { scale: 4 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
-    
+  
     html2pdf(element, options);
   };
   
+
+  const handleInputChange = (campo, value) => {
+    if (campo === 'marca' || campo === 'color') {
+      setVehiculo({ ...vehiculo, [campo]: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ]/g, '') });
+    }
+    else if (campo === 'anio') {
+      setVehiculo({ ...vehiculo, [campo]: value.replace(/\D/g, '') });
+    }
+    else {
+      setVehiculo({ ...vehiculo, [campo]: value });
+    }
+  };
 
   return (
     <div className="proforma-wrapper">
@@ -182,7 +203,6 @@ const Proforma = () => {
               <FontAwesomeIcon icon={faSave} /> Guardar Proforma
             </button>
 
-
             <button className="boton-nueva" onClick={handleNuevaProforma}>
               <FontAwesomeIcon icon={faPlus} /> Nueva Proforma
             </button>
@@ -200,7 +220,6 @@ const Proforma = () => {
         <h2>N° Proforma: {numeroProforma ? numeroProforma : '___________'}</h2>
         <section className="proforma-info">
           <div className="factura-detalle">
-            <p><strong>N° Proforma:</strong> {numeroProforma ? numeroProforma : '___________'}</p>
             <p><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
           </div>
           <div className="cliente-detalle">
@@ -227,12 +246,13 @@ const Proforma = () => {
             const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
             return (
               <div className="input-group" key={campo}>
+                <label htmlFor={campo}>{label}</label>
                 <input
                   id={campo}
                   type="text"
                   placeholder={label}
                   value={vehiculo[campo]}
-                  onChange={(e) => setVehiculo({ ...vehiculo, [campo]: e.target.value })}
+                  onChange={(e) => handleInputChange(campo, e.target.value)}
                 />
               </div>
             );

@@ -92,6 +92,7 @@
 .proforma-tabla td {
   border: 1px solid #ccc;
   padding: 0.5rem;
+  text-align: center; /* Asegura que el contenido de la celda esté centrado */
 }
 
 /* Estilo para los campos de entrada en la tabla */
@@ -224,6 +225,7 @@
   align-items: center;
   width: 40px;
   height: 40px;
+  margin: auto; /* Centra el botón en su contenedor */
 }
 
 .boton-eliminar:hover {
@@ -362,9 +364,43 @@
   margin-left: 5px;
 }
 
+/* Ajuste específico para el label e input de Cédula Cliente */
+.cliente-info label[for="cedula"] {
+  margin-bottom: 0.5rem; /* Espacio entre el label y el input */
+  margin-top: 1rem; /* Espacio superior para separar el label del resto */
+}
+
+.cliente-info input#cedula {
+  margin-top: 0.5rem; /* Espacio superior para el input */
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  width: 100%; /* Asegura que el input ocupe todo el ancho disponible */
+}
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 768px) {
+  .cliente-info p {
+    flex: 1 1 100%; /* Los elementos ocupan el 100% del ancho en pantallas pequeñas */
+    margin-bottom: 1rem; /* Espaciado entre los elementos */
+  }
+
+  .cliente-info label[for="cedula"] {
+    margin-top: 1.5rem; /* Más espacio superior en pantallas pequeñas */
+  }
+}
+
+
+
 @media print {
   /* Esconder el botón de Descargar PDF */
   .boton-descargar {
+    display: none !important;
+  }
+
+  .iva-section {
     display: none !important;
   }
 
