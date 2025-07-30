@@ -400,6 +400,10 @@
     display: none !important;
   }
 
+  .iva-section {
+    display: none !important;
+  }
+
   /* Esconder los botones de eliminar */
   .boton-eliminar {
     display: none !important;
