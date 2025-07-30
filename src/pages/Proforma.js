@@ -111,6 +111,7 @@ const Proforma = () => {
             <button className="boton-descargar" onClick={handleDescargarPDF}>
               Descargar PDF
             </button>
+            <button className="boton-guardar">Guardar Proforma</button>
           </div>
         </div>
         <h1>PROFORMA</h1>
