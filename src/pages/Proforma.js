@@ -19,6 +19,8 @@ const Proforma = () => {
   const [ivaAmount, setIvaAmount] = useState(0);
   const [numeroProforma, setNumeroProforma] = useState(null);
   const [isClienteLoaded, setIsClienteLoaded] = useState(false);
+  const [proformaGuardada, setProformaGuardada] = useState(false);
+
 
   const handleBuscarCliente = async (cedulaInput) => {
     if (cedulaInput.length === 9) {
@@ -59,6 +61,7 @@ const Proforma = () => {
 
     const numero = await obtenerNumeroProforma();
     setNumeroProforma(numero);
+    setProformaGuardada(false);
   };
 
   const handleReparacionChange = (index, field, value) => {
@@ -131,6 +134,9 @@ const Proforma = () => {
       draggable: true,
       theme: "colored",
     });
+    setCedula('');
+    setIsClienteLoaded(false);
+    setProformaGuardada(true);
   };
 
   const handleDescargarPDF = () => {
@@ -159,10 +165,11 @@ const Proforma = () => {
             <button
               className="boton-guardar"
               onClick={handleGuardarProforma}
-              disabled={!isClienteLoaded}
+              disabled={!isClienteLoaded || proformaGuardada}
             >
               <FontAwesomeIcon icon={faSave} /> Guardar Proforma
             </button>
+
 
             <button className="boton-nueva" onClick={handleNuevaProforma}>
               <FontAwesomeIcon icon={faPlus} /> Nueva Proforma
