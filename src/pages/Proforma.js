@@ -8,6 +8,7 @@ import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify'; // Importamos toast
 
 const Proforma = () => {
+  // Estados del componente
   const [cedula, setCedula] = useState('');
   const [cliente, setCliente] = useState(null);
   const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', anio: '', color: '' });
@@ -16,9 +17,7 @@ const Proforma = () => {
   const [ivaChecked, setIvaChecked] = useState(false);
   const [ivaAmount, setIvaAmount] = useState(0);
   const [numeroProforma, setNumeroProforma] = useState(null);
-  const [isClienteLoaded, setIsClienteLoaded] = useState(false);
-  const [isProformaSaved, setIsProformaSaved] = useState(false);  // Estado para verificar si la proforma ya fue guardada
-
+  const [isClienteLoaded, setIsClienteLoaded] = useState(false);  // Estado que indica si el cliente está cargado
 
   // Función para buscar cliente por cédula
   const handleBuscarCliente = async (cedulaInput) => {
@@ -36,7 +35,6 @@ const Proforma = () => {
     }
   };
 
-
   // Llamar a la función de búsqueda cada vez que la cédula cambia
   useEffect(() => {
     handleBuscarCliente(cedula);
@@ -51,12 +49,23 @@ const Proforma = () => {
     fetchNumeroProforma();
   }, []); // Esto solo se ejecuta cuando el componente se monta
 
-  // Función para generar el número de proforma
+  // Función para generar un nuevo número de proforma y limpiar los datos
   const handleNuevaProforma = async () => {
+    // Limpiar todos los campos
+    setCedula('');
+    setCliente(null);
+    setVehiculo({ placa: '', marca: '', anio: '', color: '' });
+    setReparaciones([]);
+    setTotal(0);
+    setIvaChecked(false);
+    setIvaAmount(0);
+    
+    // Cargar un nuevo número de proforma
     const numero = await obtenerNumeroProforma();
-    setNumeroProforma(numero);
+    setNumeroProforma(numero);  // Establecer el nuevo número de la proforma
   };
 
+  // Función para manejar reparaciones
   const handleReparacionChange = (index, field, value) => {
     const nuevas = [...reparaciones];
     nuevas[index][field] = field === 'precio' ? Number(value) : value;
@@ -89,6 +98,7 @@ const Proforma = () => {
     setTotal(suma);
   }, [reparaciones, ivaChecked]);
 
+  // Función para guardar la proforma
   const handleGuardarProforma = async () => {
     const nuevaProforma = {
       numero: numeroProforma,
@@ -99,38 +109,27 @@ const Proforma = () => {
       iva: ivaChecked ? ivaAmount : 0,
       fecha: new Date().toLocaleDateString(),
     };
-  
+
     // Guardar la nueva proforma en la base de datos
     await addDoc(collection(db, 'proformas'), nuevaProforma);
-  
+
     // Actualizar el número de la proforma para la siguiente
     await actualizarNumeroProforma(numeroProforma + 1);
-  
+
     // Mostrar el mensaje de éxito
     toast.success('¡Proforma guardada con éxito!');
-  
-    // No limpiar los campos aún, solo deshabilitar el botón
-    setIsProformaSaved(true);  // Marcar que la proforma ha sido guardada
-  
-    // Dejar los campos intactos para generar el PDF
   };
-  
-
-
 
   // Descargar PDF
   const handleDescargarPDF = () => {
     const element = document.getElementById('proformaContent').cloneNode(true);
-
-    // Ahora generamos el PDF usando la copia del contenido
     const options = {
       margin: 10,
       filename: 'proforma.pdf',
       html2canvas: { scale: 4 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
-
-    html2pdf(element, options); // Genera el PDF sin ocultar nada
+    html2pdf(element, options);
   };
 
   return (
@@ -151,17 +150,14 @@ const Proforma = () => {
             <button
               className="boton-guardar"
               onClick={handleGuardarProforma}
-              disabled={!isClienteLoaded || isProformaSaved}  // Deshabilitar si el cliente no está cargado o si ya está guardada
+              disabled={!isClienteLoaded}  // Deshabilitar si el cliente no está cargado
             >
               Guardar Proforma
             </button>
 
-
-
             <button
               className="boton-nueva"
-              onClick={handleNuevaProforma}
-              disabled={numeroProforma !== null}  // Deshabilitar si ya hay un número de proforma
+              onClick={handleNuevaProforma}  // Hacer clic en este botón para generar una nueva proforma
             >
               Nueva Proforma
             </button>

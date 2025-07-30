@@ -279,13 +279,6 @@
   box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
 }
 
-.boton-guardar:disabled {
-  background-color: #ccc; /* Color de fondo cuando está deshabilitado */
-  cursor: not-allowed; /* Cursor de no permitido */
-  opacity: 0.6; /* Opacidad reducida */
-}
-
-
 /* Botón Nueva Proforma */
 .boton-nueva {
   margin-top: 15px;  /* Espacio superior entre los botones */
@@ -310,6 +303,12 @@
   box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
 }
 
+.boton-nueva:disabled {
+  background-color: #ccc;  /* Color de fondo cuando está deshabilitado */
+  cursor: not-allowed;     /* Cursor de no permitido */
+  opacity: 0.6;            /* Opacidad reducida */
+  pointer-events: none;    /* Deshabilita los eventos de clic */
+}
 
 @media print {
   .boton-descargar {
