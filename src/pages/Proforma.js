@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Proforma.css';
 import { db, obtenerNumeroProforma, actualizarNumeroProforma } from '../firebase/firebase'; 
 import { collection, getDocs, query, where, addDoc } from 'firebase/firestore'; 
 import logo from '../assets/logo.png';
 import { FaTrashAlt } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
+import { toast } from 'react-toastify'; // Importamos toast
 
 const Proforma = () => {
   const [cedula, setCedula] = useState('');
@@ -15,10 +16,6 @@ const Proforma = () => {
   const [ivaChecked, setIvaChecked] = useState(false);
   const [ivaAmount, setIvaAmount] = useState(0);
   const [numeroProforma, setNumeroProforma] = useState(null);
-  const [clienteNoExiste, setClienteNoExiste] = useState(false); // Estado para controlar el error de cliente no encontrado
-
-  // Crear referencia para el proforma content
-  const proformaContentRef = useRef(null);
 
   // Función para buscar cliente por cédula
   const handleBuscarCliente = async (cedulaInput) => {
@@ -27,20 +24,16 @@ const Proforma = () => {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         setCliente(snapshot.docs[0].data());
-        setClienteNoExiste(false); // Si el cliente existe, ocultamos el mensaje de error
       } else {
         setCliente(null);
-        setClienteNoExiste(true); // Si no se encuentra el cliente, mostramos el mensaje de error
       }
-    } else {
-      setClienteNoExiste(false); // Si la cédula no es válida, no mostramos mensaje de error
     }
   };
 
   // Llamar a la función de búsqueda cada vez que la cédula cambia
   useEffect(() => {
     handleBuscarCliente(cedula);
-  }, [cedula]); // Esto se ejecuta cada vez que la cédula cambia
+  }, [cedula]);
 
   // Obtener el número de la proforma
   useEffect(() => {
@@ -89,6 +82,7 @@ const Proforma = () => {
     setTotal(suma);
   }, [reparaciones, ivaChecked]);
 
+  // Función para guardar la proforma
   const handleGuardarProforma = async () => {
     const nuevaProforma = {
       numero: numeroProforma,
@@ -106,6 +100,17 @@ const Proforma = () => {
     // Actualizar el número de la proforma para la siguiente
     await actualizarNumeroProforma(numeroProforma + 1);
 
+    // Mostrar el mensaje de éxito
+    toast.success('¡Proforma guardada con éxito!');
+
+    // Limpiar los campos después de guardar la proforma
+    setCedula('');
+    setCliente(null);
+    setVehiculo({ placa: '', marca: '', anio: '', color: '' });
+    setReparaciones([]);
+    setTotal(0);
+    setIvaChecked(false);
+    setIvaAmount(0);
     setNumeroProforma(null); // Limpiar el número de la proforma
   };
 
@@ -150,7 +155,7 @@ const Proforma = () => {
         <h1>PROFORMA</h1>
       </header>
 
-      <div id="proformaContent" ref={proformaContentRef}>
+      <div id="proformaContent">
         <h2>N° Proforma: {numeroProforma ? numeroProforma : '___________'}</h2>
         <section className="proforma-info">
           <div className="factura-detalle">
@@ -166,11 +171,6 @@ const Proforma = () => {
               value={cedula}
               onChange={(e) => setCedula(e.target.value.replace(/\D/g, '').slice(0, 9))}
             />
-            {clienteNoExiste && (
-              <p style={{ color: 'red', fontSize: '0.9rem' }}>
-                El cliente con el número de cédula {cedula} no existe.
-              </p>
-            )}
             {cliente && (
               <div className="cliente-info">
                 <p><strong>Nombre:</strong> {cliente.nombre} {cliente.apellido}</p>
