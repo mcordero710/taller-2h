@@ -1,6 +1,7 @@
+// src/firebase/firebase.js
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore'; // ← Agregamos los métodos necesarios
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -19,24 +20,24 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Función para obtener e incrementar el número de proforma
+// Función para obtener el número de proforma actual
 const obtenerNumeroProforma = async () => {
-  const proformaRef = doc(db, 'contadores', 'proforma'); // Referencia al documento que guarda el contador de proformas
-  const docSnap = await getDoc(proformaRef);
+  const docRef = doc(db, 'config', 'numeroProforma'); // Asegúrate de que este documento exista
+  const docSnap = await getDoc(docRef);
 
-  if (!docSnap.exists()) {
-    // Si no existe, creamos el contador con el valor inicial (0000001)
-    await setDoc(proformaRef, { proforma: 1 });
-    return '0000001';
+  if (docSnap.exists()) {
+    return docSnap.data().numero;
   } else {
-    // Si existe, incrementamos el número de proforma
-    const siguienteNumero = docSnap.data().proforma + 1;
-    await updateDoc(proformaRef, { proforma: siguienteNumero });
-
-    // Formatear el número con ceros a la izquierda (7 dígitos)
-    return String(siguienteNumero).padStart(7, '0');
+    // Si no existe el documento, devolvemos 1
+    return 1;
   }
 };
 
-// Exportar instancias y funciones necesarias
-export { auth, signInWithEmailAndPassword, db, obtenerNumeroProforma };
+// Función para actualizar el número de proforma
+const actualizarNumeroProforma = async (nuevoNumero) => {
+  const docRef = doc(db, 'config', 'numeroProforma'); 
+  await setDoc(docRef, { numero: nuevoNumero });
+};
+
+// Exportar
+export { auth, signInWithEmailAndPassword, db, obtenerNumeroProforma, actualizarNumeroProforma };
