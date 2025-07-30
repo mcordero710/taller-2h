@@ -21,7 +21,6 @@ const Proforma = () => {
   const [isClienteLoaded, setIsClienteLoaded] = useState(false);
   const [proformaGuardada, setProformaGuardada] = useState(false);
 
-
   const handleBuscarCliente = async (cedulaInput) => {
     if (cedulaInput.length === 9) {
       const q = query(collection(db, 'clientes'), where('cedula', '==', cedulaInput));
@@ -140,17 +139,13 @@ const Proforma = () => {
   };
 
   const handleDescargarPDF = () => {
-    // Clonamos el contenido de la proforma para modificarlo sin afectar la vista en pantalla
     const element = document.getElementById('proformaContent').cloneNode(true);
-  
-    // Encontrar la columna "Eliminar" y el botón de eliminar y ocultarlos en el PDF
     const eliminarColumnas = element.querySelectorAll("th:nth-child(4), td:nth-child(4)");
-    eliminarColumnas.forEach(col => col.style.display = 'none'); // Oculta columna de eliminar
+    eliminarColumnas.forEach(col => col.style.display = 'none');
   
     const eliminarBotones = element.querySelectorAll(".boton-eliminar");
-    eliminarBotones.forEach(btn => btn.style.display = 'none'); // Oculta los botones de eliminar
+    eliminarBotones.forEach(btn => btn.style.display = 'none');
   
-    // Ahora generamos el PDF con el contenido modificado
     const options = {
       margin: 10,
       filename: 'proforma.pdf',
@@ -160,7 +155,18 @@ const Proforma = () => {
     
     html2pdf(element, options);
   };
-  
+
+  const handleInputChange = (campo, value) => {
+    if (campo === 'marca' || campo === 'color') {
+      setVehiculo({ ...vehiculo, [campo]: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ]/g, '') });
+    }
+    else if (campo === 'anio') {
+      setVehiculo({ ...vehiculo, [campo]: value.replace(/\D/g, '') });
+    }
+    else {
+      setVehiculo({ ...vehiculo, [campo]: value });
+    }
+  };
 
   return (
     <div className="proforma-wrapper">
@@ -181,7 +187,6 @@ const Proforma = () => {
             >
               <FontAwesomeIcon icon={faSave} /> Guardar Proforma
             </button>
-
 
             <button className="boton-nueva" onClick={handleNuevaProforma}>
               <FontAwesomeIcon icon={faPlus} /> Nueva Proforma
@@ -228,12 +233,13 @@ const Proforma = () => {
             const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
             return (
               <div className="input-group" key={campo}>
+                <label htmlFor={campo}>{label}</label>
                 <input
                   id={campo}
                   type="text"
                   placeholder={label}
                   value={vehiculo[campo]}
-                  onChange={(e) => setVehiculo({ ...vehiculo, [campo]: e.target.value })}
+                  onChange={(e) => handleInputChange(campo, e.target.value)}
                 />
               </div>
             );
