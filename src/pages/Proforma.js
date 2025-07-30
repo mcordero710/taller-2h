@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Proforma.css';
-import { db, obtenerNumeroProforma, actualizarNumeroProforma } from '../firebase/firebase'; 
-import { collection, getDocs, query, where, addDoc } from 'firebase/firestore'; 
+import { db, obtenerNumeroProforma, actualizarNumeroProforma } from '../firebase/firebase';
+import { collection, getDocs, query, where, addDoc } from 'firebase/firestore';
 import logo from '../assets/logo.png';
 import { FaTrashAlt } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
@@ -16,6 +16,8 @@ const Proforma = () => {
   const [ivaChecked, setIvaChecked] = useState(false);
   const [ivaAmount, setIvaAmount] = useState(0);
   const [numeroProforma, setNumeroProforma] = useState(null);
+  const [isClienteLoaded, setIsClienteLoaded] = useState(false);
+
 
   // Función para buscar cliente por cédula
   const handleBuscarCliente = async (cedulaInput) => {
@@ -24,12 +26,18 @@ const Proforma = () => {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         setCliente(snapshot.docs[0].data());
+        setIsClienteLoaded(true);  // Establecer a true cuando el cliente se haya encontrado
       } else {
         setCliente(null);
+        setIsClienteLoaded(false);  // Establecer a false si no se encuentra el cliente
+        toast.error('La cédula del cliente ingresada no existe.');  // Mostrar mensaje de error
       }
+    } else {
+      setCliente(null);
+      setIsClienteLoaded(false);  // Asegurarse de deshabilitar el botón si la cédula no es válida
     }
   };
-
+  
   // Llamar a la función de búsqueda cada vez que la cédula cambia
   useEffect(() => {
     handleBuscarCliente(cedula);
@@ -39,7 +47,7 @@ const Proforma = () => {
   useEffect(() => {
     const fetchNumeroProforma = async () => {
       const numero = await obtenerNumeroProforma();
-      setNumeroProforma(numero); 
+      setNumeroProforma(numero);
     };
     fetchNumeroProforma();
   }, []); // Esto solo se ejecuta cuando el componente se monta
@@ -93,16 +101,16 @@ const Proforma = () => {
       iva: ivaChecked ? ivaAmount : 0,
       fecha: new Date().toLocaleDateString(),
     };
-
+  
     // Guardar la nueva proforma en la base de datos
     await addDoc(collection(db, 'proformas'), nuevaProforma);
-
+  
     // Actualizar el número de la proforma para la siguiente
     await actualizarNumeroProforma(numeroProforma + 1);
-
+  
     // Mostrar el mensaje de éxito
     toast.success('¡Proforma guardada con éxito!');
-
+  
     // Limpiar los campos después de guardar la proforma
     setCedula('');
     setCliente(null);
@@ -112,7 +120,9 @@ const Proforma = () => {
     setIvaChecked(false);
     setIvaAmount(0);
     setNumeroProforma(null); // Limpiar el número de la proforma
+    setIsClienteLoaded(false);  // Restablecer el estado a false para deshabilitar el botón
   };
+  
 
   // Descargar PDF
   const handleDescargarPDF = () => {
@@ -144,7 +154,11 @@ const Proforma = () => {
             <button className="boton-descargar" onClick={handleDescargarPDF}>
               Descargar PDF
             </button>
-            <button className="boton-guardar" onClick={handleGuardarProforma}>
+            <button
+              className="boton-guardar"
+              onClick={handleGuardarProforma}
+              disabled={!isClienteLoaded}  // Deshabilitar si el cliente no está cargado
+            >
               Guardar Proforma
             </button>
             <button className="boton-nueva" onClick={handleNuevaProforma}>
