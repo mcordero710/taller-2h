@@ -104,30 +104,32 @@ const Proforma = () => {
       toast.error('Debe cargar un cliente válido.');
       return;
     }
-
+  
     if (reparaciones.length === 0) {
       toast.error('Debe agregar al menos una reparación.');
       return;
     }
-
+  
     if (!vehiculo.placa || !vehiculo.marca || !vehiculo.anio || !vehiculo.color) {
       toast.error('Debe completar todos los datos del vehículo.');
       return;
     }
-
+  
     const nuevaProforma = {
       numero: numeroProforma,
-      cliente: cliente,
-      vehiculo: vehiculo,
-      reparaciones: reparaciones,
-      total: total,
-      iva: ivaChecked ? ivaAmount : 0,
+      cliente: cliente, // Mantener la información del cliente
+      vehiculo: vehiculo, // Mantener la información del vehículo
+      reparaciones: reparaciones, // Mantener las reparaciones
+      total: total, // Mantener el total
+      iva: ivaChecked ? ivaAmount : 0, // Mantener el IVA si está marcado
       fecha: new Date().toLocaleDateString(),
     };
-
+  
+    // Guardar la proforma en la base de datos
     await addDoc(collection(db, 'proformas'), nuevaProforma);
     await actualizarNumeroProforma(numeroProforma + 1);
-
+  
+    // Mostrar un mensaje de éxito
     toast.success('¡Proforma guardada con éxito!', {
       position: "top-center",
       autoClose: 4000,
@@ -137,10 +139,14 @@ const Proforma = () => {
       draggable: true,
       theme: "colored",
     });
-    setCedula('');
-    setIsClienteLoaded(false);
-    setProformaGuardada(true);
+  
+    // No se hace ningún reset de los datos
+    // Toda la información (cliente, reparaciones, total, IVA) permanece intacta
+    setProformaGuardada(true); // Establecer que la proforma ha sido guardada
   };
+  
+  
+  
 
   const handleDescargarPDF = () => {
     // Clonamos el contenido de la proforma para modificarlo sin afectar la vista en pantalla
