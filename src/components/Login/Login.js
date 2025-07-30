@@ -1,15 +1,29 @@
 import React, { useState } from 'react';
 import { auth, signInWithEmailAndPassword } from '../../firebase/firebase';
 import { useNavigate } from 'react-router-dom';
+import { toast, ToastContainer, Slide } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
-  function getErrorMessage(code) {
+  const showErrorMessage = (message) => {
+    toast.error(message, {
+      position: "top-center",
+      autoClose: 5000,
+      hideProgressBar: true,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      transition: Slide,
+    });
+  };
+
+  const getErrorMessage = (code) => {
     switch (code) {
       case 'auth/invalid-email':
         return 'El correo electrónico no es válido.';
@@ -29,49 +43,49 @@ const Login = () => {
       default:
         return 'Ocurrió un error. Intenta nuevamente.';
     }
-  }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      setErrorMessage('');
       navigate('/home');
     } catch (error) {
-      console.error('Error al iniciar sesión:', error.message);
-      setErrorMessage(getErrorMessage(error.code));
+      const errorMessage = getErrorMessage(error.code);
+      showErrorMessage(errorMessage);
     }
   };
 
   return (
     <div className="login-page">
       <div className="login-container">
-        <h2>TALLER 2H</h2>
-        <form onSubmit={handleLogin}>
-          <div>
-            <label>Correo Electrónico:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label>Contraseña:</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit">Iniciar Sesión</button>
-        </form>
-
-        {errorMessage && <p className="error-message">{errorMessage}</p>}
+        <div className="form-box">
+          <h2>TALLER 2H</h2>
+          <form onSubmit={handleLogin}>
+            <div className="form-field">
+              <label>Correo Electrónico:</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-field">
+              <label>Contraseña:</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit">Iniciar Sesión</button>
+          </form>
+        </div>
       </div>
+
+      <ToastContainer />
     </div>
   );
 };
