@@ -1,0 +1,71 @@
+.buscar-proforma-wrapper {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 1rem;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .buscar-proforma h2 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  
+  .buscar-proforma input {
+    width: 70%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 10px;
+  }
+  
+  .buscar-proforma button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    background-color: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .buscar-proforma button:hover {
+    background-color: #1abc9c;
+  }
+  
+  .tabla-proformas {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  .tabla-proformas th, .tabla-proformas td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+  }
+  
+  .tabla-proformas thead {
+    background-color: #2c3e50;
+    color: white;
+  }
+  
+  .tabla-proformas tbody tr:hover {
+    background-color: #f7fafc;
+  }
+  
+  .tabla-proformas td button {
+    padding: 0.4rem 1rem;
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .tabla-proformas td button:hover {
+    background-color: #2c3e50;
+  }
+  
