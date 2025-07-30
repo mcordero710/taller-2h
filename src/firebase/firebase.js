@@ -1,7 +1,6 @@
-// src/firebase.js
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'; // ← Agregá esto
+import { getFirestore, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore'; // ← Agregamos los métodos necesarios
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -18,7 +17,26 @@ const app = initializeApp(firebaseConfig);
 
 // Obtener instancias de Firebase
 const auth = getAuth(app);
-const db = getFirestore(app); // ← Agregá esto
+const db = getFirestore(app);
 
-// Exportar
-export { auth, signInWithEmailAndPassword, db };
+// Función para obtener e incrementar el número de proforma
+const obtenerNumeroProforma = async () => {
+  const proformaRef = doc(db, 'contadores', 'proforma'); // Referencia al documento que guarda el contador de proformas
+  const docSnap = await getDoc(proformaRef);
+
+  if (!docSnap.exists()) {
+    // Si no existe, creamos el contador con el valor inicial (0000001)
+    await setDoc(proformaRef, { proforma: 1 });
+    return '0000001';
+  } else {
+    // Si existe, incrementamos el número de proforma
+    const siguienteNumero = docSnap.data().proforma + 1;
+    await updateDoc(proformaRef, { proforma: siguienteNumero });
+
+    // Formatear el número con ceros a la izquierda (7 dígitos)
+    return String(siguienteNumero).padStart(7, '0');
+  }
+};
+
+// Exportar instancias y funciones necesarias
+export { auth, signInWithEmailAndPassword, db, obtenerNumeroProforma };
