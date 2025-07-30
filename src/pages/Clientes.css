@@ -1,20 +1,27 @@
+/* Contenedor principal */
 .clientes-layout {
   max-width: 1000px;
   margin: 2rem auto;
   font-family: 'Segoe UI', sans-serif;
   padding: 1rem;
+  background-color: #f9f9f9; /* Fondo claro similar al proforma */
+  border: 1px solid #ddd; /* Borde sutil */
+  border-radius: 8px; /* Bordes redondeados */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra ligera */
 }
 
+/* Título principal */
 .clientes-layout h2 {
   text-align: center;
   font-size: 2rem;
   font-weight: 700;
-  color: #2d3748;
+  color: #2c3e50; /* Color oscuro para el texto */
   margin-bottom: 1.5rem;
 }
 
+/* Botón agregar cliente */
 .boton-agregar {
-  background-color: #2b6cb0;
+  background-color: #2c3e50; /* Color principal del botón */
   color: white;
   font-weight: 500;
   border: none;
@@ -25,27 +32,22 @@
   display: block;
   width: fit-content;
   margin-left: auto;
-  margin-right: 0.5rem;   /* 🔹 agrega este margen para empujarlo un poco más a la derecha */
+  margin-right: 0.5rem;
   margin-bottom: 1rem;
   transition: background-color 0.3s ease;
 }
 
-
 .boton-agregar:hover {
-  background-color: #2c5282;
+  background-color: #1abc9c; /* Color al pasar el mouse */
 }
 
-
-.boton-agregar:hover {
-  background-color: #2c5282;
-}
-
+/* Tabla de clientes */
 .tabla-clientes {
   width: 100%;
   border-collapse: collapse;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Sombra ligera */
   margin-top: 2rem;
 }
 
@@ -53,16 +55,16 @@
 .tabla-clientes td {
   padding: 0.75rem 1rem;
   text-align: left;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0; /* Borde gris claro */
 }
 
 .tabla-clientes thead {
-  background-color: #2b6cb0;
+  background-color: #2c3e50; /* Fondo de encabezado oscuro */
   color: white;
 }
 
 .tabla-clientes tbody tr:hover {
-  background-color: #f7fafc;
+  background-color: #f7fafc; /* Fondo suave al pasar el mouse */
 }
 
 /* Modal */
@@ -93,9 +95,10 @@
   margin-bottom: 1.5rem;
   text-align: center;
   font-size: 1.5rem;
-  color: #2d3748;
+  color: #2d3748; /* Color oscuro para el texto */
 }
 
+/* Estilos de los campos de formulario */
 .formulario input {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -105,6 +108,7 @@
   font-size: 1rem;
 }
 
+/* Estilos de las acciones en el modal */
 .acciones {
   display: flex;
   justify-content: space-between;
@@ -122,15 +126,16 @@
 }
 
 .acciones .cancelar {
-  background-color: #e53e3e;
+  background-color: #e53e3e; /* Rojo para el botón de cancelar */
   color: white;
 }
 
 .acciones button[type="submit"] {
-  background-color: #2b6cb0;
+  background-color: #2c3e50; /* Botón de submit con el color principal */
   color: white;
 }
 
+/* Barra superior con búsqueda */
 .barra-superior {
   display: flex;
   justify-content: space-between;
@@ -139,9 +144,10 @@
   gap: 1rem;
 }
 
+/* Contenedor de búsqueda */
 .contenedor-busqueda {
   position: relative;
-  width: 250px; /* puedes ajustar el tamaño aquí */
+  width: 250px; /* Puedes ajustar el tamaño aquí */
 }
 
 .icono-lupa {
@@ -157,14 +163,27 @@
 .input-busqueda {
   width: 100%;
   padding: 0.4rem 0.75rem;
-  padding-left: 2rem; /* espacio para el ícono */
+  padding-left: 2rem; /* Espacio para el ícono */
   font-size: 0.95rem;
   border: 1px solid #cbd5e0;
   border-radius: 6px;
 }
 
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 768px) {
+  .clientes-layout {
+    padding: 1rem;
+  }
 
+  .clientes-layout h2 {
+    font-size: 1.75rem; /* Ajustar el tamaño del título */
+  }
 
+  .tabla-clientes {
+    font-size: 0.85rem; /* Ajustar tamaño de fuente de la tabla */
+  }
 
-
-
+  .modal-content {
+    width: 100%; /* Hacer el modal más pequeño en pantallas pequeñas */
+  }
+}
