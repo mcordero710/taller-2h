@@ -363,11 +363,26 @@
 }
 
 @media print {
+  /* Esconder el botón de Descargar PDF */
   .boton-descargar {
     display: none !important;
   }
 
+  /* Esconder los botones de eliminar */
   .boton-eliminar {
     display: none !important;
   }
+
+  /* Esconder la columna de eliminar en la tabla (4ta columna) */
+  .proforma-tabla th:nth-child(4),
+  .proforma-tabla td:nth-child(4) {
+    display: none !important;
+  }
+
+  /* Esconder toda la fila de la columna "Eliminar" */
+  .proforma-tabla td:nth-child(4),
+  .proforma-tabla th:nth-child(4) {
+    visibility: hidden !important;
+  }
 }
+
