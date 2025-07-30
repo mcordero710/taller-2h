@@ -15,23 +15,25 @@ const Proforma = () => {
   const [ivaChecked, setIvaChecked] = useState(false);
   const [ivaAmount, setIvaAmount] = useState(0);
   const [numeroProforma, setNumeroProforma] = useState(null);
+  const [clienteNoExiste, setClienteNoExiste] = useState(false); // Estado para controlar el error de cliente no encontrado
 
   // Crear referencia para el proforma content
   const proformaContentRef = useRef(null);
 
   // Función para buscar cliente por cédula
   const handleBuscarCliente = async (cedulaInput) => {
-    // Si la cédula tiene 9 dígitos, buscar en la base de datos
-    if (cedulaInput.length === 9) {
+    if (cedulaInput.length === 9) { // Validar que la cédula tenga 9 dígitos
       const q = query(collection(db, 'clientes'), where('cedula', '==', cedulaInput));
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        // Si el cliente existe, actualizar el estado con la información
         setCliente(snapshot.docs[0].data());
+        setClienteNoExiste(false); // Si el cliente existe, ocultamos el mensaje de error
       } else {
-        // Si no se encuentra el cliente, resetear el estado
         setCliente(null);
+        setClienteNoExiste(true); // Si no se encuentra el cliente, mostramos el mensaje de error
       }
+    } else {
+      setClienteNoExiste(false); // Si la cédula no es válida, no mostramos mensaje de error
     }
   };
 
@@ -164,6 +166,11 @@ const Proforma = () => {
               value={cedula}
               onChange={(e) => setCedula(e.target.value.replace(/\D/g, '').slice(0, 9))}
             />
+            {clienteNoExiste && (
+              <p style={{ color: 'red', fontSize: '0.9rem' }}>
+                El cliente con el número de cédula {cedula} no existe.
+              </p>
+            )}
             {cliente && (
               <div className="cliente-info">
                 <p><strong>Nombre:</strong> {cliente.nombre} {cliente.apellido}</p>
