@@ -140,15 +140,27 @@ const Proforma = () => {
   };
 
   const handleDescargarPDF = () => {
+    // Clonamos el contenido de la proforma para modificarlo sin afectar la vista en pantalla
     const element = document.getElementById('proformaContent').cloneNode(true);
+  
+    // Encontrar la columna "Eliminar" y el botón de eliminar y ocultarlos en el PDF
+    const eliminarColumnas = element.querySelectorAll("th:nth-child(4), td:nth-child(4)");
+    eliminarColumnas.forEach(col => col.style.display = 'none'); // Oculta columna de eliminar
+  
+    const eliminarBotones = element.querySelectorAll(".boton-eliminar");
+    eliminarBotones.forEach(btn => btn.style.display = 'none'); // Oculta los botones de eliminar
+  
+    // Ahora generamos el PDF con el contenido modificado
     const options = {
       margin: 10,
       filename: 'proforma.pdf',
       html2canvas: { scale: 4 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
+    
     html2pdf(element, options);
   };
+  
 
   return (
     <div className="proforma-wrapper">
