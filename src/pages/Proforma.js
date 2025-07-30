@@ -198,9 +198,10 @@ const Proforma = () => {
 
       <div id="proformaContent">
         <h2>N° Proforma: {numeroProforma ? numeroProforma : '___________'}</h2>
+        <div className="proforma-header">
+  </div>
         <section className="proforma-info">
           <div className="factura-detalle">
-            <p><strong>N° Proforma:</strong> {numeroProforma ? numeroProforma : '___________'}</p>
             <p><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
           </div>
           <div className="cliente-detalle">
@@ -214,10 +215,10 @@ const Proforma = () => {
             />
             {cliente && (
               <div className="cliente-info">
-                <p><strong>Nombre:</strong> {cliente.nombre} {cliente.apellido}</p>
-                <p><strong>Teléfono:</strong> {cliente.telefono}</p>
-                <p><strong>Correo:</strong> {cliente.correo}</p>
-              </div>
+              <p><strong>Nombre:</strong> {cliente.nombre} {cliente.apellido}</p>
+              <p><strong>Teléfono:</strong> {cliente.telefono}</p>
+              <p><strong>Correo:</strong> {cliente.correo}</p>
+            </div>
             )}
           </div>
         </section>
