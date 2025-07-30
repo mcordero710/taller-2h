@@ -5,10 +5,11 @@ import { collection, getDocs, query, where, addDoc } from 'firebase/firestore';
 import logo from '../assets/logo.png';
 import { FaTrashAlt } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
-import { toast } from 'react-toastify'; // Importamos toast
+import { toast } from 'react-toastify';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faDownload, faSave, faPlus } from '@fortawesome/free-solid-svg-icons';
 
 const Proforma = () => {
-  // Estados del componente
   const [cedula, setCedula] = useState('');
   const [cliente, setCliente] = useState(null);
   const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', anio: '', color: '' });
@@ -17,41 +18,38 @@ const Proforma = () => {
   const [ivaChecked, setIvaChecked] = useState(false);
   const [ivaAmount, setIvaAmount] = useState(0);
   const [numeroProforma, setNumeroProforma] = useState(null);
-  const [isClienteLoaded, setIsClienteLoaded] = useState(false);  // Estado que indica si el cliente está cargado
+  const [isClienteLoaded, setIsClienteLoaded] = useState(false);
+  const [proformaGuardada, setProformaGuardada] = useState(false);
 
-  // Función para buscar cliente por cédula
+
   const handleBuscarCliente = async (cedulaInput) => {
-    if (cedulaInput.length === 9) { // Validar que la cédula tenga 9 dígitos
+    if (cedulaInput.length === 9) {
       const q = query(collection(db, 'clientes'), where('cedula', '==', cedulaInput));
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         setCliente(snapshot.docs[0].data());
-        setIsClienteLoaded(true);  // Habilitar el botón si se encuentra el cliente
+        setIsClienteLoaded(true);
       } else {
         setCliente(null);
-        setIsClienteLoaded(false);  // Deshabilitar el botón si no se encuentra el cliente
+        setIsClienteLoaded(false);
         toast.error('La cédula del cliente ingresada no existe.');
       }
     }
   };
 
-  // Llamar a la función de búsqueda cada vez que la cédula cambia
   useEffect(() => {
     handleBuscarCliente(cedula);
   }, [cedula]);
 
-  // Obtener el número de la proforma
   useEffect(() => {
     const fetchNumeroProforma = async () => {
       const numero = await obtenerNumeroProforma();
       setNumeroProforma(numero);
     };
     fetchNumeroProforma();
-  }, []); // Esto solo se ejecuta cuando el componente se monta
+  }, []);
 
-  // Función para generar un nuevo número de proforma y limpiar los datos
   const handleNuevaProforma = async () => {
-    // Limpiar todos los campos
     setCedula('');
     setCliente(null);
     setVehiculo({ placa: '', marca: '', anio: '', color: '' });
@@ -59,13 +57,13 @@ const Proforma = () => {
     setTotal(0);
     setIvaChecked(false);
     setIvaAmount(0);
-    
-    // Cargar un nuevo número de proforma
+    setIsClienteLoaded(false);
+
     const numero = await obtenerNumeroProforma();
-    setNumeroProforma(numero);  // Establecer el nuevo número de la proforma
+    setNumeroProforma(numero);
+    setProformaGuardada(false);
   };
 
-  // Función para manejar reparaciones
   const handleReparacionChange = (index, field, value) => {
     const nuevas = [...reparaciones];
     nuevas[index][field] = field === 'precio' ? Number(value) : value;
@@ -98,8 +96,22 @@ const Proforma = () => {
     setTotal(suma);
   }, [reparaciones, ivaChecked]);
 
-  // Función para guardar la proforma
   const handleGuardarProforma = async () => {
+    if (!cliente) {
+      toast.error('Debe cargar un cliente válido.');
+      return;
+    }
+
+    if (reparaciones.length === 0) {
+      toast.error('Debe agregar al menos una reparación.');
+      return;
+    }
+
+    if (!vehiculo.placa || !vehiculo.marca || !vehiculo.anio || !vehiculo.color) {
+      toast.error('Debe completar todos los datos del vehículo.');
+      return;
+    }
+
     const nuevaProforma = {
       numero: numeroProforma,
       cliente: cliente,
@@ -110,17 +122,23 @@ const Proforma = () => {
       fecha: new Date().toLocaleDateString(),
     };
 
-    // Guardar la nueva proforma en la base de datos
     await addDoc(collection(db, 'proformas'), nuevaProforma);
-
-    // Actualizar el número de la proforma para la siguiente
     await actualizarNumeroProforma(numeroProforma + 1);
 
-    // Mostrar el mensaje de éxito
-    toast.success('¡Proforma guardada con éxito!');
+    toast.success('¡Proforma guardada con éxito!', {
+      position: "top-center",
+      autoClose: 4000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "colored",
+    });
+    setCedula('');
+    setIsClienteLoaded(false);
+    setProformaGuardada(true);
   };
 
-  // Descargar PDF
   const handleDescargarPDF = () => {
     const element = document.getElementById('proformaContent').cloneNode(true);
     const options = {
@@ -144,23 +162,23 @@ const Proforma = () => {
             <p><strong>Email:</strong> info@taller2h.com</p>
             <p><strong>Dirección:</strong> San José, Costa Rica</p>
 
-            <button className="boton-descargar" onClick={handleDescargarPDF}>
-              Descargar PDF
-            </button>
             <button
               className="boton-guardar"
               onClick={handleGuardarProforma}
-              disabled={!isClienteLoaded}  // Deshabilitar si el cliente no está cargado
+              disabled={!isClienteLoaded || proformaGuardada}
             >
-              Guardar Proforma
+              <FontAwesomeIcon icon={faSave} /> Guardar Proforma
             </button>
 
-            <button
-              className="boton-nueva"
-              onClick={handleNuevaProforma}  // Hacer clic en este botón para generar una nueva proforma
-            >
-              Nueva Proforma
+
+            <button className="boton-nueva" onClick={handleNuevaProforma}>
+              <FontAwesomeIcon icon={faPlus} /> Nueva Proforma
             </button>
+
+            <button className="boton-descargar" onClick={handleDescargarPDF}>
+              <FontAwesomeIcon icon={faDownload} /> Descargar PDF
+            </button>
+
           </div>
         </div>
         <h1>PROFORMA</h1>
@@ -193,42 +211,20 @@ const Proforma = () => {
         </section>
 
         <section className="vehiculo-detalle">
-          <div className="input-group">
-            <input
-              id="placa"
-              type="text"
-              placeholder="# Placa"
-              value={vehiculo.placa}
-              onChange={(e) => setVehiculo({ ...vehiculo, placa: e.target.value })}
-            />
-          </div>
-          <div className="input-group">
-            <input
-              id="marca"
-              type="text"
-              placeholder="Marca"
-              value={vehiculo.marca}
-              onChange={(e) => setVehiculo({ ...vehiculo, marca: e.target.value })}
-            />
-          </div>
-          <div className="input-group">
-            <input
-              id="anio"
-              type="text"
-              placeholder="Año"
-              value={vehiculo.anio}
-              onChange={(e) => setVehiculo({ ...vehiculo, anio: e.target.value })}
-            />
-          </div>
-          <div className="input-group">
-            <input
-              id="color"
-              type="text"
-              placeholder="Color"
-              value={vehiculo.color}
-              onChange={(e) => setVehiculo({ ...vehiculo, color: e.target.value })}
-            />
-          </div>
+          {['placa', 'marca', 'anio', 'color'].map((campo) => {
+            const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
+            return (
+              <div className="input-group" key={campo}>
+                <input
+                  id={campo}
+                  type="text"
+                  placeholder={label}
+                  value={vehiculo[campo]}
+                  onChange={(e) => setVehiculo({ ...vehiculo, [campo]: e.target.value })}
+                />
+              </div>
+            );
+          })}
         </section>
 
         <table className="proforma-tabla">
@@ -279,16 +275,14 @@ const Proforma = () => {
               checked={ivaChecked}
               onChange={handleIvaChange}
             />
-            Factura Electrónica
+            Factura Electrónica (13%)
           </label>
         </section>
 
         <div className="proforma-totales">
-          <p><strong>Subtotal:</strong> ₡{total.toFixed(2)}</p>
-          {ivaChecked && (
-            <p><strong>IVA (13%):</strong> ₡{ivaAmount.toFixed(2)}</p>
-          )}
-          <p><strong>Total:</strong> ₡{(total + ivaAmount).toFixed(2)}</p>
+          <p><strong>Subtotal:</strong> ₡{(total - ivaAmount).toFixed(2)}</p>
+          {ivaChecked && <p><strong>IVA (13%):</strong> ₡{ivaAmount.toFixed(2)}</p>}
+          <p><strong>Total:</strong> ₡{total.toFixed(2)}</p>
         </div>
 
         <footer className="proforma-footer">
@@ -305,7 +299,7 @@ const Proforma = () => {
             <ol>
               <li>Condiciones de pago: 50% pago adelantado y 50% contra entrega.</li>
               <li>En caso de necesitar algún repuesto adicional, se le indicará una vez procedamos con el desarme del vehículo.</li>
-              <li>Monto de repuestos por tiempo limitado y sujeto a cambio por parte de la agencia vendedora (en caso de ser requerido).</li>
+              <li>Monto de repuestos por tiempo limitado y sujeto a cambio por parte de la agencia vendedora.</li>
               <li>Validez de la oferta: 10 días.</li>
             </ol>
           </div>
