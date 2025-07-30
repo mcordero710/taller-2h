@@ -92,6 +92,7 @@
 .proforma-tabla td {
   border: 1px solid #ccc;
   padding: 0.5rem;
+  text-align: center; /* Asegura que el contenido de la celda esté centrado */
 }
 
 /* Estilo para los campos de entrada en la tabla */
@@ -224,6 +225,7 @@
   align-items: center;
   width: 40px;
   height: 40px;
+  margin: auto; /* Centra el botón en su contenedor */
 }
 
 .boton-eliminar:hover {
