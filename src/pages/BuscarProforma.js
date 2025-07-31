@@ -31,8 +31,14 @@ const BuscarProforma = () => {
       setProformas([]);
       toast.info('No existe proforma para los datos ingresados', {
         position: 'top-center',
-        autoClose: 3000,
+        autoClose: 2500,
+        closeOnClick: true,
+        pauseOnHover: false,
+        draggable: false,
+        closeButton: false, // 🔹 Quita la “X”
+        hideProgressBar: true, // 🔹 Quita la barra inferior
       });
+      
     }
   };
 

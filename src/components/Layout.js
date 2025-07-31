@@ -61,7 +61,16 @@ const Layout = () => {
       </main>
 
       {/* Contenedor de notificaciones */}
-      <ToastContainer position="top-center" autoClose={3000} />
+      <ToastContainer
+        position="top-center"
+        autoClose={2500}
+        hideProgressBar={true}
+        closeButton={false}
+        closeOnClick={true}
+        pauseOnHover={false}
+        draggable={false}
+      />
+
     </div>
   );
 };
