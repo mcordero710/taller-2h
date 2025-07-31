@@ -82,3 +82,52 @@ body, html, #root {
   box-sizing: border-box;
   overflow-y: auto;
 }
+
+/* Estilo global para todos los toast de react-toastify */
+.Toastify__toast {
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.Toastify__toast--info {
+  background-color: #2c3e50;
+  color: #fff;
+}
+
+.Toastify__toast--success {
+  background-color: #1abc9c;
+  color: #fff;
+}
+
+.Toastify__toast--error {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+/* Toastify - ajustes globales de apariencia */
+.Toastify__toast {
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: #fff;
+}
+
+/* Fondo para cada tipo de toast */
+.Toastify__toast--success {
+  background-color: #2c3e50; /* Color principal de tu app */
+}
+
+.Toastify__toast--error {
+  background-color: #e53e3e; /* Rojo suave para errores */
+}
+
+.Toastify__toast--info {
+  background-color: #4a5568; /* Gris azulado para info */
+}
+
+.Toastify__toast--warning {
+  background-color: #ed8936; /* Naranja para advertencias */
+}

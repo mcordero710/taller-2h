@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import { FaUsers, FaTruck, FaBoxes, FaTools, FaFileAlt } from 'react-icons/fa';
+import { FaUsers, FaTruck, FaBoxes, FaTools, FaFileAlt, FaSearch } from 'react-icons/fa'; // Agregar FaSearch para Buscar Proforma
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Layout.css';
@@ -26,6 +26,12 @@ const Layout = () => {
               <Link to="/proforma">
                 <FaFileAlt className="menu-icon" />
                 <span>Proforma</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/buscar-proforma"> {/* Nuevo enlace para buscar proforma */}
+                <FaSearch className="menu-icon" />
+                <span>Buscar Proforma</span>
               </Link>
             </li>
             <li>
@@ -55,7 +61,16 @@ const Layout = () => {
       </main>
 
       {/* Contenedor de notificaciones */}
-      <ToastContainer position="top-center" autoClose={3000} />
+      <ToastContainer
+        position="top-center"
+        autoClose={2500}
+        hideProgressBar={true}
+        closeButton={false}
+        closeOnClick={true}
+        pauseOnHover={false}
+        draggable={false}
+      />
+
     </div>
   );
 };
