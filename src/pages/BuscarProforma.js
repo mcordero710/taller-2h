@@ -2,22 +2,20 @@ import React, { useState } from 'react';
 import { db } from '../firebase/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import './BuscarProforma.css'; // Asegúrate de tener los estilos
+import './BuscarProforma.css';
 
 const BuscarProforma = () => {
   const [buscar, setBuscar] = useState('');
   const [proformas, setProformas] = useState([]);
-  const navigate = useNavigate(); // Usamos React Router para redirigir a la página de edición
+  const navigate = useNavigate();
 
   const handleBuscar = async () => {
-    if (!buscar) return; // Si no hay término de búsqueda, no hacer nada
+    if (!buscar) return;
 
     let q;
     if (buscar.length === 9) {
-      // Si la búsqueda es una cédula (suponemos que son 9 caracteres)
       q = query(collection(db, 'proformas'), where('cliente.cedula', '==', buscar));
     } else {
-      // Si la búsqueda es un número de proforma
       q = query(collection(db, 'proformas'), where('numero', '==', parseInt(buscar)));
     }
 
@@ -27,7 +25,7 @@ const BuscarProforma = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      setProformas(fetchedProformas.reverse()); // Ordenar de más reciente a la más antigua
+      setProformas(fetchedProformas.reverse());
     } else {
       setProformas([]);
       alert('No se encontraron resultados');
@@ -35,23 +33,30 @@ const BuscarProforma = () => {
   };
 
   const handleVerProforma = (id) => {
-    // Redirigir a la pantalla de proforma para editarla
     navigate(`/proforma/${id}`);
   };
 
   return (
     <div className="buscar-proforma-wrapper">
-      <h2>Buscar Proforma</h2>
+      <h2 className="buscar-proforma-header">Buscar Proforma</h2>
 
-      <div className="buscar-proforma">
-        <input
-          type="text"
-          placeholder="Buscar por número de proforma o cédula"
-          value={buscar}
-          onChange={(e) => setBuscar(e.target.value)}
-        />
-        <button onClick={handleBuscar}>Buscar</button>
+      <div className="buscar-proforma-barra">
+        <label htmlFor="campoBuscar" className="buscar-proforma-label">
+          Digite el número de cédula o el número de proforma que desea consultar
+        </label>
+        <div className="buscar-proforma-campos">
+          <input
+            id="campoBuscar"
+            type="text"
+            placeholder=""
+            value={buscar}
+            onChange={(e) => setBuscar(e.target.value)}
+          />
+          <button onClick={handleBuscar}>Buscar</button>
+        </div>
       </div>
+
+
 
       {proformas.length > 0 ? (
         <table className="tabla-proformas">
@@ -77,7 +82,7 @@ const BuscarProforma = () => {
           </tbody>
         </table>
       ) : (
-        <p>No se encontraron proformas para el cliente.</p>
+        <p className="buscar-proforma-resultados">No se encontraron proformas para el cliente.</p>
       )}
     </div>
   );
