@@ -36,7 +36,7 @@
 .tabla-proformas th,
 .tabla-proformas td {
   padding: 0.8rem 1rem;
-  text-align: left;
+  text-align: center; /* ✅ CENTRAR contenido de columnas */
   border: 1px solid #ddd;
 }
 

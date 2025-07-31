@@ -67,29 +67,32 @@ const BuscarProforma = () => {
       </div>
 
       {proformas.length > 0 && (
-        <table className="tabla-proformas">
-          <thead>
-            <tr>
-              <th>Número de Proforma</th>
-              <th>Cédula Cliente</th>
-              <th>Fecha</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>
-            {proformas.map((proforma) => (
-              <tr key={proforma.id}>
-                <td>{proforma.numero}</td>
-                <td>{proforma.cliente.cedula}</td>
-                <td>{proforma.fecha}</td>
-                <td>
-                  <button onClick={() => handleVerProforma(proforma.id)}>Ver / Editar</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+  <table className="tabla-proformas">
+    <thead>
+      <tr>
+        <th>Número de Proforma</th>
+        <th>Cédula</th>
+        <th>Cliente</th>
+        <th>Fecha</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {proformas.map((proforma) => (
+        <tr key={proforma.id}>
+          <td>{proforma.numero}</td>
+          <td>{proforma.cliente.cedula}</td>
+          <td>{`${proforma.cliente.nombre} ${proforma.cliente.apellido}`}</td>
+          <td>{proforma.fecha}</td>
+          <td>
+            <button onClick={() => handleVerProforma(proforma.id)}>Ver / Editar</button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+)}
+
     </div>
   );
 };
