@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { db } from '../firebase/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify'; // ✅ Se agregó toast
 import './BuscarProforma.css';
 
 const BuscarProforma = () => {
@@ -28,7 +29,10 @@ const BuscarProforma = () => {
       setProformas(fetchedProformas.reverse());
     } else {
       setProformas([]);
-      alert('No se encontraron resultados');
+      toast.info('No existe proforma para los datos ingresados', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     }
   };
 
@@ -56,9 +60,7 @@ const BuscarProforma = () => {
         </div>
       </div>
 
-
-
-      {proformas.length > 0 ? (
+      {proformas.length > 0 && (
         <table className="tabla-proformas">
           <thead>
             <tr>
@@ -81,8 +83,6 @@ const BuscarProforma = () => {
             ))}
           </tbody>
         </table>
-      ) : (
-        <p className="buscar-proforma-resultados">No se encontraron proformas para el cliente.</p>
       )}
     </div>
   );
