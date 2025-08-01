@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Proforma.css';
 import { db, obtenerNumeroProforma, actualizarNumeroProforma } from '../firebase/firebase';
-import { collection, getDocs, query, where, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, addDoc, updateDoc, doc } from 'firebase/firestore';
 import logo from '../assets/logo.png';
 import { FaTrashAlt } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
@@ -20,6 +20,9 @@ const Proforma = () => {
   const [numeroProforma, setNumeroProforma] = useState(null);
   const [isClienteLoaded, setIsClienteLoaded] = useState(false);
   const [proformaGuardada, setProformaGuardada] = useState(false);
+  const [fecha, setFecha] = useState(null);
+  const [proformaId, setProformaId] = useState(null); // null = nueva
+  const [buscarProforma, setBuscarProforma] = useState('');
 
   const handleBuscarCliente = async (cedulaInput) => {
     if (cedulaInput.length === 9) {
@@ -36,9 +39,42 @@ const Proforma = () => {
     }
   };
 
+  const handleBuscarProforma = async (numero) => {
+    try {
+      const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(numero)));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        toast.error(`No se encontró la proforma #${numero}`);
+        return;
+      }
+
+      const docSnap = snapshot.docs[0];
+      const data = docSnap.data();
+
+      setNumeroProforma(data.numero);
+      setCedula(data.cliente?.cedula || '');
+      setCliente(data.cliente);
+      setVehiculo(data.vehiculo || { placa: '', marca: '', anio: '', color: '' });
+      setReparaciones(data.reparaciones || []);
+      setIvaChecked(data.iva > 0);
+      setIvaAmount(data.iva || 0);
+      setTotal(data.total || 0);
+      setFecha(data.fecha || new Date().toLocaleDateString());
+      setProformaGuardada(false);
+      setIsClienteLoaded(true);
+      setProformaId(docSnap.id);
+      toast.success(`Proforma #${data.numero} cargada correctamente`);
+    } catch (error) {
+      console.error("Error al buscar proforma:", error);
+      toast.error('Ocurrió un error al cargar la proforma');
+    }
+  };
+
   useEffect(() => {
     if (cedula === '') {
-      setCliente(null); // Limpiar la información del cliente cuando la cédula esté vacía
+      setCliente(null);
+      setIsClienteLoaded(false);
     } else {
       handleBuscarCliente(cedula);
     }
@@ -61,6 +97,7 @@ const Proforma = () => {
     setIvaChecked(false);
     setIvaAmount(0);
     setIsClienteLoaded(false);
+    setBuscarProforma('');
 
     const numero = await obtenerNumeroProforma();
     setNumeroProforma(numero);
@@ -73,14 +110,14 @@ const Proforma = () => {
     setReparaciones(nuevas);
   };
 
-  const agregarReparacion = () => {
-    setReparaciones([...reparaciones, { concepto: '', precio: 0 }]);
-  };
-
   const eliminarReparacion = (index) => {
     const nuevas = [...reparaciones];
     nuevas.splice(index, 1);
     setReparaciones(nuevas);
+  };
+
+  const agregarReparacion = () => {
+    setReparaciones([...reparaciones, { concepto: '', precio: 0 }]);
   };
 
   const handleIvaChange = () => {
@@ -104,78 +141,62 @@ const Proforma = () => {
       toast.error('Debe cargar un cliente válido.');
       return;
     }
-  
+
     if (reparaciones.length === 0) {
       toast.error('Debe agregar al menos una reparación.');
       return;
     }
-  
+
     if (!vehiculo.placa || !vehiculo.marca || !vehiculo.anio || !vehiculo.color) {
       toast.error('Debe completar todos los datos del vehículo.');
       return;
     }
-  
+
     const nuevaProforma = {
       numero: numeroProforma,
-      cliente: cliente, // Mantener la información del cliente
-      vehiculo: vehiculo, // Mantener la información del vehículo
-      reparaciones: reparaciones, // Mantener las reparaciones
-      total: total, // Mantener el total
-      iva: ivaChecked ? ivaAmount : 0, // Mantener el IVA si está marcado
-      fecha: new Date().toLocaleDateString(),
+      cliente: cliente,
+      vehiculo: vehiculo,
+      reparaciones: reparaciones,
+      total: total,
+      iva: ivaChecked ? ivaAmount : 0,
+      fecha: fecha || new Date().toLocaleDateString(),
     };
-  
-    // Guardar la proforma en la base de datos
-    await addDoc(collection(db, 'proformas'), nuevaProforma);
-    await actualizarNumeroProforma(numeroProforma + 1);
-  
-    // Mostrar un mensaje de éxito
-    toast.success('¡Proforma guardada con éxito!', {
-      position: "top-center",
-      autoClose: 4000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      theme: "colored",
-    });
-  
-    // No se hace ningún reset de los datos
-    // Toda la información (cliente, reparaciones, total, IVA) permanece intacta
-    setProformaGuardada(true); // Establecer que la proforma ha sido guardada
+
+    try {
+      if (proformaId) {
+        await updateDoc(doc(db, 'proformas', proformaId), nuevaProforma);
+        toast.success('¡Proforma actualizada con éxito!');
+      } else {
+        const docRef = await addDoc(collection(db, 'proformas'), nuevaProforma);
+        setProformaId(docRef.id);
+        await actualizarNumeroProforma(numeroProforma + 1);
+        toast.success('¡Proforma guardada con éxito!');
+      }
+      setProformaGuardada(true);
+    } catch (error) {
+      toast.error('Error al guardar la proforma');
+      console.error(error);
+    }
   };
-  
-  
-  
 
   const handleDescargarPDF = () => {
-    // Clonamos el contenido de la proforma para modificarlo sin afectar la vista en pantalla
     const element = document.getElementById('proformaContent').cloneNode(true);
-  
-    // Encontrar la columna "Eliminar" y el botón de eliminar y ocultarlos en el PDF
     const eliminarColumnas = element.querySelectorAll("th:nth-child(4), td:nth-child(4)");
-    eliminarColumnas.forEach(col => col.style.display = 'none'); // Oculta columna de eliminar
-  
+    eliminarColumnas.forEach(col => col.style.display = 'none');
     const eliminarBotones = element.querySelectorAll(".boton-eliminar");
-    eliminarBotones.forEach(btn => btn.style.display = 'none'); // Oculta los botones de eliminar
-  
-    // Eliminar la sección de factura electrónica
+    eliminarBotones.forEach(btn => btn.style.display = 'none');
     const ivaSection = element.querySelector(".iva-section");
     if (ivaSection) {
-      ivaSection.style.display = 'none'; // Oculta la sección de Factura Electrónica
+      ivaSection.style.display = 'none';
     }
-  
-    // Ahora generamos el PDF con el contenido modificado
     const options = {
       margin: 10,
       filename: 'proforma.pdf',
       html2canvas: { scale: 4 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
-  
     html2pdf(element, options);
   };
-  
 
   const handleInputChange = (campo, value) => {
     if (campo === 'marca' || campo === 'color') {
@@ -200,6 +221,7 @@ const Proforma = () => {
             <p><strong>Tel:</strong> (506) 2222-2222</p>
             <p><strong>Email:</strong> info@taller2h.com</p>
             <p><strong>Dirección:</strong> San José, Costa Rica</p>
+            <p><strong>Cédula Jurídica:</strong> 123145644</p>
 
             <button
               className="boton-guardar"
@@ -216,17 +238,35 @@ const Proforma = () => {
             <button className="boton-descargar" onClick={handleDescargarPDF}>
               <FontAwesomeIcon icon={faDownload} /> Descargar PDF
             </button>
-
           </div>
         </div>
         <h1>PROFORMA</h1>
+        <div className="buscar-proforma">
+          <label htmlFor="buscarProforma">Buscar Proforma</label>
+          <input
+            id="buscarProforma"
+            type="text"
+            placeholder=""
+            className="input-buscar"
+            value={buscarProforma}
+            onChange={(e) => setBuscarProforma(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleBuscarProforma(e.target.value);
+              }
+              if (e.key && !/^\d$/.test(e.key) && e.key !== 'Backspace') {
+                e.preventDefault();
+              }
+            }}
+          />
+        </div>
       </header>
 
       <div id="proformaContent">
         <h2>N° Proforma: {numeroProforma ? numeroProforma : '___________'}</h2>
         <section className="proforma-info">
           <div className="factura-detalle">
-            <p><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
+            <p><strong>Fecha:</strong> {fecha ? fecha : new Date().toLocaleDateString()}</p>
           </div>
           <div className="cliente-detalle">
             <label htmlFor="cedula">Cédula del cliente</label>

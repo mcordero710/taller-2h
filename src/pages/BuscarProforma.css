@@ -111,3 +111,12 @@
   background-color: #1abc9c;
   transform: scale(1.05);
 }
+
+/* Ajuste de ancho igual para las columnas Número de Proforma y Cédula */
+.tabla-proformas th:nth-child(1),
+.tabla-proformas th:nth-child(2),
+.tabla-proformas td:nth-child(1),
+.tabla-proformas td:nth-child(2) {
+  width: 140px; /* Ajusta este valor según tu preferencia visual */
+}
+
