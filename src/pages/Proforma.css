@@ -392,6 +392,29 @@
   }
 }
 
+.buscar-proforma {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.buscar-proforma label {
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 0.4rem;
+}
+
+.buscar-proforma input {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 80px;
+  box-sizing: border-box;
+  text-align: center; 
+}
+
 
 
 @media print {
@@ -420,5 +443,6 @@
   .proforma-tabla th:nth-child(4) {
     visibility: hidden !important;
   }
+  
 }
 
