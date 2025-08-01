@@ -22,6 +22,7 @@ const Proforma = () => {
   const [proformaGuardada, setProformaGuardada] = useState(false);
   const [fecha, setFecha] = useState(null);
   const [proformaId, setProformaId] = useState(null); // null = nueva
+  const [buscarProforma, setBuscarProforma] = useState('');
 
   const handleBuscarCliente = async (cedulaInput) => {
     if (cedulaInput.length === 9) {
@@ -96,6 +97,7 @@ const Proforma = () => {
     setIvaChecked(false);
     setIvaAmount(0);
     setIsClienteLoaded(false);
+    setBuscarProforma('');
 
     const numero = await obtenerNumeroProforma();
     setNumeroProforma(numero);
@@ -240,18 +242,18 @@ const Proforma = () => {
         </div>
         <h1>PROFORMA</h1>
         <div className="buscar-proforma">
-          <label htmlFor="buscarProforma">Buscar Proforma por número:</label>
+          <label htmlFor="buscarProforma">Buscar Proforma</label>
           <input
             id="buscarProforma"
             type="text"
-            placeholder="Ej: 1001"
+            placeholder=""
             className="input-buscar"
+            value={buscarProforma}
+            onChange={(e) => setBuscarProforma(e.target.value)}
             onKeyDown={(e) => {
-              // Solo Enter activa la búsqueda
               if (e.key === 'Enter') {
                 handleBuscarProforma(e.target.value);
               }
-              // Solo permitir números
               if (e.key && !/^\d$/.test(e.key) && e.key !== 'Backspace') {
                 e.preventDefault();
               }
