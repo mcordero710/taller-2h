@@ -1,0 +1,37 @@
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import './DetalleProforma.css';
+
+const DetalleProforma = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const proforma = location.state?.proforma;
+
+  if (!proforma) {
+    return <p>No se proporcionó información de la proforma.</p>;
+  }
+
+  const { vehiculo } = proforma;
+
+  const redirigirAProforma = () => {
+    navigate('/proforma', { state: { proforma } });
+  };
+
+  return (
+    <div className="detalle-proforma-wrapper">
+      <h2>Detalle del Vehículo</h2>
+      <ul>
+        <li><strong>Placa:</strong> {vehiculo.placa}</li>
+        <li><strong>Marca:</strong> {vehiculo.marca}</li>
+        <li><strong>Año:</strong> {vehiculo.anio}</li>
+        <li><strong>Color:</strong> {vehiculo.color}</li>
+      </ul>
+
+      <button className="boton-principal" onClick={redirigirAProforma}>
+        Editar o Imprimir Proforma
+      </button>
+    </div>
+  );
+};
+
+export default DetalleProforma;

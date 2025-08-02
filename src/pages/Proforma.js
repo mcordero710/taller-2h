@@ -8,6 +8,7 @@ import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faSave, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { useLocation } from 'react-router-dom';
 
 const Proforma = () => {
   const [cedula, setCedula] = useState('');
@@ -21,8 +22,10 @@ const Proforma = () => {
   const [isClienteLoaded, setIsClienteLoaded] = useState(false);
   const [proformaGuardada, setProformaGuardada] = useState(false);
   const [fecha, setFecha] = useState(null);
-  const [proformaId, setProformaId] = useState(null); // null = nueva
+  const [proformaId, setProformaId] = useState(null);
   const [buscarProforma, setBuscarProforma] = useState('');
+  const location = useLocation();
+  const proformaDesdeDetalle = location.state?.proforma;
 
   const handleBuscarCliente = async (cedulaInput) => {
     if (cedulaInput.length === 9) {
@@ -82,11 +85,32 @@ const Proforma = () => {
 
   useEffect(() => {
     const fetchNumeroProforma = async () => {
-      const numero = await obtenerNumeroProforma();
-      setNumeroProforma(numero);
+      if (!proformaDesdeDetalle) {
+        const numero = await obtenerNumeroProforma();
+        setNumeroProforma(numero);
+      }
     };
     fetchNumeroProforma();
-  }, []);
+  }, [proformaDesdeDetalle]);
+
+  // ✅ Carga automática si vienes desde DetalleProforma
+  useEffect(() => {
+    if (proformaDesdeDetalle) {
+      setNumeroProforma(proformaDesdeDetalle.numero || null);
+      setCedula(proformaDesdeDetalle.cliente?.cedula || '');
+      setCliente(proformaDesdeDetalle.cliente || null);
+      setVehiculo(proformaDesdeDetalle.vehiculo || { placa: '', marca: '', anio: '', color: '' });
+      setReparaciones(proformaDesdeDetalle.reparaciones || []);
+      setIvaChecked((proformaDesdeDetalle.iva || 0) > 0);
+      setIvaAmount(proformaDesdeDetalle.iva || 0);
+      setTotal(proformaDesdeDetalle.total || 0);
+      setFecha(proformaDesdeDetalle.fecha || new Date().toLocaleDateString());
+      setProformaGuardada(false);
+      setIsClienteLoaded(true);
+      setProformaId(proformaDesdeDetalle.id || null); // Asegúrate de incluirlo desde DetalleProforma si quieres editar
+      toast.info(`Editando proforma #${proformaDesdeDetalle.numero}`);
+    }
+  }, [proformaDesdeDetalle]);
 
   const handleNuevaProforma = async () => {
     setCedula('');
@@ -98,7 +122,6 @@ const Proforma = () => {
     setIvaAmount(0);
     setIsClienteLoaded(false);
     setBuscarProforma('');
-
     const numero = await obtenerNumeroProforma();
     setNumeroProforma(numero);
     setProformaGuardada(false);
@@ -141,12 +164,10 @@ const Proforma = () => {
       toast.error('Debe cargar un cliente válido.');
       return;
     }
-
     if (reparaciones.length === 0) {
       toast.error('Debe agregar al menos una reparación.');
       return;
     }
-
     if (!vehiculo.placa || !vehiculo.marca || !vehiculo.anio || !vehiculo.color) {
       toast.error('Debe completar todos los datos del vehículo.');
       return;
@@ -154,10 +175,10 @@ const Proforma = () => {
 
     const nuevaProforma = {
       numero: numeroProforma,
-      cliente: cliente,
-      vehiculo: vehiculo,
-      reparaciones: reparaciones,
-      total: total,
+      cliente,
+      vehiculo,
+      reparaciones,
+      total,
       iva: ivaChecked ? ivaAmount : 0,
       fecha: fecha || new Date().toLocaleDateString(),
     };
@@ -201,11 +222,9 @@ const Proforma = () => {
   const handleInputChange = (campo, value) => {
     if (campo === 'marca' || campo === 'color') {
       setVehiculo({ ...vehiculo, [campo]: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ]/g, '') });
-    }
-    else if (campo === 'anio') {
+    } else if (campo === 'anio') {
       setVehiculo({ ...vehiculo, [campo]: value.replace(/\D/g, '') });
-    }
-    else {
+    } else {
       setVehiculo({ ...vehiculo, [campo]: value });
     }
   };
@@ -222,7 +241,7 @@ const Proforma = () => {
             <p><strong>Email:</strong> info@taller2h.com</p>
             <p><strong>Dirección:</strong> San José, Costa Rica</p>
             <p><strong>Cédula Jurídica:</strong> 123145644</p>
-
+  
             <button
               className="boton-guardar"
               onClick={handleGuardarProforma}
@@ -230,11 +249,11 @@ const Proforma = () => {
             >
               <FontAwesomeIcon icon={faSave} /> Guardar Proforma
             </button>
-
+  
             <button className="boton-nueva" onClick={handleNuevaProforma}>
               <FontAwesomeIcon icon={faPlus} /> Nueva Proforma
             </button>
-
+  
             <button className="boton-descargar" onClick={handleDescargarPDF}>
               <FontAwesomeIcon icon={faDownload} /> Descargar PDF
             </button>
@@ -246,7 +265,6 @@ const Proforma = () => {
           <input
             id="buscarProforma"
             type="text"
-            placeholder=""
             className="input-buscar"
             value={buscarProforma}
             onChange={(e) => setBuscarProforma(e.target.value)}
@@ -261,13 +279,15 @@ const Proforma = () => {
           />
         </div>
       </header>
-
+  
       <div id="proformaContent">
         <h2>N° Proforma: {numeroProforma ? numeroProforma : '___________'}</h2>
+  
         <section className="proforma-info">
           <div className="factura-detalle">
             <p><strong>Fecha:</strong> {fecha ? fecha : new Date().toLocaleDateString()}</p>
           </div>
+  
           <div className="cliente-detalle">
             <label htmlFor="cedula">Cédula del cliente</label>
             <input
@@ -286,7 +306,7 @@ const Proforma = () => {
             )}
           </div>
         </section>
-
+  
         <section className="vehiculo-detalle">
           {['placa', 'marca', 'anio', 'color'].map((campo) => {
             const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
@@ -304,7 +324,7 @@ const Proforma = () => {
             );
           })}
         </section>
-
+  
         <table className="proforma-tabla">
           <thead>
             <tr>
@@ -341,11 +361,11 @@ const Proforma = () => {
             ))}
           </tbody>
         </table>
-
+  
         <div className="proforma-actions">
           <button onClick={agregarReparacion}>+ Agregar Reparación</button>
         </div>
-
+  
         <section className="iva-section">
           <label>
             <input
@@ -356,13 +376,13 @@ const Proforma = () => {
             Factura Electrónica (13%)
           </label>
         </section>
-
+  
         <div className="proforma-totales">
           <p><strong>Subtotal:</strong> ₡{(total - ivaAmount).toFixed(2)}</p>
           {ivaChecked && <p><strong>IVA (13%):</strong> ₡{ivaAmount.toFixed(2)}</p>}
           <p><strong>Total:</strong> ₡{total.toFixed(2)}</p>
         </div>
-
+  
         <footer className="proforma-footer">
           <div className="proforma-nota">
             <h4>Nota:</h4>
@@ -386,6 +406,7 @@ const Proforma = () => {
       </div>
     </div>
   );
+  
 };
 
 export default Proforma;
