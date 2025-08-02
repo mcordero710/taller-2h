@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { db } from '../firebase/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify'; // ✅ Se agregó toast
+import { toast } from 'react-toastify';
 import './BuscarProforma.css';
 
 const BuscarProforma = () => {
@@ -26,7 +26,20 @@ const BuscarProforma = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      setProformas(fetchedProformas.reverse());
+
+      const proformasOrdenadas = fetchedProformas.sort((a, b) => {
+        const convertirFecha = (fechaStr) => {
+          if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
+          const [mes, dia, anio] = fechaStr.split('/');
+          return new Date(`${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`);
+        };
+      
+        const dateA = convertirFecha(a.fecha);
+        const dateB = convertirFecha(b.fecha);
+        return dateB - dateA; // Descendente: más reciente primero
+      });
+
+      setProformas(proformasOrdenadas);
     } else {
       setProformas([]);
       toast.info('No existe proforma para los datos ingresados', {
@@ -35,15 +48,14 @@ const BuscarProforma = () => {
         closeOnClick: true,
         pauseOnHover: false,
         draggable: false,
-        closeButton: false, // 🔹 Quita la “X”
-        hideProgressBar: true, // 🔹 Quita la barra inferior
+        closeButton: false,
+        hideProgressBar: true,
       });
-      
     }
   };
 
-  const handleVerProforma = (id) => {
-    navigate(`/proforma/${id}`);
+  const handleVerProforma = (proforma) => {
+    navigate('/detalle-proforma', { state: { proforma } });
   };
 
   return (
@@ -58,7 +70,6 @@ const BuscarProforma = () => {
           <input
             id="campoBuscar"
             type="text"
-            placeholder=""
             value={buscar}
             onChange={(e) => setBuscar(e.target.value)}
           />
@@ -67,32 +78,33 @@ const BuscarProforma = () => {
       </div>
 
       {proformas.length > 0 && (
-  <table className="tabla-proformas">
-    <thead>
-      <tr>
-        <th>Número de Proforma</th>
-        <th>Cédula</th>
-        <th>Cliente</th>
-        <th>Fecha</th>
-        <th>Acción</th>
-      </tr>
-    </thead>
-    <tbody>
-      {proformas.map((proforma) => (
-        <tr key={proforma.id}>
-          <td>{proforma.numero}</td>
-          <td>{proforma.cliente.cedula}</td>
-          <td>{`${proforma.cliente.nombre} ${proforma.cliente.apellido}`}</td>
-          <td>{proforma.fecha}</td>
-          <td>
-            <button onClick={() => handleVerProforma(proforma.id)}>Ver / Editar</button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-)}
-
+        <table className="tabla-proformas">
+          <thead>
+            <tr>
+              <th>Número de Proforma</th>
+              <th>Cédula</th>
+              <th>Cliente</th>
+              <th>Fecha</th>
+              <th>Placa</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {proformas.map((proforma) => (
+              <tr key={proforma.id}>
+                <td>{proforma.numero}</td>
+                <td>{proforma.cliente.cedula}</td>
+                <td>{`${proforma.cliente.nombre} ${proforma.cliente.apellido}`}</td>
+                <td>{proforma.fecha}</td>
+                <td>{proforma.vehiculo?.placa || '—'}</td>
+                <td>
+                  <button onClick={() => handleVerProforma(proforma)}>Ver / Editar</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };
