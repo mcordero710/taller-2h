@@ -43,28 +43,33 @@
 }
 
 /* Botones dentro de la tabla de gastos */
+/* Botones dentro de la tabla de gastos (solo íconos) */
 .historial-gastos td button {
-  height: 32px;
-  padding: 0.3rem 0.6rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  background-color: #2c3e50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  height: 32px; /* Tamaño más pequeño */
+  width: 32px; /* Tamaño ajustado */
+  padding: 0; /* Elimina el padding extra */
+  font-size: 1rem; /* Ajusta el tamaño de los íconos */
+  background-color: transparent; /* Sin fondo */
+  color: #2c3e50; /* Color para los íconos */
+  border: 1px solid #ccc; /* Borde suave */
+  border-radius: 4px; /* Bordes redondeados */
+  cursor: pointer; /* Puntero cuando pasa por encima */
   transition: background-color 0.3s ease, transform 0.2s ease;
-  margin-right: 0.5rem;
 }
 
 .historial-gastos td button:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
+  background-color: #1abc9c; /* Color de fondo cuando pasa el mouse */
+  transform: scale(1.1); /* Efecto de escala */
 }
 
-/* Columnas de acciones para botones de icono */
+/* Íconos de los botones (Eliminar y Editar) */
 .historial-gastos td button i {
-  font-size: 1rem;
+  font-size: 1.5rem; /* Tamaño más grande para los íconos */
+  color: #2c3e50; /* Color de los íconos */
+}
+
+.historial-gastos td button:hover i {
+  color: white; /* Cambia el color del ícono al pasar el mouse */
 }
 
 /* Historiales */
@@ -180,4 +185,37 @@
 .btn-descargar:hover {
   background-color: #1abc9c;
   transform: scale(1.05);
+}
+
+/* Botón de Guardar */
+/* Botón de Guardar como ícono */
+.btn-guardar {
+  height: 32px; /* Tamaño ajustado */
+  width: 32px; /* Tamaño ajustado */
+  padding: 0; /* Elimina el padding extra */
+  font-size: 1.5rem; /* Tamaño de ícono */
+  background-color: transparent; /* Sin fondo */
+  color: #2c3e50; /* Color para el ícono */
+  border: 1px solid #ccc; /* Borde suave */
+  border-radius: 4px; /* Bordes redondeados */
+  cursor: pointer; /* Puntero cuando pasa por encima */
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Centrado del ícono dentro del botón */
+}
+
+.btn-guardar:hover {
+  background-color: #1abc9c; /* Color de fondo al pasar el mouse */
+  transform: scale(1.1); /* Efecto de escala */
+}
+
+/* Ícono dentro del botón */
+.btn-guardar i {
+  font-size: 1.5rem; /* Ajusta el tamaño del ícono */
+  color: #2c3e50; /* Color del ícono */
+}
+
+.btn-guardar:hover i {
+  color: white; /* Cambia el color del ícono al pasar el ratón */
 }

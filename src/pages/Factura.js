@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
-import { FaEdit, FaTrashAlt } from 'react-icons/fa'; // Importamos los iconos
+import { FaEdit, FaTrashAlt, FaSave } from 'react-icons/fa'; // Importamos los iconos
 
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
@@ -291,7 +291,9 @@ const Factura = () => {
                       </td>
                       <td>
                         {editGasto && editGasto.id === g.id ? (
-                          <button onClick={() => guardarEdicion(g.id)}>Guardar</button>
+                          <button onClick={() => guardarEdicion(g.id)}>
+                          <FaSave />
+                        </button>
                         ) : (
                           <>
                             <button onClick={() => editarGasto(g)}>
