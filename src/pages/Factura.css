@@ -8,6 +8,7 @@
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: relative; /* Necesario para posicionar elementos dentro del contenedor */
 }
 
 /* Encabezado */
@@ -26,6 +27,7 @@
   margin-bottom: 2rem;
   text-align: center;
   font-size: 0.95rem;
+  table-layout: fixed;
 }
 
 .factura-tabla-resumen th,
@@ -34,50 +36,16 @@
   padding: 0.8rem;
 }
 
-/* Secciones agrupadas estilo barra */
-.buscar-proforma-barra {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+/* Ajusta el tamaño de la columna de "Acciones" (el cuarto hijo de la tabla) */
+.factura-tabla-resumen td:nth-child(4) {
+  width: 120px; /* Ajuste del ancho de la columna */
+  text-align: center; /* Centrado de contenido */
 }
 
-/* Etiquetas */
-.buscar-proforma-label {
-  font-size: 0.85rem;
-  color: #2c3e50;
-  font-weight: 600;
-}
-
-/* Grupos de input + botón */
-.buscar-proforma-campos {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-/* Input genérico */
-.buscar-proforma-campos input {
-  width: 180px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.85rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.buscar-proforma-campos input:focus {
-  border-color: #2c3e50;
-  box-shadow: 0 0 4px rgba(44, 62, 80, 0.4);
-  outline: none;
-}
-
-/* Botón genérico */
-.buscar-proforma-campos button {
-  height: 36px;
-  padding: 0.4rem 0.8rem;
+/* Botones dentro de la tabla de gastos */
+.historial-gastos td button {
+  height: 32px;
+  padding: 0.3rem 0.6rem;
   font-size: 0.85rem;
   font-weight: 600;
   background-color: #2c3e50;
@@ -86,46 +54,18 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-right: 0.5rem;
 }
 
-.buscar-proforma-campos button:hover {
+.historial-gastos td button:hover {
   background-color: #1abc9c;
   transform: scale(1.05);
 }
 
-/* Botón de PDF */
-/* Botón de PDF */
-.btn-descargar {
-  padding: 0.4rem 0.8rem; /* Ajusta el padding para que sea consistente con otros botones */
-  font-size: 0.85rem; /* Tamaño de fuente consistente */
-  font-weight: 600;
-  background-color: #2c3e50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  position: absolute;
-  top: 2rem; /* Ajusta la posición superior */
-  right: 2rem; /* Mueve el botón hacia el lado derecho */
-  width: auto; /* Ajustamos para que el botón no ocupe todo el ancho */
-  min-width: 140px; /* Mantiene el tamaño mínimo constante */
-  height: 36px; /* Mantiene la altura uniforme con otros botones */
-  z-index: 10; /* Asegura que el botón esté encima de otros elementos */
+/* Columnas de acciones para botones de icono */
+.historial-gastos td button i {
+  font-size: 1rem;
 }
-
-.btn-descargar:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
-}
-
-/* Aseguramos que el contenedor principal tenga suficiente espacio y no se vea afectado */
-.factura-wrapper {
-  position: relative; /* Asegura que el botón de descarga se posicione dentro de este contenedor */
-}
-
-
-
 
 /* Historiales */
 .historial-abonos,
@@ -155,27 +95,18 @@
   padding: 0.6rem 0.8rem;
 }
 
-/* Firma del cliente */
-.firma-cliente {
-  margin-top: 2rem;
-}
-
-.firma-cliente label {
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.linea-firma {
-  border-bottom: 2px solid #333;
-  width: 250px;
-  margin-top: 0.5rem;
+/* Ajusta el padding en las celdas de la tabla */
+.historial-gastos td {
+  padding: 0.6rem;
+  text-align: center;
+  vertical-align: middle;
 }
 
 /* Grupo de gasto (detalle y monto) */
 .grupo-gasto-column {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;  /* Alineamos todo a la izquierda */
+  align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -195,15 +126,15 @@
 
 .grupo-gasto-inputs input {
   width: 200px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.85rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
 .grupo-gasto-column button {
-  height: 36px;
-  padding: 0.4rem 0.8rem;
+  height: 32px;
+  padding: 0.3rem 0.6rem;
   font-size: 0.85rem;
   font-weight: 600;
   background-color: #2c3e50;
@@ -214,7 +145,7 @@
   transition: background-color 0.3s ease, transform 0.2s ease;
   align-self: flex-start;
   width: auto;
-  min-width: 140px;
+  min-width: 100px;
 }
 
 .grupo-gasto-column button:hover {
@@ -222,3 +153,31 @@
   transform: scale(1.05);
 }
 
+/* Botón de PDF en la parte superior derecha */
+.btn-descargar {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background-color: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: inline-block; /* No se mueve, mantiene su posición */
+  margin-top: 1rem; /* Asegura que haya un margen desde la parte superior */
+  margin-right: 1rem; /* Asegura que haya un margen desde el lado derecho */
+  width: auto; /* Ajuste automático del ancho */
+  min-width: 120px; /* Establece un ancho mínimo para el botón */
+  height: 32px;
+  box-sizing: border-box;
+  max-width: calc(100% - 2rem); /* Limita el ancho máximo */
+  position: absolute; /* Botón alineado en la parte superior derecha */
+  top: 1rem;
+  right: 1rem;
+}
+
+.btn-descargar:hover {
+  background-color: #1abc9c;
+  transform: scale(1.05);
+}

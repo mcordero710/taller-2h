@@ -6,10 +6,14 @@ import {
   query,
   where,
   getDocs,
-  addDoc
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
+import { FaEdit, FaTrashAlt } from 'react-icons/fa'; // Importamos los iconos
 
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
@@ -19,6 +23,9 @@ const Factura = () => {
   const [gastos, setGastos] = useState([]);
   const [detalleGasto, setDetalleGasto] = useState('');
   const [montoGasto, setMontoGasto] = useState('');
+  const [editGasto, setEditGasto] = useState(null);
+  const [newDetalle, setNewDetalle] = useState('');
+  const [newMonto, setNewMonto] = useState('');
 
   const buscarProforma = async () => {
     const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(numeroProforma)));
@@ -46,7 +53,10 @@ const Factura = () => {
   const cargarGastos = async (proformaId) => {
     const q = query(collection(db, 'gastos'), where('proformaId', '==', proformaId));
     const snapshot = await getDocs(q);
-    const resultados = snapshot.docs.map(doc => doc.data());
+    const resultados = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
     setGastos(resultados);
   };
 
@@ -89,6 +99,47 @@ const Factura = () => {
     setDetalleGasto('');
     setMontoGasto('');
     toast.success('Gasto registrado exitosamente', { autoClose: 2500 });
+  };
+
+  const editarGasto = async (gasto) => {
+    if (!gasto || !gasto.id) {
+      toast.error('ID de gasto no válido', { autoClose: 2500 });
+      return;
+    }
+    setEditGasto(gasto);
+    setNewDetalle(gasto.detalle);
+    setNewMonto(gasto.monto);
+  };
+
+  const guardarEdicion = async (gastoId) => {
+    if (!gastoId) {
+      toast.error('ID de gasto no válido', { autoClose: 2500 });
+      return;
+    }
+    if (!newDetalle || !newMonto || isNaN(newMonto)) {
+      toast.warn('Por favor ingresa un nombre y un monto válidos.', { autoClose: 2500 });
+      return;
+    }
+
+    const gastoRef = doc(db, 'gastos', gastoId);
+    await updateDoc(gastoRef, {
+      detalle: newDetalle,
+      monto: parseInt(newMonto),
+    });
+
+    setEditGasto(null);
+    toast.success('Gasto actualizado exitosamente', { autoClose: 2500 });
+    cargarGastos(proforma.id);
+  };
+
+  const eliminarGasto = async (gastoId) => {
+    const confirmacion = window.confirm("¿Estás seguro de que deseas eliminar este gasto?");
+    if (confirmacion) {
+      const gastoRef = doc(db, 'gastos', gastoId);
+      await deleteDoc(gastoRef);
+      toast.success('Gasto eliminado exitosamente', { autoClose: 2500 });
+      cargarGastos(proforma.id);
+    }
   };
 
   const descargarPDF = () => {
@@ -136,7 +187,6 @@ const Factura = () => {
             </tbody>
           </table>
 
-          {/* Campos de gasto alineados horizontalmente */}
           <div className="grupo-gasto-column">
             <div className="grupo-gasto-inputs">
               <label htmlFor="detalleGasto">Detalle del Gasto:</label>
@@ -161,8 +211,6 @@ const Factura = () => {
             <button onClick={ingresarGasto}>Ingresar Gasto</button>
           </div>
 
-
-          {/* Campo de abono */}
           <div className="buscar-proforma-barra">
             <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
             <div className="buscar-proforma-campos">
@@ -212,14 +260,49 @@ const Factura = () => {
                     <th>Fecha</th>
                     <th>Detalle</th>
                     <th>Monto</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {gastos.map((g, index) => (
                     <tr key={index}>
                       <td>{g.fecha}</td>
-                      <td>{g.detalle}</td>
-                      <td>{g.monto.toLocaleString()}</td>
+                      <td>
+                        {editGasto && editGasto.id === g.id ? (
+                          <input
+                            type="text"
+                            value={newDetalle}
+                            onChange={(e) => setNewDetalle(e.target.value)}
+                          />
+                        ) : (
+                          g.detalle
+                        )}
+                      </td>
+                      <td>
+                        {editGasto && editGasto.id === g.id ? (
+                          <input
+                            type="number"
+                            value={newMonto}
+                            onChange={(e) => setNewMonto(e.target.value)}
+                          />
+                        ) : (
+                          g.monto.toLocaleString()
+                        )}
+                      </td>
+                      <td>
+                        {editGasto && editGasto.id === g.id ? (
+                          <button onClick={() => guardarEdicion(g.id)}>Guardar</button>
+                        ) : (
+                          <>
+                            <button onClick={() => editarGasto(g)}>
+                              <FaEdit />
+                            </button>
+                            <button onClick={() => eliminarGasto(g.id)}>
+                              <FaTrashAlt />
+                            </button>
+                          </>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
