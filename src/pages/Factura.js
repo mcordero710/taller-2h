@@ -66,27 +66,61 @@ const Factura = () => {
   const saldoPendiente = totalFinal - totalAbonado;
 
   const ingresarAbono = async () => {
-    if (!abono || isNaN(abono)) return;
-    if (saldoPendiente <= 0) {
-      toast.warn('La factura ya está saldada. No se pueden ingresar más abonos.', { autoClose: 2500 });
-      return;
+    let valid = true;
+
+    // Validación para el campo "abono"
+    if (!abono || abono.trim() === '' || isNaN(abono)) {
+      toast.error('Por favor, ingrese el monto del abono.');
+      valid = false; // Marca que hay un error en la validación
     }
 
+    // Validación para el saldo pendiente
+    if (saldoPendiente <= 0) {
+      toast.warn('La factura ya está saldada. No se pueden ingresar más abonos.', { autoClose: 2500 });
+      valid = false; // Marca que no se puede ingresar el abono
+    }
+
+    // Si alguna de las validaciones falla, no continuamos con el proceso
+    if (!valid) return;
+
+    // Si los campos son válidos, proceder con el registro del abono
     const nuevoAbono = {
       proformaId: proforma.id,
       monto: parseInt(abono),
       fecha: new Date().toLocaleDateString(),
     };
 
+    // Agregar el abono a la base de datos y cargar los abonos nuevamente
     await addDoc(collection(db, 'abonos'), nuevoAbono);
     await cargarAbonos(proforma.id);
+
+    // Limpiar el campo de abono
     setAbono('');
+
+    // Mostrar mensaje de éxito
     toast.success('Abono registrado exitosamente', { autoClose: 2500 });
   };
 
-  const ingresarGasto = async () => {
-    if (!detalleGasto || !montoGasto || isNaN(montoGasto)) return;
 
+  const ingresarGasto = async () => {
+    let valid = true;
+
+    // Validación para el campo "detalle"
+    if (!detalleGasto || detalleGasto.trim() === '') {
+      toast.error('Por favor, ingrese la información del "Detalle del Gasto".');
+      valid = false; // Marca que hay un error en la validación
+    }
+
+    // Validación para el campo "monto"
+    if (!montoGasto || isNaN(montoGasto) || montoGasto.trim() === '') {
+      toast.error('Por favor, ingrese la información del "Monto del Gasto".');
+      valid = false; // Marca que hay un error en la validación
+    }
+
+    // Si alguna de las validaciones falla, no continuamos con el proceso
+    if (!valid) return;
+
+    // Si los campos son válidos, proceder con el registro del gasto
     const nuevoGasto = {
       proformaId: proforma.id,
       detalle: detalleGasto,
@@ -94,12 +128,19 @@ const Factura = () => {
       fecha: new Date().toLocaleDateString(),
     };
 
+    // Agregar el gasto a la base de datos y cargar los gastos nuevamente
     await addDoc(collection(db, 'gastos'), nuevoGasto);
     await cargarGastos(proforma.id);
+
+    // Limpiar los campos
     setDetalleGasto('');
     setMontoGasto('');
+
+    // Mostrar mensaje de éxito
     toast.success('Gasto registrado exitosamente', { autoClose: 2500 });
   };
+
+
 
   const editarGasto = async (gasto) => {
     if (!gasto || !gasto.id) {
