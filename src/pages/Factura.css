@@ -395,6 +395,90 @@
   background-color: #d0d7de;
 }
 
+/* ============================== */
+/* === ESTILOS PARA EL PDF ===== */
+/* ============================== */
+@media print {
+  /* Oculta botones, inputs, acciones */
+  .boton-accion,
+  input,
+  button,
+  .buscar-proforma-barra,
+  .grupo-gasto-column,
+  .btn-descargar,
+  .toast-confirm-wrapper,
+  .center-toast-container {
+    display: none !important;
+  }
+
+  /* Asegura buen formato en PDF */
+  .factura-pdf {
+    padding: 1.5rem;
+    font-size: 12px;
+    color: #000;
+    font-family: Arial, sans-serif;
+  }
+
+  .factura-contacto,
+  .factura-cliente {
+    margin-bottom: 1rem;
+  }
+
+  .factura-tabla-resumen,
+  .historial-abonos table,
+  .historial-gastos table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+  }
+
+  .factura-tabla-resumen th,
+  .factura-tabla-resumen td,
+  .historial-abonos th,
+  .historial-abonos td,
+  .historial-gastos th,
+  .historial-gastos td {
+    border: 1px solid #333;
+    padding: 6px 10px;
+    text-align: center;
+  }
+
+  .historial-gastos td button,
+  .historial-gastos td input {
+    display: none !important;
+  }
+
+  .firma-cliente {
+    margin-top: 2rem;
+  }
+
+  .linea-firma {
+    width: 200px;
+    border-bottom: 1px solid #000;
+    margin-top: 30px;
+  }
+
+  /* Asegura márgenes para PDF */
+  body {
+    margin: 0;
+  }
+}
+
+.nota-final-cliente {
+  margin-top: 2rem;
+  font-size: 0.95rem;
+  background-color: #f4f4f4;
+  padding: 1rem;
+  border-left: 4px solid #e74c3c;
+  color: #333;
+}
+
+.nota-final-cliente p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+
 
 
 

@@ -219,7 +219,6 @@ const Factura = () => {
       }
     );
   };
-  
 
 
   const confirmarEliminacion = async (gastoId) => {
@@ -236,9 +235,34 @@ const Factura = () => {
   };
 
   const descargarPDF = () => {
-    const element = document.getElementById('factura-pdf');
-    html2pdf().from(element).save(`Factura-Proforma-${numeroProforma}.pdf`);
+    const original = document.getElementById('factura-pdf');
+    const copia = original.cloneNode(true);
+
+    // Ocultar inputs y botones en la copia
+    const elementosAEliminar = copia.querySelectorAll(
+      'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
+    );
+    elementosAEliminar.forEach(el => el.remove());
+
+    // Ocultar la última columna (Acciones) de la tabla de gastos
+    const columnasAcciones = copia.querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child');
+    columnasAcciones.forEach(col => col.style.display = 'none');
+
+    // Opcional: eliminar la firma si no querés que se imprima
+    // const firma = copia.querySelector('.firma-cliente');
+    // if (firma) firma.remove();
+
+    const opt = {
+      margin: 0.5,
+      filename: `Factura-Proforma-${numeroProforma}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(copia).save();
   };
+
 
   return (
     <div className="factura-wrapper">
@@ -266,7 +290,7 @@ const Factura = () => {
       </div>
 
       {proforma && (
-        <div id="factura-pdf">
+        <div id="factura-pdf" className="factura-pdf">
           <div className="factura-contacto-cliente">
             <div className="factura-contacto">
               <p>Tel: (506) 2222-2222</p>
@@ -440,11 +464,22 @@ const Factura = () => {
           )}
 
           {saldoPendiente === 0 && (
-            <div className="firma-cliente">
-              <label>Firma del Cliente:</label>
-              <div className="linea-firma" />
-            </div>
+            <>
+              <div className="nota-final-cliente">
+                <p>
+                  <strong>Nota:</strong> Al firmar esta factura, el cliente confirma que ha recibido el vehículo conforme
+                  y acepta que <strong>una vez retirado del taller, no se ofrece garantía por daños posteriores</strong>
+                  que no estén relacionados con los servicios prestados. Se recomienda revisar el vehículo antes de su entrega.
+                </p>
+              </div>
+
+              <div className="firma-cliente">
+                <label>Firma del Cliente:</label>
+                <div className="linea-firma" />
+              </div>
+            </>
           )}
+
         </div>
       )}
     </div>
