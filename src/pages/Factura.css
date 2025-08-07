@@ -395,6 +395,45 @@
   background-color: #d0d7de;
 }
 
+.nota-final-cliente {
+  margin-top: 2rem;
+  font-size: 0.95rem;
+  background-color: #f4f4f4;
+  padding: 1rem;
+  border-left: 4px solid #e74c3c;
+  color: #333;
+}
+
+.nota-final-cliente p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.fecha-factura {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #2c3e50;
+  background-color: #f4f4f4;
+  padding: 0.4rem 0.8rem;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+
+.fecha-factura-centro {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+
+
+
 /* ============================== */
 /* === ESTILOS PARA EL PDF ===== */
 /* ============================== */
@@ -462,21 +501,18 @@
   body {
     margin: 0;
   }
+
+  .fecha-factura-centro {
+    display: block;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 1rem;
+  }
+  
 }
 
-.nota-final-cliente {
-  margin-top: 2rem;
-  font-size: 0.95rem;
-  background-color: #f4f4f4;
-  padding: 1rem;
-  border-left: 4px solid #e74c3c;
-  color: #333;
-}
-
-.nota-final-cliente p {
-  margin: 0;
-  line-height: 1.5;
-}
 
 
 

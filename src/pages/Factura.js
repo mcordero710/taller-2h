@@ -266,6 +266,7 @@ const Factura = () => {
 
   return (
     <div className="factura-wrapper">
+
       <ToastContainer
         enableMultiContainer
         containerId="center-toast"
@@ -273,6 +274,14 @@ const Factura = () => {
         newestOnTop={true}
         closeOnClick={false}
       />
+
+      <div className="fecha-factura-centro">
+        Fecha de entrega: {new Date().toLocaleDateString('es-CR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        })}
+      </div>
 
       <h2 className="factura-header">Factura</h2>
 
