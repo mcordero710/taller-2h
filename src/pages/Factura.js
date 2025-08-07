@@ -184,13 +184,46 @@ const Factura = () => {
   };
 
   const eliminarGasto = async (gastoId) => {
-    const confirmacion = window.confirm("¿Estás seguro de que deseas eliminar este gasto?");
-    if (confirmacion) {
-      const gastoRef = doc(db, 'gastos', gastoId);
-      await deleteDoc(gastoRef);
-      toast.success('Gasto eliminado exitosamente', { autoClose: 2500 });
-      cargarGastos(proforma.id);
-    }
+    toast.info(
+      ({ closeToast }) => (
+        <div className="toast-confirm-container">
+          <p className="toast-confirm-message">¿Estás seguro de que deseas eliminar este gasto?</p>
+          <div className="toast-confirm-buttons">
+            <button
+              className="btn-confirm eliminar"
+              onClick={async () => {
+                await confirmarEliminacion(gastoId);
+                closeToast();
+              }}
+            >
+              Eliminar
+            </button>
+            <button
+              className="btn-confirm cancelar"
+              onClick={closeToast}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        className: 'toast-confirm-wrapper'
+      }
+    );
+  };
+  
+  
+  const confirmarEliminacion = async (gastoId) => {
+    const gastoRef = doc(db, 'gastos', gastoId);
+    await deleteDoc(gastoRef);
+    toast.success('Gasto eliminado exitosamente', { autoClose: 2500 });
+    cargarGastos(proforma.id);
   };
 
   const cancelarEdicion = () => {
