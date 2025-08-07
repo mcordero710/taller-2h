@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Factura.css';
 import { db } from '../firebase/firebase';
 import {
@@ -6,6 +6,7 @@ import {
   query,
   where,
   getDocs,
+  getDoc,  // Importar getDoc
   addDoc,
   doc,
   updateDoc,
@@ -13,11 +14,12 @@ import {
 } from 'firebase/firestore';
 import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
-import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa'; // Importamos los íconos
+import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa';
 
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
   const [proforma, setProforma] = useState(null);
+  const [cliente, setCliente] = useState(null);
   const [abono, setAbono] = useState('');
   const [abonos, setAbonos] = useState([]);
   const [gastos, setGastos] = useState([]);
@@ -27,12 +29,39 @@ const Factura = () => {
   const [newDetalle, setNewDetalle] = useState('');
   const [newMonto, setNewMonto] = useState('');
 
+  // Cargar cliente de Firestore
+  useEffect(() => {
+    if (proforma) {
+      if (proforma.clienteId) {
+        cargarCliente(proforma.clienteId); // cliente como referencia
+      } else if (proforma.cliente && proforma.cliente.nombre && proforma.cliente.cedula) {
+        setCliente(proforma.cliente); // cliente embebido
+      }
+    }
+  }, [proforma]);
+
+
+  const cargarCliente = async (clienteId) => {
+    if (!clienteId) {
+      toast.error('Cliente ID no disponible', { autoClose: 2500 });
+      return;
+    }
+
+    const clienteRef = doc(db, 'clientes', clienteId);  // Obtener el documento de cliente por clienteId
+    const clienteSnap = await getDoc(clienteRef);  // Usar getDoc aquí
+    if (clienteSnap.exists()) {
+      setCliente(clienteSnap.data());  // Si el cliente existe, establecerlo en el estado
+    } else {
+      toast.error('No se encontró el cliente', { autoClose: 2500 });
+    }
+  };
+
   const buscarProforma = async () => {
     const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(numeroProforma)));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       const docRef = snapshot.docs[0];
-      setProforma({ id: docRef.id, ...docRef.data() });
+      setProforma({ id: docRef.id, ...docRef.data() });  // Establecer la proforma y llamar a cargarAbonos y cargarGastos
       cargarAbonos(docRef.id);
       cargarGastos(docRef.id);
     } else {
@@ -68,59 +97,46 @@ const Factura = () => {
   const ingresarAbono = async () => {
     let valid = true;
 
-    // Validación para el campo "abono"
     if (!abono || abono.trim() === '' || isNaN(abono)) {
       toast.error('Por favor, ingrese el monto del abono.');
-      valid = false; // Marca que hay un error en la validación
+      valid = false;
     }
 
-    // Validación para el saldo pendiente
     if (saldoPendiente <= 0) {
       toast.warn('La factura ya está saldada. No se pueden ingresar más abonos.', { autoClose: 2500 });
-      valid = false; // Marca que no se puede ingresar el abono
+      valid = false;
     }
 
-    // Si alguna de las validaciones falla, no continuamos con el proceso
     if (!valid) return;
 
-    // Si los campos son válidos, proceder con el registro del abono
     const nuevoAbono = {
       proformaId: proforma.id,
       monto: parseInt(abono),
       fecha: new Date().toLocaleDateString(),
     };
 
-    // Agregar el abono a la base de datos y cargar los abonos nuevamente
     await addDoc(collection(db, 'abonos'), nuevoAbono);
     await cargarAbonos(proforma.id);
 
-    // Limpiar el campo de abono
     setAbono('');
-
-    // Mostrar mensaje de éxito
     toast.success('Abono registrado exitosamente', { autoClose: 2500 });
   };
-
 
   const ingresarGasto = async () => {
     let valid = true;
 
-    // Validación para el campo "detalle"
     if (!detalleGasto || detalleGasto.trim() === '') {
       toast.error('Por favor, ingrese la información del "Detalle del Gasto".');
-      valid = false; // Marca que hay un error en la validación
+      valid = false;
     }
 
-    // Validación para el campo "monto"
     if (!montoGasto || isNaN(montoGasto) || montoGasto.trim() === '') {
       toast.error('Por favor, ingrese la información del "Monto del Gasto".');
-      valid = false; // Marca que hay un error en la validación
+      valid = false;
     }
 
-    // Si alguna de las validaciones falla, no continuamos con el proceso
     if (!valid) return;
 
-    // Si los campos son válidos, proceder con el registro del gasto
     const nuevoGasto = {
       proformaId: proforma.id,
       detalle: detalleGasto,
@@ -128,19 +144,13 @@ const Factura = () => {
       fecha: new Date().toLocaleDateString(),
     };
 
-    // Agregar el gasto a la base de datos y cargar los gastos nuevamente
     await addDoc(collection(db, 'gastos'), nuevoGasto);
     await cargarGastos(proforma.id);
 
-    // Limpiar los campos
     setDetalleGasto('');
     setMontoGasto('');
-
-    // Mostrar mensaje de éxito
     toast.success('Gasto registrado exitosamente', { autoClose: 2500 });
   };
-
-
 
   const editarGasto = async (gasto) => {
     if (!gasto || !gasto.id) {
@@ -184,9 +194,9 @@ const Factura = () => {
   };
 
   const cancelarEdicion = () => {
-    setEditGasto(null); // Cancelar la edición
-    setNewDetalle('');  // Limpiar el detalle
-    setNewMonto('');    // Limpiar el monto
+    setEditGasto(null);
+    setNewDetalle('');
+    setNewMonto('');
   };
 
   const descargarPDF = () => {
@@ -207,12 +217,30 @@ const Factura = () => {
             value={numeroProforma}
             onChange={(e) => setNumeroProforma(e.target.value)}
           />
-          <button onClick={buscarProforma}>Buscar</button>
+          <button className="boton-accion" onClick={buscarProforma}>Buscar</button>
         </div>
       </div>
 
       {proforma && (
-        <div id="factura-pdf" className="factura-info">
+        <div id="factura-pdf">
+          <div className="factura-contacto-cliente">
+            <div className="factura-contacto">
+              <p>Tel: (506) 2222-2222</p>
+              <p>Email: info@taller2h.com</p>
+              <p>Dirección: San José, Costa Rica</p>
+              <p>Cédula Jurídica: 123145644</p>
+            </div>
+
+            {cliente && (
+              <div className="factura-cliente">
+                <p>Cliente: <strong>{cliente.nombre} {cliente.apellido}</strong></p>
+                <p>Cédula: <strong>{cliente.cedula}</strong></p>
+              </div>
+            )}
+          </div>
+
+
+          {/* Resumen de la proforma */}
           <table className="factura-tabla-resumen">
             <thead>
               <tr>
@@ -234,6 +262,7 @@ const Factura = () => {
             </tbody>
           </table>
 
+          {/* Formularios para ingresar gastos y abonos */}
           <div className="grupo-gasto-column">
             <div className="grupo-gasto-inputs">
               <label htmlFor="detalleGasto">Detalle del Gasto:</label>
@@ -255,7 +284,7 @@ const Factura = () => {
               />
             </div>
 
-            <button onClick={ingresarGasto}>Ingresar Gasto</button>
+            <button className="boton-accion" onClick={ingresarGasto}>Ingresar Gasto</button>
           </div>
 
           <div className="buscar-proforma-barra">
@@ -268,14 +297,15 @@ const Factura = () => {
                 onChange={(e) => setAbono(e.target.value)}
                 disabled={saldoPendiente <= 0}
               />
-              <button onClick={ingresarAbono} disabled={saldoPendiente <= 0}>Ingresar Abono</button>
+              <button className="boton-accion" onClick={ingresarAbono} disabled={saldoPendiente <= 0}>Ingresar Abono</button>
             </div>
           </div>
 
-          <button className="btn-descargar" onClick={descargarPDF}>
+          <button className="boton-accion btn-descargar" onClick={descargarPDF}>
             Descargar Factura
           </button>
 
+          {/* Historial de abonos */}
           {abonos.length > 0 && (
             <div className="historial-abonos">
               <h3>Historial de Abonos</h3>
@@ -298,6 +328,7 @@ const Factura = () => {
             </div>
           )}
 
+          {/* Historial de gastos */}
           {gastos.length > 0 && (
             <div className="historial-gastos">
               <h3>Gastos Registrados</h3>
@@ -343,7 +374,7 @@ const Factura = () => {
                               <FaSave />
                             </button>
                             <button onClick={cancelarEdicion}>
-                              <FaTimes /> {/* Ícono para cancelar */}
+                              <FaTimes />
                             </button>
                           </>
                         ) : (
