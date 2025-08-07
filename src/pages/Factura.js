@@ -15,6 +15,8 @@ import {
 import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
 import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa';
+import { ToastContainer } from 'react-toastify';
+
 
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
@@ -208,17 +210,18 @@ const Factura = () => {
         </div>
       ),
       {
-        position: "top-center",
         autoClose: false,
         closeOnClick: false,
         draggable: false,
         closeButton: false,
+        containerId: 'center-toast',
         className: 'toast-confirm-wrapper'
       }
     );
   };
   
-  
+
+
   const confirmarEliminacion = async (gastoId) => {
     const gastoRef = doc(db, 'gastos', gastoId);
     await deleteDoc(gastoRef);
@@ -239,6 +242,14 @@ const Factura = () => {
 
   return (
     <div className="factura-wrapper">
+      <ToastContainer
+        enableMultiContainer
+        containerId="center-toast"
+        className="center-toast-container"
+        newestOnTop={true}
+        closeOnClick={false}
+      />
+
       <h2 className="factura-header">Factura</h2>
 
       <div className="buscar-proforma-barra">
