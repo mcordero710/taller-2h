@@ -237,21 +237,24 @@ const Factura = () => {
   const descargarPDF = () => {
     const original = document.getElementById('factura-pdf');
     const copia = original.cloneNode(true);
-
-    // Ocultar inputs y botones en la copia
+  
+    // Traer la fecha que está fuera y ponerla al inicio del clon
+    const fechaOriginal = document.querySelector('.fecha-factura-centro');
+    if (fechaOriginal) {
+      const fechaClon = fechaOriginal.cloneNode(true);
+      copia.insertBefore(fechaClon, copia.firstChild);
+    }
+  
+    // Ocultar inputs/botones en la copia
     const elementosAEliminar = copia.querySelectorAll(
       'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
     );
     elementosAEliminar.forEach(el => el.remove());
-
-    // Ocultar la última columna (Acciones) de la tabla de gastos
+  
+    // Ocultar columna Acciones
     const columnasAcciones = copia.querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child');
     columnasAcciones.forEach(col => col.style.display = 'none');
-
-    // Opcional: eliminar la firma si no querés que se imprima
-    // const firma = copia.querySelector('.firma-cliente');
-    // if (firma) firma.remove();
-
+  
     const opt = {
       margin: 0.5,
       filename: `Factura-Proforma-${numeroProforma}.pdf`,
@@ -259,9 +262,10 @@ const Factura = () => {
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
-
+  
     html2pdf().set(opt).from(copia).save();
   };
+  
 
 
   return (
@@ -276,7 +280,7 @@ const Factura = () => {
       />
 
       <div className="fecha-factura-centro">
-        Fecha de entrega: {new Date().toLocaleDateString('es-CR', {
+        Fecha: {new Date().toLocaleDateString('es-CR', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',
