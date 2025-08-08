@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import { FaUsers, FaTruck, FaBoxes, FaTools, FaFileAlt, FaSearch } from 'react-icons/fa'; // Agregar FaSearch para Buscar Proforma
+import { FaUsers, FaTruck, FaBoxes, FaTools, FaFileAlt, FaSearch,FaFileInvoice } from 'react-icons/fa'; // Agregar FaSearch para Buscar Proforma
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Layout.css';
@@ -35,6 +35,13 @@ const Layout = () => {
               </Link>
             </li>
             <li>
+              <li>
+                <Link to="/factura">
+                  <FaFileInvoice className="menu-icon" />
+                  <span>Factura</span>
+                </Link>
+              </li>
+
               <Link to="/proveedores">
                 <FaTruck className="menu-icon" />
                 <span>Proveedores</span>
