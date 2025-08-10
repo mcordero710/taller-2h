@@ -6,7 +6,7 @@ import {
   query,
   where,
   getDocs,
-  getDoc,  // Importar getDoc
+  getDoc,
   addDoc,
   doc,
   updateDoc,
@@ -16,9 +16,10 @@ import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
 import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa';
 import { ToastContainer } from 'react-toastify';
-import logo from '../assets/logo.png'; // o el nombre que guardaste
+import logo from '../assets/logo.png';
 
-
+// Loader global
+import { useLoading } from '../components/ui/LoadingContext';
 
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
@@ -33,6 +34,19 @@ const Factura = () => {
   const [newDetalle, setNewDetalle] = useState('');
   const [newMonto, setNewMonto] = useState('');
 
+  // flags para deshabilitar controles
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSavingGasto, setIsSavingGasto] = useState(false);
+  const [isUpdatingGasto, setIsUpdatingGasto] = useState(false);
+  const [isDeletingGasto, setIsDeletingGasto] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSavingAbono, setIsSavingAbono] = useState(false);
+  const [deletingGastoId, setDeletingGastoId] = useState(null);
+
+  const busy = isSearching || isSavingGasto || isUpdatingGasto || isDeletingGasto || isGeneratingPdf || isSavingAbono;
+
+  const { withLoading } = useLoading();
+
   // Cargar cliente de Firestore
   useEffect(() => {
     if (proforma) {
@@ -40,39 +54,65 @@ const Factura = () => {
         cargarCliente(proforma.clienteId); // cliente como referencia
       } else if (proforma.cliente && proforma.cliente.nombre && proforma.cliente.cedula) {
         setCliente(proforma.cliente); // cliente embebido
+      } else {
+        setCliente(null);
       }
+    } else {
+      setCliente(null);
     }
   }, [proforma]);
-
 
   const cargarCliente = async (clienteId) => {
     if (!clienteId) {
       toast.error('Cliente ID no disponible', { autoClose: 2500 });
       return;
     }
-
-    const clienteRef = doc(db, 'clientes', clienteId);  // Obtener el documento de cliente por clienteId
-    const clienteSnap = await getDoc(clienteRef);  // Usar getDoc aquí
+    const clienteRef = doc(db, 'clientes', clienteId);
+    const clienteSnap = await getDoc(clienteRef);
     if (clienteSnap.exists()) {
-      setCliente(clienteSnap.data());  // Si el cliente existe, establecerlo en el estado
+      setCliente(clienteSnap.data());
     } else {
       toast.error('No se encontró el cliente', { autoClose: 2500 });
     }
   };
 
+  // Buscar proforma con loader
   const buscarProforma = async () => {
-    const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(numeroProforma)));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-      const docRef = snapshot.docs[0];
-      setProforma({ id: docRef.id, ...docRef.data() });  // Establecer la proforma y llamar a cargarAbonos y cargarGastos
-      cargarAbonos(docRef.id);
-      cargarGastos(docRef.id);
-    } else {
-      setProforma(null);
-      setAbonos([]);
-      setGastos([]);
-      toast.info('Proforma no encontrada.', { autoClose: 2500 });
+    const term = (numeroProforma || '').trim();
+    const numero = parseInt(term, 10);
+
+    if (!term || Number.isNaN(numero)) {
+      toast.info('Ingrese un número de proforma válido.', {
+        position: 'top-center',
+        autoClose: 2000,
+        hideProgressBar: true,
+      });
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      await withLoading(async () => {
+        const q = query(collection(db, 'proformas'), where('numero', '==', numero));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          const docRef = snapshot.docs[0];
+          const data = { id: docRef.id, ...docRef.data() };
+          setProforma(data);
+          await Promise.all([cargarAbonos(docRef.id), cargarGastos(docRef.id)]);
+        } else {
+          setProforma(null);
+          setAbonos([]);
+          setGastos([]);
+          toast.info('Proforma no encontrada.', { autoClose: 2500 });
+        }
+      }, 'Buscando factura…');
+    } catch (err) {
+      console.error('Error al buscar la proforma:', err);
+      toast.error('Ocurrió un error al buscar. Intenta nuevamente.');
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -98,6 +138,7 @@ const Factura = () => {
   const totalFinal = proforma ? proforma.total + totalGastos : 0;
   const saldoPendiente = totalFinal - totalAbonado;
 
+  // Ingresar abono (lo dejamos sin overlay porque pediste solo gastos/PDF)
   const ingresarAbono = async () => {
     let valid = true;
 
@@ -113,19 +154,26 @@ const Factura = () => {
 
     if (!valid) return;
 
-    const nuevoAbono = {
-      proformaId: proforma.id,
-      monto: parseInt(abono),
-      fecha: new Date().toLocaleDateString(),
-    };
-
-    await addDoc(collection(db, 'abonos'), nuevoAbono);
-    await cargarAbonos(proforma.id);
-
-    setAbono('');
-    toast.success('Abono registrado exitosamente', { autoClose: 2500 });
+    try {
+      setIsSavingAbono(true);
+      await withLoading(async () => {
+        const nuevoAbono = {
+          proformaId: proforma.id,
+          monto: parseInt(abono, 10),
+          fecha: new Date().toLocaleDateString(),
+        };
+        await addDoc(collection(db, 'abonos'), nuevoAbono);
+        await cargarAbonos(proforma.id);
+        setAbono('');
+        toast.success('Abono registrado exitosamente', { autoClose: 2500 });
+      }, 'Registrando abono…'); // 👈 texto del overlay
+    } finally {
+      setIsSavingAbono(false);
+    }
   };
 
+
+  // Ingresar gasto con overlay
   const ingresarGasto = async () => {
     let valid = true;
 
@@ -141,22 +189,27 @@ const Factura = () => {
 
     if (!valid) return;
 
-    const nuevoGasto = {
-      proformaId: proforma.id,
-      detalle: detalleGasto,
-      monto: parseInt(montoGasto),
-      fecha: new Date().toLocaleDateString(),
-    };
-
-    await addDoc(collection(db, 'gastos'), nuevoGasto);
-    await cargarGastos(proforma.id);
-
-    setDetalleGasto('');
-    setMontoGasto('');
-    toast.success('Gasto registrado exitosamente', { autoClose: 2500 });
+    try {
+      setIsSavingGasto(true);
+      await withLoading(async () => {
+        const nuevoGasto = {
+          proformaId: proforma.id,
+          detalle: detalleGasto,
+          monto: parseInt(montoGasto),
+          fecha: new Date().toLocaleDateString(),
+        };
+        await addDoc(collection(db, 'gastos'), nuevoGasto);
+        await cargarGastos(proforma.id);
+        setDetalleGasto('');
+        setMontoGasto('');
+        toast.success('Gasto registrado exitosamente', { autoClose: 2500 });
+      }, 'Registrando gasto…');
+    } finally {
+      setIsSavingGasto(false);
+    }
   };
 
-  const editarGasto = async (gasto) => {
+  const editarGasto = (gasto) => {
     if (!gasto || !gasto.id) {
       toast.error('ID de gasto no válido', { autoClose: 2500 });
       return;
@@ -166,26 +219,56 @@ const Factura = () => {
     setNewMonto(gasto.monto);
   };
 
+  // Guardar edición con overlay
   const guardarEdicion = async (gastoId) => {
     if (!gastoId) {
       toast.error('ID de gasto no válido', { autoClose: 2500 });
       return;
     }
     if (!newDetalle || !newMonto || isNaN(newMonto)) {
-      toast.warn('Por favor ingresa un nombre y un monto válidos.', { autoClose: 2500 });
+      toast.warn('Por favor ingresa un detalle y un monto válidos.', { autoClose: 2500 });
       return;
     }
 
-    const gastoRef = doc(db, 'gastos', gastoId);
-    await updateDoc(gastoRef, {
-      detalle: newDetalle,
-      monto: parseInt(newMonto),
-    });
-
-    setEditGasto(null);
-    toast.success('Gasto actualizado exitosamente', { autoClose: 2500 });
-    cargarGastos(proforma.id);
+    try {
+      setIsUpdatingGasto(true);
+      await withLoading(async () => {
+        const gastoRef = doc(db, 'gastos', gastoId);
+        await updateDoc(gastoRef, {
+          detalle: newDetalle,
+          monto: parseInt(newMonto),
+        });
+        setEditGasto(null);
+        toast.success('Gasto actualizado exitosamente', { autoClose: 2500 });
+        await cargarGastos(proforma.id);
+      }, 'Actualizando gasto…');
+    } finally {
+      setIsUpdatingGasto(false);
+    }
   };
+
+  // Confirm toast -> al dar "Eliminar" llama a esta con overlay
+  const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
+
+const confirmarEliminacion = async (gastoId) => {
+  try {
+    setDeletingGastoId(gastoId);
+    setIsDeletingGasto(true);
+    await withLoading(async () => {
+      // 👇 Deja que React pinte el overlay ANTES de borrar
+      await nextFrame();
+
+      const gastoRef = doc(db, 'gastos', gastoId);
+      await deleteDoc(gastoRef);
+      await cargarGastos(proforma.id);
+      toast.success('Gasto eliminado exitosamente', { autoClose: 2500 });
+    }, 'Eliminando gasto…');
+  } finally {
+    setIsDeletingGasto(false);
+    setDeletingGastoId(null);
+  }
+};
+
 
   const eliminarGasto = async (gastoId) => {
     toast.info(
@@ -199,12 +282,14 @@ const Factura = () => {
                 await confirmarEliminacion(gastoId);
                 closeToast();
               }}
+              disabled={busy}
             >
               Eliminar
             </button>
             <button
               className="btn-confirm cancelar"
               onClick={closeToast}
+              disabled={busy}
             >
               Cancelar
             </button>
@@ -222,82 +307,78 @@ const Factura = () => {
     );
   };
 
-
-  const confirmarEliminacion = async (gastoId) => {
-    const gastoRef = doc(db, 'gastos', gastoId);
-    await deleteDoc(gastoRef);
-    toast.success('Gasto eliminado exitosamente', { autoClose: 2500 });
-    cargarGastos(proforma.id);
-  };
-
   const cancelarEdicion = () => {
     setEditGasto(null);
     setNewDetalle('');
     setNewMonto('');
   };
 
-  const descargarPDF = () => {
+  // Generar PDF con overlay
+  const descargarPDF = async () => {
     const original = document.getElementById('factura-pdf');
     if (!original) return;
-  
-    // Clonamos SOLO el contenido que va al PDF
-    const copia = original.cloneNode(true);
-  
-    // --- Encabezado SOLO para PDF (logo + datos + fecha) ---
-    const header = document.createElement('div');
-    header.setAttribute(
-      'style',
-      'display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;'
-    );
-  
-    const logoImg = document.createElement('img');
-    logoImg.src = logo; // ← ruta resuelta por el bundler
-    logoImg.alt = 'Taller 2H';
-    logoImg.setAttribute('style', 'width:120px; height:auto;');
-  
-    const rightBox = document.createElement('div');
-    rightBox.setAttribute('style', 'text-align:right; font-size:12px; color:#333; line-height:1.3;');
-    rightBox.innerHTML = `
-      <div><strong>Tel:</strong> (506) 2222-2222</div>
-      <div><strong>Email:</strong> info@taller2h.com</div>
-      <div><strong>Dirección:</strong> San José, Costa Rica</div>
-      <div><strong>Cédula Jurídica:</strong> 123145644</div>
-      <div style="margin-top:6px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CR', {year:'numeric', month:'2-digit', day:'2-digit'})}</div>
-    `;
-  
-    header.appendChild(logoImg);
-    header.appendChild(rightBox);
-  
-    // Lo insertamos al inicio del clon (antes de todo)
-    copia.insertBefore(header, copia.firstChild);
-  
-    // --- Limpiar elementos interactivos en el clon ---
-    copia.querySelectorAll(
-      'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
-    ).forEach(el => el.remove());
-  
-    // Ocultar columna "Acciones" en tabla de gastos
-    copia.querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child')
-      .forEach(col => col.style.display = 'none');
-  
-    // Opciones PDF
-    const opt = {
-      margin: 0.5,
-      filename: `Factura-Proforma-${numeroProforma}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 3, useCORS: true, backgroundColor: null }, // respeta transparencia del PNG
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-  
-    html2pdf().set(opt).from(copia).save();
-  };
-  
-  
 
+    try {
+      setIsGeneratingPdf(true);
+      await withLoading(async () => {
+        const copia = original.cloneNode(true);
+
+        const header = document.createElement('div');
+        header.setAttribute(
+          'style',
+          'display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;'
+        );
+
+        const logoImg = document.createElement('img');
+        logoImg.src = logo;
+        logoImg.alt = 'Taller 2H';
+        logoImg.setAttribute('style', 'width:120px; height:auto;');
+
+        const rightBox = document.createElement('div');
+        rightBox.setAttribute('style', 'text-align:right; font-size:12px; color:#333; line-height:1.3;');
+        rightBox.innerHTML = `
+          <div><strong>Tel:</strong> (506) 2222-2222</div>
+          <div><strong>Email:</strong> info@taller2h.com</div>
+          <div><strong>Dirección:</strong> San José, Costa Rica</div>
+          <div><strong>Cédula Jurídica:</strong> 123145644</div>
+          <div style="margin-top:6px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+        `;
+
+        header.appendChild(logoImg);
+        header.appendChild(rightBox);
+        copia.insertBefore(header, copia.firstChild);
+
+        copia.querySelectorAll(
+          'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
+        ).forEach(el => el.remove());
+
+        copia.querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child')
+          .forEach(col => col.style.display = 'none');
+
+        const opt = {
+          margin: 0.5,
+          filename: `Factura-Proforma-${numeroProforma}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 3, useCORS: true, backgroundColor: null },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        await html2pdf().set(opt).from(copia).save();
+      }, 'Generando PDF…');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  const onBuscarKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      buscarProforma();
+    }
+  };
 
   return (
     <div className="factura-wrapper">
-
       <ToastContainer
         enableMultiContainer
         containerId="center-toast"
@@ -324,8 +405,12 @@ const Factura = () => {
             type="text"
             value={numeroProforma}
             onChange={(e) => setNumeroProforma(e.target.value)}
+            onKeyDown={onBuscarKeyDown}
+            disabled={isSearching}
           />
-          <button className="boton-accion" onClick={buscarProforma}>Buscar</button>
+          <button className="boton-accion" onClick={buscarProforma} disabled={isSearching}>
+            {isSearching ? 'Buscando…' : 'Buscar'}
+          </button>
         </div>
       </div>
 
@@ -346,7 +431,6 @@ const Factura = () => {
               </div>
             )}
           </div>
-
 
           {/* Resumen de la proforma */}
           <table className="factura-tabla-resumen">
@@ -379,6 +463,7 @@ const Factura = () => {
                 type="text"
                 value={detalleGasto}
                 onChange={(e) => setDetalleGasto(e.target.value)}
+                disabled={busy}
               />
             </div>
 
@@ -389,10 +474,13 @@ const Factura = () => {
                 type="number"
                 value={montoGasto}
                 onChange={(e) => setMontoGasto(e.target.value)}
+                disabled={busy}
               />
             </div>
 
-            <button className="boton-accion" onClick={ingresarGasto}>Ingresar Gasto</button>
+            <button className="boton-accion" onClick={ingresarGasto} disabled={busy}>
+              {isSavingGasto ? 'Guardando…' : 'Ingresar Gasto'}
+            </button>
           </div>
 
           <div className="buscar-proforma-barra">
@@ -403,14 +491,20 @@ const Factura = () => {
                 type="number"
                 value={abono}
                 onChange={(e) => setAbono(e.target.value)}
-                disabled={saldoPendiente <= 0}
+                disabled={saldoPendiente <= 0 || busy}
               />
-              <button className="boton-accion" onClick={ingresarAbono} disabled={saldoPendiente <= 0}>Ingresar Abono</button>
+              <button
+                className="boton-accion"
+                onClick={ingresarAbono}
+                disabled={saldoPendiente <= 0 || busy}
+              >
+                {isSavingAbono ? 'Registrando…' : 'Ingresar Abono'}
+              </button>
             </div>
           </div>
 
-          <button className="boton-accion btn-descargar" onClick={descargarPDF}>
-            Descargar Factura
+          <button className="boton-accion btn-descargar" onClick={descargarPDF} disabled={busy}>
+            {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
           </button>
 
           {/* Historial de abonos */}
@@ -459,6 +553,7 @@ const Factura = () => {
                             type="text"
                             value={newDetalle}
                             onChange={(e) => setNewDetalle(e.target.value)}
+                            disabled={busy}
                           />
                         ) : (
                           g.detalle
@@ -470,6 +565,7 @@ const Factura = () => {
                             type="number"
                             value={newMonto}
                             onChange={(e) => setNewMonto(e.target.value)}
+                            disabled={busy}
                           />
                         ) : (
                           g.monto.toLocaleString()
@@ -478,21 +574,27 @@ const Factura = () => {
                       <td>
                         {editGasto && editGasto.id === g.id ? (
                           <>
-                            <button onClick={() => guardarEdicion(g.id)}>
+                            <button onClick={() => guardarEdicion(g.id)} disabled={busy}>
                               <FaSave />
                             </button>
-                            <button onClick={cancelarEdicion}>
+                            <button onClick={cancelarEdicion} disabled={busy}>
                               <FaTimes />
                             </button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => editarGasto(g)}>
+                            <button onClick={() => editarGasto(g)} disabled={busy}>
                               <FaEdit />
                             </button>
-                            <button onClick={() => eliminarGasto(g.id)}>
-                              <FaTrashAlt />
+                            <button
+                              onClick={() => eliminarGasto(g.id)}
+                              disabled={busy || deletingGastoId === g.id}
+                              className={deletingGastoId === g.id ? 'btn-eliminando' : ''}
+                              aria-busy={deletingGastoId === g.id}
+                            >
+                              {deletingGastoId === g.id ? 'Eliminando…' : <FaTrashAlt />}
                             </button>
+
                           </>
                         )}
                       </td>
