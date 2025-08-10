@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // <- + useRef
 import './Clientes.css';
 import { db } from '../firebase/firebase';
 import { collection, addDoc, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 import Pagination from '../components/Pagination/Pagination';
+import { useLoading } from '../components/ui/LoadingContext'; // <- NEW: loader global
 
 const Clientes = () => {
   const [showModal, setShowModal] = useState(false);
@@ -21,13 +22,34 @@ const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const clientsPerPage = 10;
 
+  // NEW: loader
+  const { show, hide, withLoading } = useLoading();
+  const firstLoadRef = useRef(true); // para ocultar el loader solo la primera vez
+
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'clientes'), (snapshot) => {
-      const datos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setClientes(datos);
-    });
+    // mostrar loader mientras llega el primer snapshot
+    show('Cargando clientes…');
+
+    const unsubscribe = onSnapshot(
+      collection(db, 'clientes'),
+      (snapshot) => {
+        const datos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setClientes(datos);
+
+        if (firstLoadRef.current) {
+          hide();
+          firstLoadRef.current = false;
+        }
+      },
+      (error) => {
+        console.error('Error al cargar clientes:', error);
+        toast.error('No se pudieron cargar los clientes.');
+        hide();
+      }
+    );
+
     return () => unsubscribe();
-  }, []);
+  }, [show, hide]);
 
   const handleNumberOnlyChange = (e) => {
     const { name, value } = e.target;
@@ -65,14 +87,16 @@ const Clientes = () => {
     }
 
     try {
-      if (editMode) {
-        const clienteRef = doc(db, 'clientes', selectedClientId);
-        await updateDoc(clienteRef, formData);
-        toast.success('¡Cliente actualizado con éxito!');
-      } else {
-        await addDoc(collection(db, 'clientes'), formData);
-        toast.success('¡Cliente agregado con éxito!');
-      }
+      await withLoading(async () => {
+        if (editMode) {
+          const clienteRef = doc(db, 'clientes', selectedClientId);
+          await updateDoc(clienteRef, formData);
+          toast.success('¡Cliente actualizado con éxito!');
+        } else {
+          await addDoc(collection(db, 'clientes'), formData);
+          toast.success('¡Cliente agregado con éxito!');
+        }
+      }, editMode ? 'Actualizando cliente…' : 'Guardando cliente…');
 
       setFormData({ cedula: '', nombre: '', apellido: '', telefono: '', correo: '' });
       setEditMode(false);
@@ -85,16 +109,16 @@ const Clientes = () => {
   };
 
   const filteredClients = clientes
-  .filter((cliente) =>
-    Object.values(cliente).some((valor) =>
-      typeof valor === 'string' &&
-      valor.toLowerCase().includes(searchTerm.toLowerCase())
+    .filter((cliente) =>
+      Object.values(cliente).some(
+        (valor) =>
+          typeof valor === 'string' &&
+          valor.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     )
-  )
-  .sort((a, b) =>
-    a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
-  );
-
+    .sort((a, b) =>
+      a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
+    );
 
   const indexOfLastClient = currentPage * clientsPerPage;
   const indexOfFirstClient = indexOfLastClient - clientsPerPage;
