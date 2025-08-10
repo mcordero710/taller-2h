@@ -4,7 +4,7 @@ import { FaUsers, FaTruck, FaBoxes, FaTools, FaFileAlt, FaSearch,FaFileInvoice }
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Layout.css';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo.png'; // Asegúrate de que la ruta al logo sea correcta
 
 const Layout = () => {
   return (

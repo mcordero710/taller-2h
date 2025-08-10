@@ -103,3 +103,17 @@ button:focus {
   color: #333;
   font-size: 1rem;
 }
+
+/* Logo dentro de la caja del login */
+.logo-login {
+  display: block;
+  width: 140px;     /* ajusta a gusto: 120–200px suele ir bien */
+  height: auto;
+  margin: 0 auto 16px; /* centrado y con espacio debajo */
+}
+
+/* Si quieres que el título no quede tan pegado al logo */
+.form-box h2 {
+  margin-top: 0.5rem;
+}
+

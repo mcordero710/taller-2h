@@ -16,6 +16,8 @@ import html2pdf from 'html2pdf.js';
 import { toast } from 'react-toastify';
 import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa';
 import { ToastContainer } from 'react-toastify';
+import logo from '../assets/logo.png'; // o el nombre que guardaste
+
 
 
 const Factura = () => {
@@ -236,35 +238,60 @@ const Factura = () => {
 
   const descargarPDF = () => {
     const original = document.getElementById('factura-pdf');
+    if (!original) return;
+  
+    // Clonamos SOLO el contenido que va al PDF
     const copia = original.cloneNode(true);
   
-    // Traer la fecha que está fuera y ponerla al inicio del clon
-    const fechaOriginal = document.querySelector('.fecha-factura-centro');
-    if (fechaOriginal) {
-      const fechaClon = fechaOriginal.cloneNode(true);
-      copia.insertBefore(fechaClon, copia.firstChild);
-    }
-  
-    // Ocultar inputs/botones en la copia
-    const elementosAEliminar = copia.querySelectorAll(
-      'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
+    // --- Encabezado SOLO para PDF (logo + datos + fecha) ---
+    const header = document.createElement('div');
+    header.setAttribute(
+      'style',
+      'display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;'
     );
-    elementosAEliminar.forEach(el => el.remove());
   
-    // Ocultar columna Acciones
-    const columnasAcciones = copia.querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child');
-    columnasAcciones.forEach(col => col.style.display = 'none');
+    const logoImg = document.createElement('img');
+    logoImg.src = logo; // ← ruta resuelta por el bundler
+    logoImg.alt = 'Taller 2H';
+    logoImg.setAttribute('style', 'width:120px; height:auto;');
   
+    const rightBox = document.createElement('div');
+    rightBox.setAttribute('style', 'text-align:right; font-size:12px; color:#333; line-height:1.3;');
+    rightBox.innerHTML = `
+      <div><strong>Tel:</strong> (506) 2222-2222</div>
+      <div><strong>Email:</strong> info@taller2h.com</div>
+      <div><strong>Dirección:</strong> San José, Costa Rica</div>
+      <div><strong>Cédula Jurídica:</strong> 123145644</div>
+      <div style="margin-top:6px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CR', {year:'numeric', month:'2-digit', day:'2-digit'})}</div>
+    `;
+  
+    header.appendChild(logoImg);
+    header.appendChild(rightBox);
+  
+    // Lo insertamos al inicio del clon (antes de todo)
+    copia.insertBefore(header, copia.firstChild);
+  
+    // --- Limpiar elementos interactivos en el clon ---
+    copia.querySelectorAll(
+      'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
+    ).forEach(el => el.remove());
+  
+    // Ocultar columna "Acciones" en tabla de gastos
+    copia.querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child')
+      .forEach(col => col.style.display = 'none');
+  
+    // Opciones PDF
     const opt = {
       margin: 0.5,
       filename: `Factura-Proforma-${numeroProforma}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
+      html2canvas: { scale: 3, useCORS: true, backgroundColor: null }, // respeta transparencia del PNG
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
   
     html2pdf().set(opt).from(copia).save();
   };
+  
   
 
 
