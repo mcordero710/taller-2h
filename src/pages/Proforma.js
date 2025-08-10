@@ -201,23 +201,35 @@ const Proforma = () => {
   };
 
   const handleDescargarPDF = () => {
-    const element = document.getElementById('proformaContent').cloneNode(true);
-    const eliminarColumnas = element.querySelectorAll("th:nth-child(4), td:nth-child(4)");
-    eliminarColumnas.forEach(col => col.style.display = 'none');
-    const eliminarBotones = element.querySelectorAll(".boton-eliminar");
-    eliminarBotones.forEach(btn => btn.style.display = 'none');
-    const ivaSection = element.querySelector(".iva-section");
-    if (ivaSection) {
-      ivaSection.style.display = 'none';
-    }
+    const element = document.getElementById('proformaPrintable').cloneNode(true);
+  
+    // Ocultar cosas que no van en el PDF
+    element.querySelectorAll(
+      '.boton-eliminar, .boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma'
+    ).forEach(el => el && (el.style.display = 'none'));
+  
+    // Ocultar la 4ta columna (eliminar)
+    element.querySelectorAll('th:nth-child(4), td:nth-child(4)')
+      .forEach(col => col.style.display = 'none');
+  
+    // Ocultar IVA checkbox (como ya hacías)
+    const ivaSection = element.querySelector('.iva-section');
+    if (ivaSection) ivaSection.style.display = 'none';
+  
+    // Asegurar logo grande en el PDF (por si el clon aplica otra medida)
+    const logoImg = element.querySelector('.proforma-logo img');
+    if (logoImg) logoImg.style.width = '150px';
+  
     const options = {
       margin: 10,
-      filename: 'proforma.pdf',
-      html2canvas: { scale: 4 },
+      filename: `proforma-${numeroProforma ?? ''}.pdf`,
+      html2canvas: { scale: 3, useCORS: true }, // useCORS ayuda con imágenes
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
+  
     html2pdf(element, options);
   };
+  
 
   const handleInputChange = (campo, value) => {
     if (campo === 'marca' || campo === 'color') {
@@ -230,7 +242,7 @@ const Proforma = () => {
   };
 
   return (
-    <div className="proforma-wrapper">
+    <div className="proforma-wrapper" id="proformaPrintable">
       <header className="proforma-header">
         <div className="proforma-top">
           <div className="proforma-logo">
@@ -241,7 +253,7 @@ const Proforma = () => {
             <p><strong>Email:</strong> info@taller2h.com</p>
             <p><strong>Dirección:</strong> San José, Costa Rica</p>
             <p><strong>Cédula Jurídica:</strong> 123145644</p>
-  
+
             <button
               className="boton-guardar"
               onClick={handleGuardarProforma}
@@ -249,11 +261,11 @@ const Proforma = () => {
             >
               <FontAwesomeIcon icon={faSave} /> Guardar Proforma
             </button>
-  
+
             <button className="boton-nueva" onClick={handleNuevaProforma}>
               <FontAwesomeIcon icon={faPlus} /> Nueva Proforma
             </button>
-  
+
             <button className="boton-descargar" onClick={handleDescargarPDF}>
               <FontAwesomeIcon icon={faDownload} /> Descargar PDF
             </button>
@@ -279,15 +291,15 @@ const Proforma = () => {
           />
         </div>
       </header>
-  
+
       <div id="proformaContent">
         <h2>N° Proforma: {numeroProforma ? numeroProforma : '___________'}</h2>
-  
+
         <section className="proforma-info">
           <div className="factura-detalle">
             <p><strong>Fecha:</strong> {fecha ? fecha : new Date().toLocaleDateString()}</p>
           </div>
-  
+
           <div className="cliente-detalle">
             <label htmlFor="cedula">Cédula del cliente</label>
             <input
@@ -306,7 +318,7 @@ const Proforma = () => {
             )}
           </div>
         </section>
-  
+
         <section className="vehiculo-detalle">
           {['placa', 'marca', 'anio', 'color'].map((campo) => {
             const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
@@ -324,7 +336,7 @@ const Proforma = () => {
             );
           })}
         </section>
-  
+
         <table className="proforma-tabla">
           <thead>
             <tr>
@@ -361,11 +373,11 @@ const Proforma = () => {
             ))}
           </tbody>
         </table>
-  
+
         <div className="proforma-actions">
           <button onClick={agregarReparacion}>+ Agregar Reparación</button>
         </div>
-  
+
         <section className="iva-section">
           <label>
             <input
@@ -376,13 +388,13 @@ const Proforma = () => {
             Factura Electrónica (13%)
           </label>
         </section>
-  
+
         <div className="proforma-totales">
           <p><strong>Subtotal:</strong> ₡{(total - ivaAmount).toFixed(2)}</p>
           {ivaChecked && <p><strong>IVA (13%):</strong> ₡{ivaAmount.toFixed(2)}</p>}
           <p><strong>Total:</strong> ₡{total.toFixed(2)}</p>
         </div>
-  
+
         <footer className="proforma-footer">
           <div className="proforma-nota">
             <h4>Nota:</h4>
@@ -406,7 +418,7 @@ const Proforma = () => {
       </div>
     </div>
   );
-  
+
 };
 
 export default Proforma;

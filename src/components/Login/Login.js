@@ -5,6 +5,10 @@ import { toast, ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Login.css';
 
+// 👇 Ajusta la ruta según dónde esté tu Login.js.
+// Si tu Login.js está en src/pages/Login.js, esta ruta funciona:
+import logo from '../../assets/logo.png';
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,7 +64,11 @@ const Login = () => {
     <div className="login-page">
       <div className="login-container">
         <div className="form-box">
+          {/* 👇 Logo dentro del contenedor */}
+          <img src={logo} alt="Logo Taller 2H" className="logo-login" />
+
           <h2>TALLER 2H</h2>
+
           <form onSubmit={handleLogin}>
             <div className="form-field">
               <label>Correo Electrónico:</label>
