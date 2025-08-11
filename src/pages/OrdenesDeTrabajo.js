@@ -4,7 +4,6 @@ import { toast } from 'react-toastify';
 import { FaSearch, FaCar, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaHashtag } from 'react-icons/fa';
 import logo from '../assets/logo.png';
 
-// 🔥 Firebase
 import { db, auth } from '../firebase/firebase';
 import {
   collection,
@@ -18,7 +17,6 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 
-// ⏳ Loader global
 import { useLoading } from '../components/ui/LoadingContext';
 
 const OrdenesDeTrabajo = () => {
@@ -33,6 +31,7 @@ const OrdenesDeTrabajo = () => {
   );
 
   const [placa, setPlaca] = useState('');
+  const [proformaNumero, setProformaNumero] = useState('');
   const [loadingVehiculo, setLoadingVehiculo] = useState(false);
   const [vehiculo, setVehiculo] = useState(null);
 
@@ -41,17 +40,20 @@ const OrdenesDeTrabajo = () => {
   const [reparaciones, setReparaciones] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState('');
-  const [otId, setOtId] = useState(null); // uso interno, no se imprime
+  const [otId, setOtId] = useState(null);
 
   const { withLoading } = useLoading();
 
   const convertirFecha = (fechaStr) => {
     if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
     const [mes, dia, anio] = fechaStr.split('/');
-    return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
+    return new Date(`${anio}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`);
   };
 
-  const loadUltimaOT = async (placaUpper) => {
+  // ===== Última OT por placa (con opción de preservar proforma en pantalla) =====
+  const loadUltimaOT = async (placaUpper, opts = {}) => {
+    const preserveProforma = !!opts.preserveProforma;
+
     setOtId(null);
     setCono('');
     setReparaciones([]);
@@ -63,7 +65,7 @@ const OrdenesDeTrabajo = () => {
       }
       if (!snapOT.empty) {
         const docs = snapOT.docs.map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => {
+          .sort((a,b) => {
             const ta = a.createdAt?.toMillis?.() ?? a.updatedAt?.toMillis?.() ?? 0;
             const tb = b.createdAt?.toMillis?.() ?? b.updatedAt?.toMillis?.() ?? 0;
             return tb - ta;
@@ -71,8 +73,17 @@ const OrdenesDeTrabajo = () => {
         const top = docs[0];
         setOtId(top.id);
         setCono(top.numeroCono || '');
+
+        // ⬇️ Solo actualiza proforma si la OT realmente trae valor.
+        if (top.proformaNumero !== undefined && top.proformaNumero !== null) {
+          setProformaNumero(String(top.proformaNumero));
+        } else if (!preserveProforma) {
+          // si NO queremos preservar (casos antiguos), recién entonces limpiaríamos
+          setProformaNumero('');
+        }
+
         setReparaciones(Array.isArray(top.reparaciones)
-          ? top.reparaciones.map((r, i) => ({ id: `${top.id}-${i}`, texto: r.texto || String(r) }))
+          ? top.reparaciones.map((r,i)=>({ id:`${top.id}-${i}`, texto: r.texto||String(r) }))
           : []);
       }
     } catch (err) {
@@ -80,61 +91,147 @@ const OrdenesDeTrabajo = () => {
     }
   };
 
-  const buscarVehiculo = async () => {
-    const term = (placa || '').replace(/\s+/g, '').toUpperCase();
-    if (!term) return;
+  // ===== Búsquedas individuales =====
+  const buscarPorCono = async (coneVal, placaUpper) => {
+    const snap = await getDocs(query(collection(db, 'ordenes_trabajo'), where('numeroCono', '==', coneVal)));
+    if (snap.empty) return null;
+
+    let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (placaUpper) {
+      docs = docs.filter(d => (d.placa || d.vehiculo?.placa || '').toUpperCase() === placaUpper);
+      if (docs.length === 0) return null;
+    }
+    docs.sort((a,b) => {
+      const ta = a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
+      const tb = b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
+      return tb - ta;
+    });
+    const ot = docs[0];
+
+    setOtId(ot.id);
+    setCono(ot.numeroCono || '');
+    const placaDoc = (ot.placa || ot.vehiculo?.placa || '').toUpperCase();
+    setPlaca(placaDoc);
+    setVehiculo({
+      placa: placaDoc,
+      marca: ot.vehiculo?.marca || '',
+      anio: ot.vehiculo?.anio || '',
+      color: ot.vehiculo?.color || '',
+    });
+
+    // ⬇️ Solo setear si existe en la OT; si no, respetamos lo que esté en pantalla.
+    if (ot.proformaNumero !== undefined && ot.proformaNumero !== null) {
+      setProformaNumero(String(ot.proformaNumero));
+    }
+
+    setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r,i)=>({ id:`${ot.id}-${i}`, texto: r.texto||String(r) })) : []);
+    return ot;
+  };
+
+  const buscarPorProforma = async (proformaNum, placaUpper) => {
+    if (!proformaNum) return null;
+    const snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', proformaNum)));
+    if (snap.empty) return null;
+
+    let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (placaUpper) {
+      docs = docs.filter(p => (p.vehiculo?.placa || '').toUpperCase() === placaUpper);
+      if (docs.length === 0) return null;
+    }
+    docs.sort((a,b)=> convertirFecha(b.fecha) - convertirFecha(a.fecha));
+    const p = docs[0];
+
+    const placaDoc = (p.vehiculo?.placa || placaUpper || '').toUpperCase();
+    setPlaca(placaDoc);
+    setVehiculo({
+      placa: placaDoc,
+      marca: p.vehiculo?.marca || '',
+      anio: p.vehiculo?.anio || p.vehiculo?.ano || '',
+      color: p.vehiculo?.color || '',
+    });
+    // ⬇️ El usuario buscó por proforma: mantenla en pantalla
+    setProformaNumero(String(p.numero || ''));
+
+    if (placaDoc) await loadUltimaOT(placaDoc, { preserveProforma: true });
+    return p;
+  };
+
+  const buscarPorPlaca = async (placaUpper) => {
+    if (!placaUpper) return null;
+
+    const vehRef = doc(db, 'vehiculos', placaUpper);
+    const vehSnap = await getDoc(vehRef);
+    if (vehSnap.exists()) {
+      const v = vehSnap.data();
+      setVehiculo({ placa: placaUpper, marca: v.marca || '', anio: v.anio || v.ano || '', color: v.color || '' });
+      await loadUltimaOT(placaUpper, { preserveProforma: true });
+      return { origen: 'vehiculos' };
+    }
+
+    const qPro = query(collection(db, 'proformas'), where('vehiculo.placa', '==', placaUpper));
+    const snapPro = await getDocs(qPro);
+    if (!snapPro.empty) {
+      const docs = snapPro.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b)=> convertirFecha(b.fecha) - convertirFecha(a.fecha));
+      const best = docs[0];
+      const info = best.vehiculo || {};
+      setVehiculo({ placa: placaUpper, marca: info.marca || '', anio: info.anio || info.ano || '', color: info.color || '' });
+      await loadUltimaOT(placaUpper, { preserveProforma: true });
+      return { origen: 'proformas' };
+    }
+
+    const mock = vehiculosMock.find(v => v.placa.toUpperCase() === placaUpper);
+    if (mock) {
+      setVehiculo({ ...mock, placa: placaUpper });
+      await loadUltimaOT(placaUpper, { preserveProforma: true });
+      return { origen: 'mock' };
+    }
+
+    return null;
+  };
+
+  // ===== Botón Cargar datos =====
+  const cargarDatos = async () => {
+    const placaUpper = (placa || '').replace(/\s+/g, '').toUpperCase();
+    const coneVal = (cono || '').trim();
+    const pfStr = (proformaNumero || '').trim();
+    const pfNum = /^\d+$/.test(pfStr) ? parseInt(pfStr, 10) : null;
+
+    if (!coneVal && !pfNum && !placaUpper) {
+      toast.info('Ingrese Nº de cono, o Nº de proforma y/o placa.');
+      return;
+    }
 
     setLoadingVehiculo(true);
     try {
       await withLoading(async () => {
-        let vehEncontrado = null;
+        let found = null;
+        if (coneVal) found = await buscarPorCono(coneVal, placaUpper);
+        if (!found && pfNum) found = await buscarPorProforma(pfNum, placaUpper);
+        if (!found && placaUpper) found = await buscarPorPlaca(placaUpper);
 
-        const vehRef = doc(db, 'vehiculos', term);
-        const vehSnap = await getDoc(vehRef);
-        if (vehSnap.exists()) {
-          const v = vehSnap.data();
-          vehEncontrado = { placa: term, marca: v.marca || '', anio: v.anio || v.ano || '', color: v.color || '' };
-        } else {
-          const qPro = query(collection(db, 'proformas'), where('vehiculo.placa', '==', term));
-          const snapPro = await getDocs(qPro);
-          if (!snapPro.empty) {
-            const docs = snapPro.docs.map(d => ({ id: d.id, ...d.data() }))
-              .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
-            const best = docs[0];
-            const info = best.vehiculo || {};
-            vehEncontrado = { placa: term, marca: info.marca || '', anio: info.anio || info.ano || '', color: info.color || '' };
-          } else {
-            const mock = vehiculosMock.find(v => v.placa.toUpperCase() === term);
-            if (mock) vehEncontrado = { ...mock, placa: term };
-          }
+        if (!found) {
+          setVehiculo(null); setOtId(null); setReparaciones([]);
+          toast.info('No se encontraron datos con los criterios ingresados.', { autoClose: 2200, hideProgressBar: true });
         }
-
-        if (!vehEncontrado) {
-          setVehiculo(null); setOtId(null); setCono(''); setReparaciones([]);
-          toast.info('No se encontró un vehículo con esa placa.', { autoClose: 2200, hideProgressBar: true });
-          return;
-        }
-
-        setVehiculo(vehEncontrado);
-        await loadUltimaOT(term);
-      }, 'Buscando vehículo…');
+      }, 'Cargando datos…');
     } catch (e) {
-      console.error('Error al buscar vehículo:', e);
-      toast.error('Error al buscar el vehículo.');
-      setVehiculo(null); setOtId(null); setCono(''); setReparaciones([]);
+      console.error('Error al cargar datos:', e);
+      toast.error('Ocurrió un error al cargar los datos.');
     } finally {
       setLoadingVehiculo(false);
     }
   };
 
   const onEnterBuscar = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); buscarVehiculo(); }
+    if (e.key === 'Enter') { e.preventDefault(); cargarDatos(); }
   };
 
+  // ===== Reparaciones =====
   const agregarReparacion = () => {
     const texto = (reparacion || '').trim();
     if (!texto) return;
-    setReparaciones(prev => [{ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, texto }, ...prev]);
+    setReparaciones(prev => [{ id:`${Date.now()}-${Math.random().toString(16).slice(2)}`, texto }, ...prev]);
     setReparacion('');
   };
 
@@ -147,6 +244,7 @@ const OrdenesDeTrabajo = () => {
   const cancelarEdicion = () => { setEditingId(null); setEditingText(''); };
   const eliminarReparacion = (id) => setReparaciones(prev => prev.filter(r => r.id !== id));
 
+  // ===== Guardar / Imprimir =====
   const puedeGuardarOT = !!vehiculo && cono.trim() && reparaciones.length > 0;
 
   const guardarOT = async () => {
@@ -164,15 +262,15 @@ const OrdenesDeTrabajo = () => {
       numeroCono: cono.trim(),
       reparaciones: reparaciones.map(r => ({ texto: r.texto })),
       estado: 'abierta',
+      proformaNumero: proformaNumero ? Number(proformaNumero) : null,
       updatedAt: serverTimestamp(),
       createdBy: user ? { uid: user.uid, email: user.email || null } : null,
     };
 
     try {
       await withLoading(async () => {
-        if (otId) {
-          await updateDoc(doc(db, 'ordenes_trabajo', otId), payload);
-        } else {
+        if (otId) await updateDoc(doc(db, 'ordenes_trabajo', otId), payload);
+        else {
           const ref = await addDoc(collection(db, 'ordenes_trabajo'), { ...payload, createdAt: serverTimestamp() });
           setOtId(ref.id);
         }
@@ -193,7 +291,8 @@ const OrdenesDeTrabajo = () => {
   };
 
   const limpiar = () => {
-    setPlaca(''); setVehiculo(null); setCono(''); setReparacion('');
+    setPlaca(''); setProformaNumero('');
+    setVehiculo(null); setCono(''); setReparacion('');
     setReparaciones([]); setEditingId(null); setEditingText(''); setOtId(null);
   };
 
@@ -203,15 +302,15 @@ const OrdenesDeTrabajo = () => {
         <div className="ot-header-icon"><FaCar /></div>
         <div>
           <h2 className="ot-title">Órdenes de Trabajo</h2>
-          <p className="ot-subtitle">Crea la orden a partir de la placa registrada en proforma.</p>
+          <p className="ot-subtitle">Crea la orden a partir de placa, proforma o número de cono.</p>
         </div>
       </header>
 
       <div className="ot-grid">
         <section className="card card--span2">
           <div className="card-header">
-            <h3>Búsqueda por Placa</h3>
-            <p>Al ingresar una placa existente, se cargan automáticamente marca, año y color y (si existe) su última OT.</p>
+            <h3>Búsqueda</h3>
+            <p>Puedes cargar datos por <strong>Nº de Cono</strong>, <strong>Nº de Proforma</strong> y/o <strong>Placa</strong>.</p>
           </div>
           <div className="card-body">
             <div className="row">
@@ -231,12 +330,38 @@ const OrdenesDeTrabajo = () => {
                 </div>
               </div>
 
-              <button type="button" className="btn" onClick={buscarVehiculo} disabled={loadingVehiculo}>
-                {loadingVehiculo ? 'Buscando…' : 'Cargar datos'}
+              <div className="field" style={{ maxWidth: 200 }}>
+                <label htmlFor="proforma">Nº Proforma</label>
+                <input
+                  id="proforma"
+                  inputMode="numeric"
+                  pattern="\d*"
+                  placeholder="Ej: 1024"
+                  value={proformaNumero}
+                  onChange={(e) => setProformaNumero(e.target.value.replace(/[^\d]/g, ''))}
+                  onKeyDown={onEnterBuscar}
+                  disabled={loadingVehiculo}
+                />
+              </div>
+
+              <div className="field" style={{ maxWidth: 140 }}>
+                <label htmlFor="conoBusqueda">Nº Cono</label>
+                <input
+                  id="conoBusqueda"
+                  placeholder="Ej: 27"
+                  value={cono}
+                  onChange={(e) => setCono(e.target.value)}
+                  onKeyDown={onEnterBuscar}
+                  disabled={loadingVehiculo}
+                />
+              </div>
+
+              <button type="button" className="btn" onClick={cargarDatos} disabled={loadingVehiculo}>
+                {loadingVehiculo ? 'Cargando…' : 'Cargar datos'}
               </button>
 
-              {vehiculo === null && !loadingVehiculo && placa && (
-                <span className="msg-warn">No se encontró un vehículo con esa placa.</span>
+              {vehiculo === null && !loadingVehiculo && (placa || proformaNumero || cono) && (
+                <span className="msg-warn">No se encontraron datos con los criterios ingresados.</span>
               )}
             </div>
 
@@ -246,6 +371,7 @@ const OrdenesDeTrabajo = () => {
                 <span className="chip">{vehiculo.anio}</span>
                 <span className="chip">{vehiculo.color}</span>
                 <span className="chip chip--ghost">Placa: {vehiculo.placa || placa}</span>
+                {proformaNumero && <span className="chip">Proforma: {proformaNumero}</span>}
               </div>
             )}
           </div>
@@ -261,15 +387,30 @@ const OrdenesDeTrabajo = () => {
               <label htmlFor="cono">Número de Cono</label>
               <div className="input-icon">
                 <FaHashtag className="icon-left" />
-                <input id="cono" placeholder="Ej: 27" value={cono} onChange={(e) => setCono(e.target.value)} disabled={!vehiculo} />
+                <input id="cono" placeholder="Ej: 27" value={cono} onChange={(e) => setCono(e.target.value)} />
+              </div>
+            </div>
+
+            {/* Solo-lectura para ver la proforma detectada */}
+            <div className="field">
+              <label htmlFor="proformaRO">Nº Proforma (detectado)</label>
+              <div className="input-icon">
+                <input id="proformaRO" value={proformaNumero || ''} readOnly className="input-readonly" placeholder="—" />
               </div>
             </div>
 
             <div className="field">
               <label htmlFor="reparacion">Reparación</label>
-              <textarea id="reparacion" placeholder="Describe la reparación a realizar" value={reparacion} onChange={(e) => setReparacion(e.target.value)} disabled={!vehiculo} rows={4} />
+              <textarea
+                id="reparacion"
+                placeholder="Describe la reparación a realizar"
+                value={reparacion}
+                onChange={(e) => setReparacion(e.target.value)}
+                disabled={!vehiculo}
+                rows={4}
+              />
               <div className="actions-right">
-                <button type="button" className="btn" onClick={agregarReparacion} disabled={!vehiculo || !reparacion.trim()}>
+                <button type="button" className="btn btn--sm" onClick={agregarReparacion} disabled={!vehiculo || !reparacion.trim()}>
                   <FaPlus className="mr-6" /> Agregar reparación
                 </button>
               </div>
@@ -281,7 +422,7 @@ const OrdenesDeTrabajo = () => {
       <section className="card">
         <div className="card-header">
           <h3>Reparaciones</h3>
-          <p>Se cargan si existe una OT previa para la placa.</p>
+          <p>Se cargan si existe una OT previa para la placa o la OT por cono.</p>
         </div>
         <div className="card-body">
           <table className="tabla">
@@ -307,41 +448,13 @@ const OrdenesDeTrabajo = () => {
                   <td className="td-actions">
                     {editingId === r.id ? (
                       <>
-                        <button
-                          className="btn-icon btn-icon--ghost"
-                          onClick={guardarEdicion}
-                          aria-label="Guardar"
-                          title="Guardar"
-                        >
-                          <FaSave />
-                        </button>
-                        <button
-                          className="btn-icon btn-icon--ghost"
-                          onClick={cancelarEdicion}
-                          aria-label="Cancelar"
-                          title="Cancelar"
-                        >
-                          <FaTimes />
-                        </button>
+                        <button className="btn-icon btn-icon--ghost" onClick={guardarEdicion} aria-label="Guardar" title="Guardar"><FaSave /></button>
+                        <button className="btn-icon btn-icon--ghost" onClick={cancelarEdicion} aria-label="Cancelar" title="Cancelar"><FaTimes /></button>
                       </>
                     ) : (
                       <>
-                        <button
-                          className="btn-icon btn-icon--ghost"
-                          onClick={() => iniciarEdicion(r)}
-                          aria-label="Editar"
-                          title="Editar"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          className="btn-icon btn-icon--danger"
-                          onClick={() => eliminarReparacion(r.id)}
-                          aria-label="Eliminar"
-                          title="Eliminar"
-                        >
-                          <FaTrash />
-                        </button>
+                        <button className="btn-icon btn-icon--ghost" onClick={() => iniciarEdicion(r)} aria-label="Editar" title="Editar"><FaEdit /></button>
+                        <button className="btn-icon btn-icon--danger" onClick={() => eliminarReparacion(r.id)} aria-label="Eliminar" title="Eliminar"><FaTrash /></button>
                       </>
                     )}
                   </td>
@@ -353,11 +466,11 @@ const OrdenesDeTrabajo = () => {
       </section>
 
       <div className="footer-actions no-print">
-        <button className="btn btn--ghost" onClick={limpiar}>Limpiar</button>
-        <button className="btn" onClick={guardarOT} disabled={!vehiculo || !cono.trim() || reparaciones.length === 0}>
+        <button className="btn btn--ghost btn--sm" onClick={limpiar}>Limpiar</button>
+        <button className="btn btn--sm" onClick={guardarOT} disabled={!vehiculo || !cono.trim() || reparaciones.length === 0}>
           <FaSave className="mr-6" /> {otId ? 'Actualizar Orden' : 'Guardar Orden de Trabajo'}
         </button>
-        <button className="btn btn--ghost" onClick={imprimirOT} disabled={!vehiculo || !cono.trim() || reparaciones.length === 0}>
+        <button className="btn btn--ghost btn--sm" onClick={imprimirOT} disabled={!vehiculo || !cono.trim() || reparaciones.length === 0}>
           Imprimir / Guardar PDF
         </button>
       </div>
@@ -380,6 +493,7 @@ const OrdenesDeTrabajo = () => {
         <h2 className="otp-title">Orden de Trabajo <span className="otp-cono">Cono: {cono}</span></h2>
 
         <div className="otp-datos">
+          {proformaNumero && <div><strong>Proforma:</strong> {proformaNumero}</div>}
           <div><strong>Placa:</strong> {vehiculo?.placa || placa}</div>
           <div><strong>Marca:</strong> {vehiculo?.marca}</div>
           <div><strong>Año:</strong> {vehiculo?.anio}</div>

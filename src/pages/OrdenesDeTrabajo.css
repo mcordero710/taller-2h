@@ -426,6 +426,27 @@ textarea:focus {
   align-items: center;
 }
 
+/* Título con badge de Cono */
+.otp-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 14px;
+  font-size: 20px;
+}
+
+/* Badge del cono */
+.otp-cono {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #111827;
+}
+
+
 
 /* ===================================== */
 /* =========== Modo impresión ========== */
