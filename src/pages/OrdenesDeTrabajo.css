@@ -3,244 +3,483 @@
 /* ======================= */
 
 .ot-wrapper {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-  .ot-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  .ot-header-icon {
-    display: grid;
-    place-items: center;
-    width: 40px; height: 40px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #eef2ff, #f3e8ff);
-    color: #4f46e5;
-  }
-  .ot-title { font-size: 22px; font-weight: 600; margin: 0; }
-  .ot-subtitle { margin: 0; font-size: 14px; color: #6b7280; }
-  
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.ot-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ot-header-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2ff, #f3e8ff);
+  color: #4f46e5;
+}
+
+.ot-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ot-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.ot-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 1024px) {
   .ot-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
+    grid-template-columns: 2fr 1fr;
   }
-  @media (min-width: 1024px) {
-    .ot-grid { grid-template-columns: 2fr 1fr; }
+}
+
+/* Card */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f7;
+}
+
+.card--span2 {
+  grid-column: span 1;
+}
+
+@media (min-width: 1024px) {
+  .card--span2 {
+    grid-column: span 1;
   }
-  
-  /* Card */
-  .card {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
-    border: 1px solid #eef2f7;
+}
+
+.card-header {
+  padding: 16px 16px 8px 16px;
+  border-bottom: 1px solid #f0f2f7;
+}
+
+.card-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.card-body {
+  padding: 16px;
+}
+
+/* Form */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.field {
+  flex: 1;
+  min-width: 240px;
+}
+
+.field label {
+  display: block;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.input-icon {
+  position: relative;
+}
+
+.input-icon input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px 10px 36px;
+  border-radius: 10px;
+  outline: none;
+  transition: box-shadow .15s, border-color .15s;
+}
+
+.input-icon input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+.icon-left {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+  outline: none;
+}
+
+textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+.actions-right {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* Chips */
+.vehiculo-chipset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chip {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+}
+
+.chip--ghost {
+  background: #f9fafb;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #111827;
+  color: #fff;
+  border: 1px solid #111827;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: transform .05s, filter .15s, background .15s;
+  min-height: 40px;
+}
+
+.btn:hover {
+  filter: brightness(1.05);
+}
+
+.btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.btn--ghost {
+  background: #fff;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.btn--danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+/* Spinner pequeñito */
+.spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  border-top-color: #6b7280;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
   }
-  .card--span2 { grid-column: span 1; }
-  @media (min-width: 1024px) {
-    .card--span2 { grid-column: span 1; }
+}
+
+/* Mensajes */
+.msg-warn {
+  font-size: 13px;
+  color: #b45309;
+  align-self: center;
+}
+
+/* Tabla */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tabla thead th {
+  font-weight: 600;
+  font-size: 13px;
+  text-align: left;
+  background: #f9fafb;
+  color: #374151;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.tabla tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.table-empty {
+  text-align: center;
+  padding: 24px;
+  color: #6b7280;
+}
+
+.idx {
+  font-weight: 600;
+}
+
+.td-actions {
+  text-align: right;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.input-inline {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  outline: none;
+}
+
+.input-inline:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+/* Footer */
+.footer-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ===================================== */
+/* ======== Plantilla para PDF ========= */
+/* ===================================== */
+
+/* IMPORTANTE: no usar display:none; lo dejamos fuera de pantalla pero renderizable */
+.ot-print {
+  position: fixed;
+  left: -10000px;
+  /* fuera del viewport */
+  top: 0;
+  width: 816px;
+  /* ~8.5" a 96dpi */
+  background: #fff;
+  padding: 20px;
+  z-index: -1;
+  opacity: 1;
+  /* visible para el rasterizador */
+  pointer-events: none;
+}
+
+/* Colores correctos en canvas/pdf */
+.ot-print,
+.ot-print * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Estilos internos de la plantilla (para cuando se imprima o se vea en el clon) */
+.otp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.otp-logo {
+  width: 120px;
+  height: auto;
+}
+
+.otp-empresa {
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #333;
+}
+
+.otp-fecha {
+  margin-top: 6px;
+}
+
+.otp-title {
+  margin: 6px 0 14px;
+  font-size: 20px;
+}
+
+.otp-datos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.otp-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.otp-tabla th,
+.otp-tabla td {
+  border-bottom: 1px solid #ddd;
+  padding: 8px 4px;
+  text-align: left;
+}
+
+/* Tamaño pequeño para botones con texto */
+.btn--sm {
+  padding: 8px 12px;
+  min-height: 32px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+/* Botones solo-ícono (32x32) */
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-grid;
+  place-items: center;
+  gap: 0;
+  line-height: 0;
+}
+
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Variantes */
+.btn-icon--ghost {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.btn-icon--danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+/* Ajuste de la celda de acciones */
+.td-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+
+/* ===================================== */
+/* =========== Modo impresión ========== */
+/* ===================================== */
+@media print {
+  @page {
+    size: Letter;
+    margin: 0.5in;
   }
-  .card-header {
-    padding: 16px 16px 8px 16px;
-    border-bottom: 1px solid #f0f2f7;
-  }
-  .card-header h3 { margin: 0 0 4px 0; font-size: 16px; font-weight: 600; }
-  .card-header p  { margin: 0; color: #6b7280; font-size: 13px; }
-  .card-body { padding: 16px; }
-  
-  /* Form */
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: flex-end;
-  }
-  .field { flex: 1; min-width: 240px; }
-  .field label { display: block; font-size: 13px; color: #374151; margin-bottom: 6px; }
-  
-  .input-icon { position: relative; }
-  .input-icon input {
-    width: 100%;
-    border: 1px solid #e5e7eb;
-    padding: 10px 12px 10px 36px;
-    border-radius: 10px;
-    outline: none;
-    transition: box-shadow .15s, border-color .15s;
-  }
-  .input-icon input:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99,102,241,.15);
-  }
-  .icon-left {
-    position: absolute;
-    left: 10px; top: 50%; transform: translateY(-50%);
-    color: #9ca3af;
-  }
-  textarea {
-    width: 100%;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 10px 12px;
-    resize: vertical;
-    outline: none;
-  }
-  textarea:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99,102,241,.15);
-  }
-  
-  .actions-right { display: flex; justify-content: flex-end; margin-top: 8px; }
-  
-  /* Chips */
-  .vehiculo-chipset { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .chip {
-    font-size: 13px; padding: 6px 10px; border-radius: 999px;
-    background: #eef2ff; color: #1f2937; border: 1px solid #e5e7eb;
-  }
-  .chip--ghost { background: #f9fafb; }
-  
-  /* Buttons */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    gap: 8px;
-    background: #111827; color: #fff;
-    border: 1px solid #111827; border-radius: 10px;
-    padding: 10px 14px; cursor: pointer;
-    transition: transform .05s, filter .15s, background .15s;
-    min-height: 40px;
-  }
-  .btn:hover { filter: brightness(1.05); }
-  .btn:disabled { opacity: .6; cursor: not-allowed; }
-  .btn--ghost {
-    background: #fff; color: #111827; border-color: #e5e7eb;
-  }
-  .btn--danger {
-    background: #ef4444; border-color: #ef4444; color: #fff;
-  }
-  
-  /* Spinner pequeñito */
-  .spinner {
-    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-    width: 16px; height: 16px; border-radius: 50%;
-    border: 2px solid #e5e7eb; border-top-color: #6b7280;
-    animation: spin .8s linear infinite;
-  }
-  @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
-  
-  /* Mensajes */
-  .msg-warn { font-size: 13px; color: #b45309; align-self: center; }
-  
-  /* Tabla */
-  .tabla {
-    width: 100%; border-collapse: collapse;
-    border: 1px solid #eef2f7; border-radius: 12px; overflow: hidden;
-  }
-  .tabla thead th {
-    font-weight: 600; font-size: 13px; text-align: left;
-    background: #f9fafb; color: #374151; padding: 10px 12px; border-bottom: 1px solid #eef2f7;
-  }
-  .tabla tbody td {
-    padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle;
-  }
-  .table-empty { text-align: center; padding: 24px; color: #6b7280; }
-  .idx { font-weight: 600; }
-  .td-actions { text-align: right; display: flex; gap: 8px; justify-content: flex-end; }
-  
-  .input-inline {
-    width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; outline: none;
-  }
-  .input-inline:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
-  
-  /* Footer */
-  .footer-actions {
-    display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;
-  }
-  
-  /* ===================================== */
-  /* ======== Plantilla para PDF ========= */
-  /* ===================================== */
-  
-  /* IMPORTANTE: no usar display:none; lo dejamos fuera de pantalla pero renderizable */
-  .ot-print {
-    position: fixed;
-    left: -10000px;        /* fuera del viewport */
-    top: 0;
-    width: 816px;          /* ~8.5" a 96dpi */
-    background: #fff;
-    padding: 20px;
-    z-index: -1;
-    opacity: 1;            /* visible para el rasterizador */
-    pointer-events: none;
-  }
-  
-  /* Colores correctos en canvas/pdf */
-  .ot-print, .ot-print * {
+
+  html,
+  body {
+    margin: 0 !important;
+    background: #fff !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  
-  /* Estilos internos de la plantilla (para cuando se imprima o se vea en el clon) */
-  .otp-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+
+  /* Oculta toda la app */
+  body * {
+    visibility: hidden !important;
   }
-  .otp-logo { width: 120px; height: auto; }
-  .otp-empresa { text-align: right; font-size: 12px; line-height: 1.4; color: #333; }
-  .otp-fecha { margin-top: 6px; }
-  .otp-title { margin: 6px 0 14px; font-size: 20px; }
-  .otp-datos {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; margin-bottom: 14px;
+
+  /* Muestra únicamente la plantilla */
+  #ot-print,
+  #ot-print * {
+    visibility: visible !important;
   }
-  .otp-tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
-  .otp-tabla th, .otp-tabla td {
-    border-bottom: 1px solid #ddd; padding: 8px 4px; text-align: left;
+
+  /* La plantilla ocupa la página */
+  #ot-print {
+    position: fixed !important;
+    inset: 0 !important;
+    padding: 0.5in !important;
+    width: auto !important;
+    height: auto !important;
+    z-index: 999999 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: #fff !important;
   }
-  .otp-firma { margin-top: 26px; }
-  .otp-firma-linea { height: 26px; border-bottom: 1px solid #333; width: 260px; }
-  .otp-firma-texto { font-size: 12px; margin-top: 4px; }
-  
-  /* ===================================== */
-  /* =========== Modo impresión ========== */
-  /* ===================================== */
-  @media print {
-    @page { size: Letter; margin: 0.5in; }
-  
-    html, body {
-      margin: 0 !important;
-      background: #fff !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-  
-    /* Oculta toda la app */
-    body * { visibility: hidden !important; }
-  
-    /* Muestra únicamente la plantilla */
-    #ot-print, #ot-print * { visibility: visible !important; }
-  
-    /* La plantilla ocupa la página */
-    #ot-print {
-      position: fixed !important;
-      inset: 0 !important;
-      padding: 0.5in !important;
-      width: auto !important;
-      height: auto !important;
-      z-index: 999999 !important;
-      opacity: 1 !important;
-      pointer-events: auto !important;
-      background: #fff !important;
-    }
-  
-    /* Por si quedaran controles */
-    .no-print, .btn, button, input, textarea, .spinner {
-      display: none !important;
-    }
+
+  /* Por si quedaran controles */
+  .no-print,
+  .btn,
+  button,
+  input,
+  textarea,
+  .spinner {
+    display: none !important;
   }
-  
-  /* Que html2pdf respete saltos si algún día los usas */
-  .html2pdf__page-break { page-break-after: always; }
-  
+}
+
+/* Que html2pdf respete saltos si algún día los usas */
+.html2pdf__page-break {
+  page-break-after: always;
+}

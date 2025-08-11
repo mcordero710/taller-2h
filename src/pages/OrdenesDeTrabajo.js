@@ -41,14 +41,14 @@ const OrdenesDeTrabajo = () => {
   const [reparaciones, setReparaciones] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState('');
-  const [otId, setOtId] = useState(null);
+  const [otId, setOtId] = useState(null); // uso interno, no se imprime
 
   const { withLoading } = useLoading();
 
   const convertirFecha = (fechaStr) => {
     if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
     const [mes, dia, anio] = fechaStr.split('/');
-    return new Date(`${anio}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`);
+    return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
   };
 
   const loadUltimaOT = async (placaUpper) => {
@@ -63,7 +63,7 @@ const OrdenesDeTrabajo = () => {
       }
       if (!snapOT.empty) {
         const docs = snapOT.docs.map(d => ({ id: d.id, ...d.data() }))
-          .sort((a,b) => {
+          .sort((a, b) => {
             const ta = a.createdAt?.toMillis?.() ?? a.updatedAt?.toMillis?.() ?? 0;
             const tb = b.createdAt?.toMillis?.() ?? b.updatedAt?.toMillis?.() ?? 0;
             return tb - ta;
@@ -71,7 +71,9 @@ const OrdenesDeTrabajo = () => {
         const top = docs[0];
         setOtId(top.id);
         setCono(top.numeroCono || '');
-        setReparaciones(Array.isArray(top.reparaciones) ? top.reparaciones.map((r,i)=>({ id:`${top.id}-${i}`, texto: r.texto||String(r) })) : []);
+        setReparaciones(Array.isArray(top.reparaciones)
+          ? top.reparaciones.map((r, i) => ({ id: `${top.id}-${i}`, texto: r.texto || String(r) }))
+          : []);
       }
     } catch (err) {
       console.error('Error consultando OT:', err);
@@ -96,8 +98,8 @@ const OrdenesDeTrabajo = () => {
           const qPro = query(collection(db, 'proformas'), where('vehiculo.placa', '==', term));
           const snapPro = await getDocs(qPro);
           if (!snapPro.empty) {
-            const docs = snapPro.docs.map(d => ({ id:d.id, ...d.data() }))
-              .sort((a,b)=> convertirFecha(b.fecha) - convertirFecha(a.fecha));
+            const docs = snapPro.docs.map(d => ({ id: d.id, ...d.data() }))
+              .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
             const best = docs[0];
             const info = best.vehiculo || {};
             vehEncontrado = { placa: term, marca: info.marca || '', anio: info.anio || info.ano || '', color: info.color || '' };
@@ -132,7 +134,7 @@ const OrdenesDeTrabajo = () => {
   const agregarReparacion = () => {
     const texto = (reparacion || '').trim();
     if (!texto) return;
-    setReparaciones(prev => [{ id:`${Date.now()}-${Math.random().toString(16).slice(2)}`, texto }, ...prev]);
+    setReparaciones(prev => [{ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, texto }, ...prev]);
     setReparacion('');
   };
 
@@ -154,6 +156,7 @@ const OrdenesDeTrabajo = () => {
     }
     const user = auth?.currentUser;
     const placaNorm = (vehiculo?.placa || placa).replace(/\s+/g, '').toUpperCase();
+
     const payload = {
       placa: placaNorm,
       placaRaw: vehiculo?.placa || placa,
@@ -167,8 +170,9 @@ const OrdenesDeTrabajo = () => {
 
     try {
       await withLoading(async () => {
-        if (otId) await updateDoc(doc(db, 'ordenes_trabajo', otId), payload);
-        else {
+        if (otId) {
+          await updateDoc(doc(db, 'ordenes_trabajo', otId), payload);
+        } else {
           const ref = await addDoc(collection(db, 'ordenes_trabajo'), { ...payload, createdAt: serverTimestamp() });
           setOtId(ref.id);
         }
@@ -303,13 +307,41 @@ const OrdenesDeTrabajo = () => {
                   <td className="td-actions">
                     {editingId === r.id ? (
                       <>
-                        <button className="btn btn--ghost" onClick={guardarEdicion}><FaSave /> Guardar</button>
-                        <button className="btn btn--ghost" onClick={cancelarEdicion}><FaTimes /> Cancelar</button>
+                        <button
+                          className="btn-icon btn-icon--ghost"
+                          onClick={guardarEdicion}
+                          aria-label="Guardar"
+                          title="Guardar"
+                        >
+                          <FaSave />
+                        </button>
+                        <button
+                          className="btn-icon btn-icon--ghost"
+                          onClick={cancelarEdicion}
+                          aria-label="Cancelar"
+                          title="Cancelar"
+                        >
+                          <FaTimes />
+                        </button>
                       </>
                     ) : (
                       <>
-                        <button className="btn btn--ghost" onClick={() => iniciarEdicion(r)}><FaEdit /> Editar</button>
-                        <button className="btn btn--danger" onClick={() => eliminarReparacion(r.id)}><FaTrash /> Eliminar</button>
+                        <button
+                          className="btn-icon btn-icon--ghost"
+                          onClick={() => iniciarEdicion(r)}
+                          aria-label="Editar"
+                          title="Editar"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          className="btn-icon btn-icon--danger"
+                          onClick={() => eliminarReparacion(r.id)}
+                          aria-label="Eliminar"
+                          title="Eliminar"
+                        >
+                          <FaTrash />
+                        </button>
                       </>
                     )}
                   </td>
@@ -345,15 +377,13 @@ const OrdenesDeTrabajo = () => {
           </div>
         </div>
 
-        <h2 className="otp-title">Orden de Trabajo</h2>
+        <h2 className="otp-title">Orden de Trabajo <span className="otp-cono">Cono: {cono}</span></h2>
 
         <div className="otp-datos">
           <div><strong>Placa:</strong> {vehiculo?.placa || placa}</div>
-          <div><strong>Número de Cono:</strong> {cono}</div>
           <div><strong>Marca:</strong> {vehiculo?.marca}</div>
           <div><strong>Año:</strong> {vehiculo?.anio}</div>
           <div><strong>Color:</strong> {vehiculo?.color}</div>
-          {otId && <div><strong>ID Orden:</strong> {otId}</div>}
         </div>
 
         <table className="otp-tabla">
@@ -364,11 +394,6 @@ const OrdenesDeTrabajo = () => {
             ))}
           </tbody>
         </table>
-
-        <div className="otp-firma">
-          <div className="otp-firma-linea" />
-          <div className="otp-firma-texto">Firma del Cliente</div>
-        </div>
       </div>
     </div>
   );
