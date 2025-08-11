@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import './OrdenesDeTrabajo.css';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import { FaSearch, FaCar, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaHashtag } from 'react-icons/fa';
 import logo from '../assets/logo.png';
 
@@ -29,6 +29,7 @@ const OrdenesDeTrabajo = () => {
     ],
     []
   );
+  const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
   const [placa, setPlaca] = useState('');
   const [proformaNumero, setProformaNumero] = useState('');
@@ -47,7 +48,7 @@ const OrdenesDeTrabajo = () => {
   const convertirFecha = (fechaStr) => {
     if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
     const [mes, dia, anio] = fechaStr.split('/');
-    return new Date(`${anio}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`);
+    return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
   };
 
   // ===== Última OT por placa (con opción de preservar proforma en pantalla) =====
@@ -65,7 +66,7 @@ const OrdenesDeTrabajo = () => {
       }
       if (!snapOT.empty) {
         const docs = snapOT.docs.map(d => ({ id: d.id, ...d.data() }))
-          .sort((a,b) => {
+          .sort((a, b) => {
             const ta = a.createdAt?.toMillis?.() ?? a.updatedAt?.toMillis?.() ?? 0;
             const tb = b.createdAt?.toMillis?.() ?? b.updatedAt?.toMillis?.() ?? 0;
             return tb - ta;
@@ -83,7 +84,7 @@ const OrdenesDeTrabajo = () => {
         }
 
         setReparaciones(Array.isArray(top.reparaciones)
-          ? top.reparaciones.map((r,i)=>({ id:`${top.id}-${i}`, texto: r.texto||String(r) }))
+          ? top.reparaciones.map((r, i) => ({ id: `${top.id}-${i}`, texto: r.texto || String(r) }))
           : []);
       }
     } catch (err) {
@@ -101,7 +102,7 @@ const OrdenesDeTrabajo = () => {
       docs = docs.filter(d => (d.placa || d.vehiculo?.placa || '').toUpperCase() === placaUpper);
       if (docs.length === 0) return null;
     }
-    docs.sort((a,b) => {
+    docs.sort((a, b) => {
       const ta = a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
       const tb = b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
       return tb - ta;
@@ -124,7 +125,7 @@ const OrdenesDeTrabajo = () => {
       setProformaNumero(String(ot.proformaNumero));
     }
 
-    setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r,i)=>({ id:`${ot.id}-${i}`, texto: r.texto||String(r) })) : []);
+    setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
     return ot;
   };
 
@@ -138,7 +139,7 @@ const OrdenesDeTrabajo = () => {
       docs = docs.filter(p => (p.vehiculo?.placa || '').toUpperCase() === placaUpper);
       if (docs.length === 0) return null;
     }
-    docs.sort((a,b)=> convertirFecha(b.fecha) - convertirFecha(a.fecha));
+    docs.sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
     const p = docs[0];
 
     const placaDoc = (p.vehiculo?.placa || placaUpper || '').toUpperCase();
@@ -172,7 +173,7 @@ const OrdenesDeTrabajo = () => {
     const snapPro = await getDocs(qPro);
     if (!snapPro.empty) {
       const docs = snapPro.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a,b)=> convertirFecha(b.fecha) - convertirFecha(a.fecha));
+        .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
       const best = docs[0];
       const info = best.vehiculo || {};
       setVehiculo({ placa: placaUpper, marca: info.marca || '', anio: info.anio || info.ano || '', color: info.color || '' });
@@ -231,7 +232,7 @@ const OrdenesDeTrabajo = () => {
   const agregarReparacion = () => {
     const texto = (reparacion || '').trim();
     if (!texto) return;
-    setReparaciones(prev => [{ id:`${Date.now()}-${Math.random().toString(16).slice(2)}`, texto }, ...prev]);
+    setReparaciones(prev => [{ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, texto }, ...prev]);
     setReparacion('');
   };
 
@@ -242,7 +243,41 @@ const OrdenesDeTrabajo = () => {
     setEditingId(null); setEditingText('');
   };
   const cancelarEdicion = () => { setEditingId(null); setEditingText(''); };
-  const eliminarReparacion = (id) => setReparaciones(prev => prev.filter(r => r.id !== id));
+  const eliminarReparacion = (id) => {
+    toast.info(
+      ({ closeToast }) => (
+        <div className="toast-confirm-container">
+          <p className="toast-confirm-message">¿Estás seguro de eliminar esta reparación?</p>
+          <div className="toast-confirm-buttons">
+            <button
+              className="btn-confirm eliminar"
+              onClick={async () => {
+                await confirmarEliminarReparacion(id);
+                closeToast();
+              }}
+            >
+              Eliminar
+            </button>
+            <button
+              className="btn-confirm cancelar"
+              onClick={closeToast}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        containerId: 'center-toast',
+        className: 'toast-confirm-wrapper'
+      }
+    );
+  };
+
 
   // ===== Guardar / Imprimir =====
   const puedeGuardarOT = !!vehiculo && cono.trim() && reparaciones.length > 0;
@@ -296,8 +331,25 @@ const OrdenesDeTrabajo = () => {
     setReparaciones([]); setEditingId(null); setEditingText(''); setOtId(null);
   };
 
+  const confirmarEliminarReparacion = async (id) => {
+    await withLoading(async () => {
+      await nextFrame();
+      setReparaciones(prev => prev.filter(r => r.id !== id));
+      toast.success('Reparación eliminada', { autoClose: 2000 });
+    }, 'Eliminando reparación…');
+  };
+
+
+
   return (
     <div className="ot-wrapper">
+      <ToastContainer
+        enableMultiContainer
+        containerId="center-toast"
+        className="center-toast-container"
+        newestOnTop
+        closeOnClick={false}
+      />
       <header className="ot-header">
         <div className="ot-header-icon"><FaCar /></div>
         <div>
