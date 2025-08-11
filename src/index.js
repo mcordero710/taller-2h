@@ -13,10 +13,12 @@ import EditarProforma from './pages/EditarProforma';
 import DetalleProforma from './pages/DetalleProforma';
 import Factura from './pages/Factura';
 
-// 👇 NUEVO: Provider global de loading + estilos del loader
-import { LoadingProvider } from './components/ui/LoadingContext';
-import './components/ui/Loader.css'; // Asegúrate de importar los estilos del loader
+// 👇 NUEVO: Ordenes de Trabajo
+import OrdenesDeTrabajo from './pages/OrdenesDeTrabajo';
 
+// Loader global
+import { LoadingProvider } from './components/ui/LoadingContext';
+import './components/ui/Loader.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -25,7 +27,11 @@ root.render(
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+
         <Route path="/" element={<Layout />}>
+          {/* (Opcional) Si quieres que / vaya a /home */}
+          {/* <Route index element={<Navigate to="home" replace />} /> */}
+
           <Route path="home" element={<Home />} />
           <Route path="clientes" element={<Clientes />} />
           <Route path="admin" element={<AdminPanel />} />
@@ -34,7 +40,9 @@ root.render(
           <Route path="proforma/:id" element={<EditarProforma />} />
           <Route path="detalle-proforma" element={<DetalleProforma />} />
           <Route path="factura" element={<Factura />} />
+          <Route path="ordenes" element={<OrdenesDeTrabajo />} />
         </Route>
+
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
