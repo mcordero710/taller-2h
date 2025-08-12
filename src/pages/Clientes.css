@@ -1,189 +1,309 @@
-/* Contenedor principal */
-.clientes-layout {
-  max-width: 1000px;
-  margin: 2rem auto;
-  font-family: 'Segoe UI', sans-serif;
-  padding: 1rem;
-  background-color: #f9f9f9; /* Fondo claro similar al proforma */
-  border: 1px solid #ddd; /* Borde sutil */
-  border-radius: 8px; /* Bordes redondeados */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+:root {
+  --bg: #f7f9fc;
+  --card: #ffffffcc;
+  --stroke: rgba(15, 23, 42, .08);
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #111827;
+  --accent: #0ea5e9;
+  --accent2: #22d3ee;
 }
 
-/* Título principal */
-.clientes-layout h2 {
-  text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #2c3e50; /* Color oscuro para el texto */
-  margin-bottom: 1.5rem;
+/* reset */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+/* Página */
+.clientes-page {
+  min-height: 100svh;
+  padding: 24px;
+  background:
+    radial-gradient(800px 500px at 5% -10%, #e0f2fe 0, transparent 40%),
+    radial-gradient(800px 500px at 105% 40%, #fee2e2 0, transparent 38%),
+    linear-gradient(180deg, #f8fafc, #eef2f7);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
-/* Botón agregar cliente */
-.boton-agregar {
-  background-color: #2c3e50; /* Color principal del botón */
-  color: white;
-  font-weight: 500;
-  border: none;
-  padding: 0.4rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  display: block;
-  width: fit-content;
+/* Card principal */
+.clientes-card {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, .08), 0 2px 6px rgba(2, 6, 23, .06);
+  padding: 18px 18px 12px;
+}
+
+/* Header */
+.clientes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 4px 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.clientes-header h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: .3px;
+  color: var(--primary);
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+}
+
+.counter {
   margin-left: auto;
-  margin-right: 0.5rem;
-  margin-bottom: 1rem;
-  transition: background-color 0.3s ease;
+  font-size: 13px;
+  color: var(--muted);
 }
 
-.boton-agregar:hover {
-  background-color: #1abc9c; /* Color al pasar el mouse */
+/* Buscador */
+.search { position: relative; width: min(420px, 100%); }
+
+.search-input {
+  width: 100%;
+  padding: 10px 40px 10px 36px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 14px;
+  transition: border-color .15s, box-shadow .15s;
 }
 
-/* Tabla de clientes */
+.search-input::placeholder { color: #9aa5b1; }
+
+.search-input:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, .15);
+}
+
+.search-icon {
+  position: absolute; left: 10px; top: 50%;
+  transform: translateY(-50%); color: #94a3b8;
+}
+
+.search-clear {
+  position: absolute; right: 6px; top: 50%;
+  transform: translateY(-50%);
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border: 0; background: transparent; border-radius: 8px; cursor: pointer;
+}
+
+/* Botón Agregar (compacto) */
+.boton-agregar {
+  --bg1: #0b1220; --bg2: #0f172a; --ring: rgba(14, 165, 233, .35);
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .68rem 1rem; border-radius: 12px; font-weight: 700; font-size: .98rem;
+  color: #fff; background-image: linear-gradient(135deg, var(--bg2), var(--bg1) 85%);
+  border: 1px solid rgba(15, 23, 42, .8);
+  box-shadow: 0 8px 18px rgba(2, 6, 23, .12), inset 0 0 0 1px rgba(255, 255, 255, .04);
+  cursor: pointer; transition: transform .06s, filter .15s, box-shadow .15s;
+}
+.boton-agregar::before {
+  content: "+"; display: inline-grid; place-items: center;
+  width: 26px; height: 26px; border-radius: 999px; font-weight: 900;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.boton-agregar:hover { filter: brightness(1.06); }
+.boton-agregar:active { transform: translateY(1px); }
+.boton-agregar:focus-visible { outline: 0; box-shadow: 0 0 0 4px var(--ring); }
+.boton-agregar--sm { width:auto!important; padding:6px 10px; font-size:.88rem; border-radius:10px; gap:.4rem; }
+.boton-agregar--sm::before { width:20px; height:20px; font-size:13px; }
+
+/* Botones genéricos */
+.btn-primary {
+  display:inline-flex; align-items:center; gap:8px;
+  background-image: linear-gradient(135deg, var(--primary), #0b1220 75%);
+  color:#fff; border:1px solid #0b1220; padding:10px 14px; border-radius:12px; font-weight:700;
+  transition: filter .15s, transform .06s;
+}
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-primary:active { transform: translateY(1px); }
+
+.btn-light {
+  background:#fff; border:1px solid #e5e7eb; color:var(--primary);
+  padding:10px 14px; border-radius:12px; font-weight:600;
+}
+
+.btn-icon {
+  width:28px; height:28px; display:inline-grid; place-items:center;
+  border:1px solid #e5e7eb; background:#fff; border-radius:10px; cursor:pointer;
+  transition: transform .06s, filter .15s;
+}
+.btn-icon:hover { filter: brightness(1.05); }
+.btn-icon:active { transform: translateY(1px); }
+.btn-icon--edit { border-color:#dbe3ee; }
+.btn-icon--edit svg { width:14px; height:14px; color:#111827; }
+
+/* Tabla */
+.table-wrap {
+  margin-top: 8px;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
 .tabla-clientes {
   width: 100%;
-  border-collapse: collapse;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Sombra ligera */
-  margin-top: 2rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  table-layout: fixed; /* mantenemos fixed */
 }
 
-.tabla-clientes th,
-.tabla-clientes td {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0; /* Borde gris claro */
+.tabla-clientes thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: #0f172a; color: #fff; text-align: left; padding: 12px;
 }
 
-.tabla-clientes thead {
-  background-color: #2c3e50; /* Fondo de encabezado oscuro */
-  color: white;
+.tabla-clientes tbody td {
+  padding: 12px; border-top: 1px solid #f1f5f9; vertical-align: middle;
 }
 
-.tabla-clientes tbody tr:hover {
-  background-color: #f7fafc; /* Fondo suave al pasar el mouse */
+.tabla-clientes tbody tr:nth-child(odd) { background: #fafafa; }
+.tabla-clientes tbody tr:hover { background: #f1f5ff; }
+
+/* Acciones: ancho mayor y centrado */
+.th-actions {
+  width: 96px;
+  min-width: 96px;
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
 }
+.td-actions {
+  width: 96px;
+  min-width: 96px;
+  padding-left: 2px;
+  padding-right: 2px;
+  display: grid;
+  place-items: center;
+  gap: 0;
+  text-align: center;
+}
+/* Texto del th de acciones */
+.th-actions-text {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Vacío */
+.empty { text-align: center; color: var(--muted); padding: 20px; }
 
 /* Modal */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.45);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(8, 15, 35, .45); backdrop-filter: blur(2px);
+  display: grid; place-items: center; padding: 16px;
+}
+.modal, .modal-content {
+  width: min(680px, 100%); background:#fff; border-radius:16px;
+  border:1px solid #e5e7eb; box-shadow:0 24px 60px rgba(2,6,23,.22); padding:16px;
+}
+.modal-head {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:4px 4px 10px; border-bottom:1px solid #eef2f7;
+}
+.modal-head h3, .modal-content h3 {
+  margin:0 0 12px; font-size:18px; color:var(--primary); font-weight:800;
 }
 
-.modal-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+/* Form del modal */
+.modal-form, .formulario {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding-top:4px;
+}
+.modal-form label, .formulario label { display:grid; gap:6px; font-size:13px; color:var(--primary); }
+.modal-form input, .formulario input {
+  width:100%; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb;
+  font-size:14px; background:#fff;
+}
+.modal-form input:focus, .formulario input:focus {
+  outline:0; border-color:var(--accent); box-shadow:0 0 0 4px rgba(14,165,233,.15);
+}
+.span-2 { grid-column: span 2; }
+
+/* Acciones modal */
+.modal-actions, .acciones {
+  display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:.5rem;
+}
+.modal-actions .btn-primary, .modal-actions .btn-light, .acciones button {
+  width:100%; display:inline-flex; align-items:center; justify-content:center; text-align:center;
+  line-height:1; padding:12px 16px; border-radius:12px;
+}
+.acciones .cancelar { background:#fff; color:var(--primary); border:1px solid #e5e7eb; }
+.modal-actions button[type="submit"], .acciones button[type="submit"] {
+  color:#fff; background-image: linear-gradient(135deg, #0f172a, #0b1220 85%);
+  border-color: rgba(15, 23, 42, .85);
+  box-shadow: 0 8px 18px rgba(2, 6, 23, .12), inset 0 0 0 1px rgba(255, 255, 255, .05);
+}
+.modal-actions button[type="submit"]:hover, .acciones button[type="submit"]:hover { filter: brightness(1.05); }
+.modal-actions button[type="submit"]:active, .acciones button[type="submit"]:active { transform: translateY(1px); }
+.modal-actions button[type="submit"]:focus-visible, .acciones button[type="submit"]:focus-visible { outline:0; box-shadow:0 0 0 4px rgba(14,165,233,.35); }
+
+/* Anchos por columna */
+.tabla-clientes th:nth-child(1), .tabla-clientes td:nth-child(1) { width: 120px; }   /* Cédula */
+.tabla-clientes th:nth-child(2), .tabla-clientes td:nth-child(2) { width: 150px; }   /* Nombre */
+.tabla-clientes th:nth-child(3), .tabla-clientes td:nth-child(3) { width: 150px; }   /* Apellido */
+.tabla-clientes th:nth-child(4), .tabla-clientes td:nth-child(4) { width: 120px; }   /* Teléfono */
+
+/* Correo compacto con elipsis (ajustado para dar espacio a Acciones) */
+.tabla-clientes th:nth-child(5),
+.tabla-clientes td:nth-child(5) {
+  width: 190px;
+  max-width: 190px;
+}
+.email-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; }
+
+/* Responsive */
+@media (max-width:720px) {
+  .clientes-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .toolbar { flex-wrap: wrap; }
+  .modal-form, .formulario { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
 }
 
-.modal-content h3 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  font-size: 1.5rem;
-  color: #2d3748; /* Color oscuro para el texto */
+/* Centrar el título "Acciones" explícitamente */
+.tabla-clientes thead th.th-actions { text-align: center !important; padding-left: 4px; padding-right: 4px; }
+
+/* Variante responsive: mostrar “Acc” en lugar de “Acciones” */
+@media (max-width: 1024px) {
+  .th-actions .th-actions-text { display: none; }
+  .th-actions::after { content: "Acc"; font-weight: 700; }
 }
 
-/* Estilos de los campos de formulario */
-.formulario input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 1rem;
-}
+/* Utilidad: centrar toda la columna cuando el <th> tiene .is-center */
+.tabla-clientes thead th.is-center { text-align: center; }
 
-/* Estilos de las acciones en el modal */
-.acciones {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.acciones button {
-  flex: 1;
-  padding: 0.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.acciones .cancelar {
-  background-color: #e53e3e; /* Rojo para el botón de cancelar */
-  color: white;
-}
-
-.acciones button[type="submit"] {
-  background-color: #2c3e50; /* Botón de submit con el color principal */
-  color: white;
-}
-
-/* Barra superior con búsqueda */
-.barra-superior {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  gap: 1rem;
-}
-
-/* Contenedor de búsqueda */
-.contenedor-busqueda {
-  position: relative;
-  width: 250px; /* Puedes ajustar el tamaño aquí */
-}
-
-.icono-lupa {
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  transform: translateY(-50%);
-  font-size: 1rem;
-  color: #718096;
-  pointer-events: none;
-}
-
-.input-busqueda {
-  width: 100%;
-  padding: 0.4rem 0.75rem;
-  padding-left: 2rem; /* Espacio para el ícono */
-  font-size: 0.95rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-}
-
-/* Ajustes para pantallas pequeñas */
-@media (max-width: 768px) {
-  .clientes-layout {
-    padding: 1rem;
-  }
-
-  .clientes-layout h2 {
-    font-size: 1.75rem; /* Ajustar el tamaño del título */
-  }
-
-  .tabla-clientes {
-    font-size: 0.85rem; /* Ajustar tamaño de fuente de la tabla */
-  }
-
-  .modal-content {
-    width: 100%; /* Hacer el modal más pequeño en pantallas pequeñas */
-  }
-}
+/* Aplica a las celdas del body según la posición del <th> centrado */
+.tabla-clientes:has(thead th.is-center:nth-child(1)) tbody td:nth-child(1),
+.tabla-clientes:has(thead th.is-center:nth-child(2)) tbody td:nth-child(2),
+.tabla-clientes:has(thead th.is-center:nth-child(3)) tbody td:nth-child(3),
+.tabla-clientes:has(thead th.is-center:nth-child(4)) tbody td:nth-child(4),
+.tabla-clientes:has(thead th.is-center:nth-child(5)) tbody td:nth-child(5),
+.tabla-clientes:has(thead th.is-center:nth-child(6)) tbody td:nth-child(6) { text-align: center; }
