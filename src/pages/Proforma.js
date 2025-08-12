@@ -24,6 +24,7 @@ const Proforma = () => {
   const [fecha, setFecha] = useState(null);
   const [proformaId, setProformaId] = useState(null);
   const [buscarProforma, setBuscarProforma] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const location = useLocation();
   const proformaDesdeDetalle = location.state?.proforma;
@@ -44,18 +45,20 @@ const Proforma = () => {
   };
 
   const handleBuscarProforma = async (numero) => {
+    setIsLoading(true);  // Activar el loading
     try {
       const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(numero)));
       const snapshot = await getDocs(q);
-
+  
       if (snapshot.empty) {
         toast.error(`No se encontró la proforma #${numero}`);
+        setIsLoading(false); // Desactivar el loading
         return;
       }
-
+  
       const docSnap = snapshot.docs[0];
       const data = docSnap.data();
-
+  
       setNumeroProforma(data.numero);
       setCedula(data.cliente?.cedula || '');
       setCliente(data.cliente);
@@ -72,8 +75,11 @@ const Proforma = () => {
     } catch (error) {
       console.error("Error al buscar proforma:", error);
       toast.error('Ocurrió un error al cargar la proforma');
+    } finally {
+      setIsLoading(false); // Desactivar el loading
     }
   };
+  
 
   useEffect(() => {
     if (cedula === '') {
@@ -270,42 +276,50 @@ const Proforma = () => {
 
   return (
     <div className="proforma-page">
-      <ToastContainer
-        enableMultiContainer
-        containerId="center-toast"
-        className="center-toast-container"
-        newestOnTop
-        closeOnClick={false}
-      />
+    <ToastContainer
+      enableMultiContainer
+      containerId="center-toast"
+      className="center-toast-container"
+      newestOnTop
+      closeOnClick={false}
+    />
 
-      <div className="proforma-wrapper" id="proformaPrintable">
-        {/* Head */}
-        <header className="proforma-head">
-          <div className="head-left">
-            <div className="proforma-logo">
-              <img src={logo} alt="Logo Taller 2H" className="logo" />
-            </div>
-            <div className="brand-text">
-              <h2>Proforma</h2>
-              <p className="subtitle">Genera y administra presupuestos.</p>
-            </div>
+    {/* Mostrar el spinner de carga mientras isLoading sea true */}
+    {isLoading && (
+      <div className="loading-overlay">
+        <div className="spinner"></div>
+        <p>Buscando proforma...</p>
+      </div>
+    )}
+
+    <div className="proforma-wrapper" id="proformaPrintable">
+      {/* Contenido de la página */}
+      <header className="proforma-head">
+        <div className="head-left">
+          <div className="proforma-logo">
+            <img src={logo} alt="Logo Taller 2H" className="logo" />
           </div>
-          <div className="head-right">
-            <button
-              className="boton-guardar"
-              onClick={handleGuardarProforma}
-              disabled={!isClienteLoaded || proformaGuardada}
-            >
-              <FontAwesomeIcon icon={faSave} /> Guardar
-            </button>
-            <button className="boton-nueva" onClick={handleNuevaProforma}>
-              <FontAwesomeIcon icon={faPlus} /> Nueva
-            </button>
-            <button className="boton-descargar" onClick={handleDescargarPDF}>
-              <FontAwesomeIcon icon={faDownload} /> PDF
-            </button>
+          <div className="brand-text">
+            <h2>Proforma</h2>
+            <p className="subtitle">Genera y administra presupuestos.</p>
           </div>
-        </header>
+        </div>
+        <div className="head-right">
+          <button
+            className="boton-guardar"
+            onClick={handleGuardarProforma}
+            disabled={!isClienteLoaded || proformaGuardada}
+          >
+            <FontAwesomeIcon icon={faSave} /> Guardar
+          </button>
+          <button className="boton-nueva" onClick={handleNuevaProforma}>
+            <FontAwesomeIcon icon={faPlus} /> Nueva
+          </button>
+          <button className="boton-descargar" onClick={handleDescargarPDF}>
+            <FontAwesomeIcon icon={faDownload} /> PDF
+          </button>
+        </div>
+      </header>
 
         {/* Toolbar */}
         <div className="proforma-toolbar">
