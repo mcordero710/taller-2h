@@ -1,448 +1,546 @@
-/* Contenedor principal */
+:root {
+  --bg: #f7f9fc;
+  --card: #ffffffcc;
+  --stroke: rgba(15, 23, 42, .08);
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #111827;
+  --accent: #0ea5e9;
+}
+
+/* Página con fondo suave */
+.proforma-page {
+  min-height: 100svh;
+  padding: 24px;
+  background:
+    radial-gradient(800px 500px at 5% -10%, #e0f2fe 0, transparent 40%),
+    radial-gradient(800px 500px at 105% 40%, #fee2e2 0, transparent 38%),
+    linear-gradient(180deg, #f8fafc, #eef2f7);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* Card principal */
 .proforma-wrapper {
-  max-width: 900px;
-  margin: auto;
-  padding: 1rem;
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
-  /* Fondo claro */
-  border: 1px solid #ddd;
-  /* Borde sutil */
-  border-radius: 8px;
-  /* Bordes redondeados */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  /* Sombra ligera */
+  max-width: 1100px;
+  margin: 0 auto;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, .08), 0 2px 6px rgba(2, 6, 23, .06);
+  padding: 18px;
 }
 
-/* Encabezado */
-.proforma-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-/* Sección superior */
-.proforma-top {
+/* Head */
+.proforma-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eef2f7;
 }
 
-.proforma-logo {
+.head-left {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .proforma-logo img {
-  width: 150px;
-  height: auto;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
 }
 
-.proforma-contact {
-  text-align: right;
-  font-size: 0.9rem;
-  color: #555;
+.brand-text h2 {
+  margin: 0;
+  font-size: 26px;
+  color: var(--primary);
+  letter-spacing: .2px;
 }
 
-/* Información general */
-.proforma-info,
-.vehiculo-detalle {
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-  color: #333;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
+.subtitle {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
 }
 
-.proforma-info label,
-.vehiculo-detalle label {
-  font-weight: bold;
-  color: #2c3e50;
+.head-right button {
+  margin-left: 6px;
 }
 
-.proforma-info input,
-.vehiculo-detalle input {
-  padding: 0.3rem;
-  font-size: 0.9rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Tabla */
-.proforma-tabla {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.proforma-tabla th {
-  background-color: #2c3e50;
-  color: white;
-  padding: 0.5rem;
-  text-align: left;
-}
-
-.proforma-tabla td {
-  border: 1px solid #ccc;
-  padding: 0.5rem;
-  text-align: center; /* Asegura que el contenido de la celda esté centrado */
-}
-
-/* Estilo para los campos de entrada en la tabla */
-.proforma-tabla input[type="text"],
-.proforma-tabla input[type="number"] {
-  width: 100%;
-  padding: 0.4rem;
-  font-size: 0.9rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.proforma-tabla input[type="text"]:focus,
-.proforma-tabla input[type="number"]:focus {
-  outline: none;
-  border-color: #2c3e50;
-  box-shadow: 0 0 4px rgba(44, 62, 80, 0.5);
-}
-
-.proforma-tabla tr:nth-child(even) {
-  background-color: #f2f2f2;
-}
-
-/* Botones de acción */
-.proforma-actions {
-  margin-top: 1rem;
-  text-align: right;
-}
-
-.proforma-actions button {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  color: white;
-  background-color: #2c3e50;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.proforma-actions button:hover {
-  background-color: #1abc9c;
-}
-
-/* IVA Checkbox */
-.iva-section {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  font-size: 1rem;
-  color: #2c3e50;
-}
-
-.iva-section label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-}
-
-.iva-section input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #2c3e50;
-  border: 1px solid #cbd5e0;
-  border-radius: 4px;
-}
-
-.iva-section p {
-  margin-top: 0.5rem;
-  font-size: 0.95rem;
-  color: #555;
-}
-
-/* Factura Electrónica Section */
-.factura-electronica-section {
-  display: flex;
-  align-items: center;
-  margin-top: 1rem;
-  font-size: 1rem;
-  color: #333;
-}
-
-.factura-electronica-section input {
-  margin-right: 0.5rem;
-  vertical-align: middle;
-}
-
-.factura-electronica-section label {
-  font-weight: normal;
-  margin-bottom: 0;
-}
-
-/* Footer */
-.proforma-footer {
-  margin-top: 2rem;
-  padding: 1rem;
-  background-color: #f9f9f9;
-  border-top: 1px solid #ddd;
-  font-size: 0.9rem;
-  color: #2c3e50;
-}
-
-.proforma-footer p {
-  margin: 0.5rem 0;
-}
-
-.proforma-gracias {
-  text-align: center;
-  margin-top: 1.5rem;
-  font-size: 1rem;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-/* Botón de eliminar con ícono */
-.boton-eliminar {
-  background-color: transparent;
-  border: 2px solid #e53e3e;
-  color: #e53e3e;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 40px;
-  height: 40px;
-  margin: auto; /* Centra el botón en su contenedor */
-}
-
-.boton-eliminar:hover {
-  background-color: #ffe5e5;
-  color: #c53030;
-  border-color: #c53030;
-}
-
-/* Botón Descargar PDF */
-.boton-descargar {
-  background-color: #2c3e50;
-  color: white;
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.boton-descargar:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
-}
-
-.boton-descargar:focus {
-  outline: none;
-  box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
-}
-
-/* Botón Guardar Proforma */
-.boton-guardar {
-  margin-top: 15px;
-  background-color: #2c3e50;
-  color: white;
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.boton-guardar:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
-}
-
-.boton-guardar:focus {
-  outline: none;
-  box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
-}
-
-.boton-guardar:disabled {
-  background-color: #ccc;
-  color: #666;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-
-/* Botón Nueva Proforma */
-.boton-nueva {
-  margin-top: 15px;  /* Espacio superior entre los botones */
-  background-color: #2c3e50;
-  color: white;
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.boton-nueva:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
-}
-
-.boton-nueva:focus {
-  outline: none;
-  box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
-}
-
-.boton-nueva:disabled {
-  background-color: #ccc;  /* Color de fondo cuando está deshabilitado */
-  cursor: not-allowed;     /* Cursor de no permitido */
-  opacity: 0.6;            /* Opacidad reducida */
-  pointer-events: none;    /* Deshabilita los eventos de clic */
-}
-
+/* Botones principales */
 .boton-descargar,
 .boton-guardar,
 .boton-nueva {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
-  font-weight: bold;
-  background-color: #2c3e50;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  padding: .48rem .8rem;
+  font-size: .92rem;
+  font-weight: 700;
+  background: #0f172a;
+  color: #fff;
+  border: 1px solid #0b1220;
+  border-radius: 12px;
   cursor: pointer;
-  white-space: nowrap;
-  width: auto;         /* 🔹 evita que se estiren */
-  min-width: fit-content;
-  max-width: 200px;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition: filter .15s, transform .06s;
 }
 
 .boton-descargar:hover,
 .boton-guardar:hover,
 .boton-nueva:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
+  filter: brightness(1.05);
+}
+
+.boton-descargar:active,
+.boton-guardar:active,
+.boton-nueva:active {
+  transform: translateY(1px);
 }
 
 .boton-guardar:disabled,
 .boton-nueva:disabled {
-  background-color: #ccc;
-  color: #666;
+  background: #cbd5e1;
+  border-color: #cbd5e1;
   cursor: not-allowed;
-  transform: none;
-  opacity: 0.7;
 }
 
-.boton-descargar,
-.boton-guardar,
-.boton-nueva {
-  margin-left: 5px;
+/* Toolbar */
+.proforma-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 10px;
 }
 
-/* Ajuste específico para el label e input de Cédula Cliente */
-.cliente-info label[for="cedula"] {
-  margin-bottom: 0.5rem; /* Espacio entre el label y el input */
-  margin-top: 1rem; /* Espacio superior para separar el label del resto */
+.datos-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.cliente-info input#cedula {
-  margin-top: 0.5rem; /* Espacio superior para el input */
-  padding: 0.5rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  width: 100%; /* Asegura que el input ocupe todo el ancho disponible */
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #1e293b;
+  font-weight: 700;
+  border: 1px solid #e5e7eb;
 }
 
-/* Ajustes para pantallas pequeñas */
-@media (max-width: 768px) {
-  .cliente-info p {
-    flex: 1 1 100%; /* Los elementos ocupan el 100% del ancho en pantallas pequeñas */
-    margin-bottom: 1rem; /* Espaciado entre los elementos */
-  }
-
-  .cliente-info label[for="cedula"] {
-    margin-top: 1.5rem; /* Más espacio superior en pantallas pequeñas */
-  }
+.fecha-mini {
+  color: #475569;
+  font-size: 14px;
 }
 
+/* Buscar proforma */
 .buscar-proforma {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  margin: 1rem 0;
+  gap: 8px;
 }
 
 .buscar-proforma label {
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 0.4rem;
+  font-size: 12px;
+  color: #475569;
 }
 
-.buscar-proforma input {
-  padding: 0.4rem 0.6rem;
-  font-size: 0.9rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 80px;
-  box-sizing: border-box;
-  text-align: center; 
+.buscar-proforma .input-buscar {
+  width: 96px;
+  text-align: center;
+  padding: .4rem .5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: .9rem;
+  background: #fff;
 }
 
+.buscar-proforma .input-buscar:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, .15);
+}
 
+/* Grid info */
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
 
+.card-section {
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 2px 6px rgba(2, 6, 23, .04);
+}
+
+.card-section h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.card-section label {
+  display: block;
+  font-size: 13px;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.card-section input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 14px;
+}
+
+.card-section input:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, .15);
+}
+
+.vehiculo-detalle {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* Tabla */
+.tabla-wrap {
+  margin-top: 12px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.tabla-headbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.tabla-headbar h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.btn-add {
+  padding: .42rem .8rem;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-add:hover {
+  filter: brightness(1.03);
+}
+
+.proforma-tabla {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  table-layout: fixed;
+}
+
+.proforma-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #0f172a;
+  color: #fff;
+  text-align: left;
+  padding: 12px;
+}
+
+.proforma-tabla tbody td {
+  padding: 12px;
+  border-top: 1px solid #f1f5f9;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.proforma-tabla tbody tr:nth-child(odd) {
+  background: #fafafa;
+}
+
+.proforma-tabla tbody tr:hover {
+  background: #f1f5ff;
+}
+
+.proforma-tabla input[type="text"],
+.proforma-tabla input[type="number"] {
+  width: 100%;
+  padding: .45rem .55rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.proforma-tabla input:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, .15);
+}
+
+/* Botón icono (eliminar) */
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .06s, filter .15s, background .15s, color .15s, border-color .15s;
+  font-weight: 700;
+}
+
+.btn-icon:hover {
+  filter: brightness(1.03);
+}
+
+.btn-icon:active {
+  transform: translateY(1px);
+}
+
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-icon--danger {
+  border-color: #ffe4e6;
+  color: #b91c1c;
+}
+
+.btn-icon--danger:hover {
+  background: #ffe4e6;
+  border-color: #fecdd3;
+}
+
+/* Totales */
+.totales-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.card-totales {
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 6px rgba(2, 6, 23, .04);
+  min-width: 260px;
+}
+
+.card-totales p {
+  margin: .35rem 0;
+}
+
+.card-totales .total-line {
+  font-size: 18px;
+}
+
+/* ===== Switch IVA (toggle) ===== */
+.iva-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  display: inline-block;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .slider {
+  position: absolute;
+  inset: 0;
+  background: #e5e7eb;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px #d1d5db;
+  transition: background .2s ease, box-shadow .2s ease;
+}
+
+.switch .slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+  transition: transform .2s ease;
+}
+
+.switch input:checked+.slider {
+  background: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, .2);
+}
+
+.switch input:checked+.slider::before {
+  transform: translateX(20px);
+}
+
+.switch input:focus-visible+.slider {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, .25);
+}
+
+.switch-label {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Footer */
+.proforma-footer {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+}
+
+.proforma-footer h4 {
+  margin: .2rem 0 .6rem;
+}
+
+.proforma-gracias {
+  text-align: center;
+  margin-top: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Estados vacíos */
+.empty {
+  text-align: center;
+  color: #64748b;
+  padding: 18px;
+}
+
+/* ===== Confirmación estándar (igual a Órdenes de Trabajo) ===== */
+.toast-confirm-wrapper {
+  width: 420px;
+  max-width: 92vw;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .18);
+  padding: 12px !important;
+  background: #fff !important;
+  border: 1px solid #eef2f7;
+}
+
+.toast-confirm-container {
+  display: grid;
+  gap: 12px;
+}
+
+.toast-confirm-message {
+  margin: 0;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.45;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.toast-confirm-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter .15s, transform .05s;
+}
+
+.btn-confirm:active {
+  transform: translateY(1px);
+}
+
+.btn-confirm.eliminar {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.btn-confirm.eliminar:hover {
+  filter: brightness(1.05);
+}
+
+.btn-confirm.cancelar {
+  background: #fff;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.btn-confirm.cancelar:hover {
+  filter: brightness(1.03);
+}
+
+/* Print */
 @media print {
-  /* Esconder el botón de Descargar PDF */
-  .boton-descargar {
+
+  .boton-descargar,
+  .iva-section,
+  .proforma-toolbar {
     display: none !important;
   }
 
-  .iva-section {
-    display: none !important;
-  }
-
-  /* Esconder los botones de eliminar */
-  .boton-eliminar {
-    display: none !important;
-  }
-
-  /* Esconder la columna de eliminar en la tabla (4ta columna) */
   .proforma-tabla th:nth-child(4),
   .proforma-tabla td:nth-child(4) {
     display: none !important;
   }
-
-  /* Esconder toda la fila de la columna "Eliminar" */
-  .proforma-tabla td:nth-child(4),
-  .proforma-tabla th:nth-child(4) {
-    visibility: hidden !important;
-  }
-  
 }
 
+@media (max-width:900px) {
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+}
