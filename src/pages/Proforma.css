@@ -240,18 +240,49 @@
   color: #0f172a;
 }
 
+/* Botón "Agregar" con los mismos colores que los otros botones */
+/* Botón "Agregar" con los mismos colores que los otros botones */
 .btn-add {
-  padding: .42rem .8rem;
+  padding: .42rem 1rem;
+  /* Ajustado tamaño fijo */
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
+  border: 1px solid #0b1220;
+  /* Color similar a los otros botones */
+  background: #0f172a;
+  /* Fondo oscuro igual a los otros botones */
+  color: #fff;
+  /* Texto blanco */
   cursor: pointer;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: filter .15s, transform .06s;
+  visibility: visible;
+  /* Asegura que el botón sea siempre visible */
+  width: auto;
+  /* El ancho se ajusta al contenido */
 }
 
 .btn-add:hover {
-  filter: brightness(1.03);
+  filter: brightness(1.05);
+  /* Efecto de brillo al pasar el cursor */
+  background: #10b981;
+  /* Fondo verde, igual al de los otros botones */
 }
+
+.btn-add:active {
+  transform: translateY(1px);
+  /* Efecto al hacer clic */
+}
+
+.btn-add:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.3);
+  /* Efecto de enfoque */
+}
+
+
 
 .proforma-tabla {
   width: 100%;
