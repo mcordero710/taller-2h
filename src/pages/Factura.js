@@ -323,6 +323,34 @@ const Factura = () => {
       await withLoading(async () => {
         const copia = original.cloneNode(true);
 
+        // --- estilos para PDF con colores (encabezados azules) ---
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+          .factura-pdf, .factura-pdf * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .factura-tabla-resumen thead th,
+          .historial-abonos thead th,
+          .historial-gastos thead th {
+            background: #0f172a !important;
+            color: #ffffff !important;
+          }
+        `;
+        copia.insertBefore(styleEl, copia.firstChild);
+
+        // Fallback extra: pintamos inline por si algún motor ignora la hoja <style>
+        copia
+          .querySelectorAll(
+            '.factura-tabla-resumen thead th, .historial-abonos thead th, .historial-gastos thead th'
+          )
+          .forEach((th) => {
+            th.style.background = '#0f172a';
+            th.style.color = '#fff';
+          });
+        // --- fin estilos para PDF con colores ---
+
+        // Header con logo + datos
         const header = document.createElement('div');
         header.setAttribute(
           'style',
@@ -335,7 +363,10 @@ const Factura = () => {
         logoImg.setAttribute('style', 'width:120px; height:auto;');
 
         const rightBox = document.createElement('div');
-        rightBox.setAttribute('style', 'text-align:right; font-size:12px; color:#333; line-height:1.3;');
+        rightBox.setAttribute(
+          'style',
+          'text-align:right; font-size:12px; color:#333; line-height:1.3;'
+        );
         rightBox.innerHTML = `
           <div><strong></strong>Taller automotriz 2H S.A</div>
           <div><strong>Tel:</strong> 62756427</div>
@@ -348,19 +379,22 @@ const Factura = () => {
         header.appendChild(rightBox);
         copia.insertBefore(header, copia.firstChild);
 
-        copia.querySelectorAll(
-          'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
-        ).forEach(el => el.remove());
-
-        copia.querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child')
-          .forEach(col => col.style.display = 'none');
+        // Quitamos controles/inputs del clon
+        copia
+          .querySelectorAll(
+            'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
+          )
+          .forEach((el) => el.remove());
+        copia
+          .querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child')
+          .forEach((col) => (col.style.display = 'none'));
 
         const opt = {
           margin: 0.5,
           filename: `Factura-Proforma-${numeroProforma}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 3, useCORS: true, backgroundColor: null },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+          html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
         };
 
         await html2pdf().set(opt).from(copia).save();
@@ -369,6 +403,7 @@ const Factura = () => {
       setIsGeneratingPdf(false);
     }
   };
+
 
   const onBuscarKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -418,7 +453,7 @@ const Factura = () => {
         {proforma && (
           <div id="factura-pdf" className="factura-pdf">
             <div className="factura-contacto-cliente">
-              
+
 
               {cliente && (
                 <div className="factura-cliente">
