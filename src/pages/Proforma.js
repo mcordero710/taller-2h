@@ -300,27 +300,27 @@ const Proforma = () => {
   
         const element = original.cloneNode(true);
   
-        // Ocultar controles (incluye "+ Agregar")
+        // 1) Ocultar controles/acciones
         element
           .querySelectorAll(
             '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
           )
           .forEach((el) => el && (el.style.display = 'none'));
   
-        // Ocultar columna de acciones
+        // ocultar columna de acciones en tabla
         element
           .querySelectorAll('th:nth-child(4), td:nth-child(4)')
           .forEach((col) => (col.style.display = 'none'));
   
-        // Ocultar sección de IVA
+        // ocultar toggle IVA en impresión
         const ivaSection = element.querySelector('.iva-section');
         if (ivaSection) ivaSection.style.display = 'none';
   
-        // ⬇️ Ocultar el subtítulo "Genera y administra presupuestos."
+        // ocultar subtítulo
         const subtitle = element.querySelector('.brand-text .subtitle');
         if (subtitle) subtitle.style.display = 'none';
   
-        // ⬅️ Contacto para impresión (se inserta debajo del header existente)
+        // 2) Bloque de información de contacto bajo el header
         (() => {
           const head = element.querySelector('.proforma-head');
           const contacto = document.createElement('div');
@@ -329,19 +329,82 @@ const Proforma = () => {
             'display:flex;flex-wrap:wrap;gap:18px;margin:8px 0 12px 0;font-size:12px;color:#333;'
           );
           contacto.innerHTML = `
-            <div><strong>Tel:</strong> (506) 2222-2222</div>
-            <div><strong>Email:</strong> info@taller2h.com</div>
-            <div><strong>Dirección:</strong> San José, Costa Rica</div>
-            <div><strong>Cédula Jurídica:</strong> 123145644</div>
+            <div><strong></strong>Taller automotriz 2H S.A</div>
+            <div><strong>Tel:</strong>62756427</div>
+            <div><strong>Email:</strong>taller2hrosario@gmail.com</div>
+            <div><strong>Cédula Jurídica:</strong>3-101-930294</div>
           `;
-          if (head && head.parentNode) {
-            head.parentNode.insertBefore(contacto, head.nextSibling);
-          } else {
-            element.insertBefore(contacto, element.firstChild);
-          }
+          if (head && head.parentNode) head.parentNode.insertBefore(contacto, head.nextSibling);
+          else element.insertBefore(contacto, element.firstChild);
         })();
   
-        // (opcional) si quieres forzar tamaño del logo en el PDF:
+        // 3) Cliente y Vehículo como texto limpio (sin inputs)
+        const makeRow = (label, value = '') => {
+          const row = document.createElement('div');
+          row.setAttribute(
+            'style',
+            'display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:14px;'
+          );
+          const l = document.createElement('strong');
+          l.textContent = `${label}:`;
+          l.setAttribute('style', 'min-width:140px;color:#0f172a;');
+          const v = document.createElement('span');
+          v.textContent = value ?? ''; // si no hay, queda vacío
+          v.setAttribute('style', 'color:#334155;white-space:pre-wrap;');
+          row.appendChild(l);
+          row.appendChild(v);
+          return row;
+        };
+  
+        // 3.a) Sección Cliente
+        (() => {
+          const clienteCard = Array.from(element.querySelectorAll('.card-section'))
+            .find(sec => (sec.querySelector('h3')?.textContent || '').toLowerCase().includes('cliente'));
+          if (!clienteCard) return;
+  
+          // limpiar todo y reconstruir
+          clienteCard.innerHTML = '';
+          const title = document.createElement('h3');
+          title.textContent = 'Cliente';
+          title.setAttribute('style', 'margin:0 0 8px;font-size:16px;color:#0f172a;');
+          const block = document.createElement('div');
+          block.setAttribute('style', 'padding:4px 2px;');
+  
+          block.appendChild(makeRow('Cédula', (cedula || '').toString()));
+          block.appendChild(makeRow('Nombre', cliente ? `${cliente.nombre ?? ''} ${cliente.apellido ?? ''}`.trim() : ''));
+          block.appendChild(makeRow('Teléfono', cliente?.telefono ?? ''));
+          block.appendChild(makeRow('Correo', cliente?.correo ?? ''));
+  
+          clienteCard.appendChild(title);
+          clienteCard.appendChild(block);
+        })();
+  
+        // 3.b) Sección Vehículo
+        (() => {
+          const vehiculoCard = Array.from(element.querySelectorAll('.card-section'))
+            .find(sec => (sec.querySelector('h3')?.textContent || '').toLowerCase().includes('vehículo'));
+          if (!vehiculoCard) return;
+  
+          vehiculoCard.innerHTML = '';
+          const title = document.createElement('h3');
+          title.textContent = 'Vehículo';
+          title.setAttribute('style', 'margin:0 0 8px;font-size:16px;color:#0f172a;');
+          const block = document.createElement('div');
+          block.setAttribute('style', 'padding:4px 2px;');
+  
+          // Placa -> si no hay, valor vacío (sin "—")
+          block.appendChild(makeRow('Placa', vehiculo?.placa ?? ''));
+  
+          block.appendChild(makeRow('Marca', vehiculo?.marca ?? ''));
+          block.appendChild(makeRow('Modelo', vehiculo?.modelo ?? ''));
+          block.appendChild(makeRow('Año', vehiculo?.anio ?? ''));
+          block.appendChild(makeRow('Color', vehiculo?.color ?? ''));
+  
+          vehiculoCard.appendChild(title);
+          vehiculoCard.appendChild(block);
+        })();
+  
+        // 4) Logo más grande en PDF
         const logoImg = element.querySelector('.proforma-logo img');
         if (logoImg) {
           logoImg.style.width = '120px';
@@ -363,7 +426,6 @@ const Proforma = () => {
     }
   };
   
-
 
   // 👇 validación/normalización de inputs vehículo (incluye "modelo")
   const handleInputChange = (campo, value) => {
