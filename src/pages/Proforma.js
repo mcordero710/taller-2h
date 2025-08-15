@@ -250,15 +250,16 @@ const Proforma = () => {
   const handleGuardarProforma = async () => {
     if (!cliente) return toast.error('Debe cargar un cliente válido.');
     if (reparaciones.length === 0) return toast.error('Debe agregar al menos una reparación.');
-    // 👇 ahora también exige "modelo"
-    if (!vehiculo.placa || !vehiculo.marca || !vehiculo.modelo || !vehiculo.anio || !vehiculo.color) {
-      return toast.error('Debe completar todos los datos del vehículo.');
+
+    // 🔹 Placa OPCIONAL: solo validamos marca, modelo, año y color
+    if (!vehiculo.marca || !vehiculo.modelo || !vehiculo.anio || !vehiculo.color) {
+      return toast.error('Debe completar marca, modelo, año y color del vehículo.');
     }
 
     const nuevaProforma = {
       numero: numeroProforma,
       cliente,
-      vehiculo,
+      vehiculo, // puede llevar placa '' si no la tienen aún
       reparaciones,
       total,
       iva: ivaChecked ? ivaAmount : 0,
@@ -287,37 +288,38 @@ const Proforma = () => {
     }
   };
 
+
   const handleDescargarPDF = async () => {
     const original = document.getElementById('proformaPrintable');
     if (!original) return;
-  
+
     try {
       setIsGeneratingPdf(true);
       await withLoading(async () => {
         await nextFrame();
-  
+
         const element = original.cloneNode(true);
-  
+
         // Ocultar controles (incluye "+ Agregar")
         element
           .querySelectorAll(
             '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
           )
           .forEach((el) => el && (el.style.display = 'none'));
-  
+
         // Ocultar columna de acciones
         element
           .querySelectorAll('th:nth-child(4), td:nth-child(4)')
           .forEach((col) => (col.style.display = 'none'));
-  
+
         // Ocultar sección de IVA
         const ivaSection = element.querySelector('.iva-section');
         if (ivaSection) ivaSection.style.display = 'none';
-  
+
         // ⬇️ Ocultar el subtítulo "Genera y administra presupuestos."
         const subtitle = element.querySelector('.brand-text .subtitle');
         if (subtitle) subtitle.style.display = 'none';
-  
+
         // Ajustar tamaño del logo
         const logoImg = element.querySelector('.proforma-logo img');
         if (logoImg) {
@@ -325,22 +327,22 @@ const Proforma = () => {
           logoImg.style.height = 'auto';
           logoImg.style.objectFit = 'contain';
         }
-  
+
         const options = {
           margin: 10,
           filename: `proforma-${numeroProforma ?? ''}.pdf`,
           html2canvas: { scale: 3, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         };
-  
+
         await html2pdf().set(options).from(element).save();
       }, 'Generando PDF…');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
-  
-  
+
+
   // 👇 validación/normalización de inputs vehículo (incluye "modelo")
   const handleInputChange = (campo, value) => {
     if (campo === 'marca') {
@@ -450,9 +452,11 @@ const Proforma = () => {
           <div className="card-section">
             <h3>Vehículo</h3>
             <div className="vehiculo-detalle">
-              {/* orden: Placa, Marca, Modelo, Año, Color */}
               {['placa', 'marca', 'modelo', 'anio', 'color'].map((campo) => {
-                const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
+                const label =
+                  campo === 'anio' ? 'Año' :
+                    campo === 'placa' ? 'Placa (opcional)' :
+                      campo.charAt(0).toUpperCase() + campo.slice(1);
 
                 const commonProps = {
                   id: campo,
@@ -466,16 +470,12 @@ const Proforma = () => {
                 return (
                   <div className="input-group" key={campo}>
                     <label htmlFor={campo}>{label}</label>
-
                     {campo === 'color' ? (
                       <input
                         {...commonProps}
                         inputMode="text"
-                        pattern="[A-Za-zÁÉÍÓÚáéíóúÜü\s\-]+"
-                        onKeyDown={(e) => {
-                          // Bloquea números (incluye numpad)
-                          if (/\d/.test(e.key)) e.preventDefault();
-                        }}
+                        pattern="[A-Za-zÁÉÍÓÚáéíóúÜü\\s\\-]+"
+                        onKeyDown={(e) => { if (/\d/.test(e.key)) e.preventDefault(); }}
                       />
                     ) : (
                       <input {...commonProps} />
