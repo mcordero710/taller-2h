@@ -292,55 +292,77 @@ const Proforma = () => {
   const handleDescargarPDF = async () => {
     const original = document.getElementById('proformaPrintable');
     if (!original) return;
-
+  
     try {
       setIsGeneratingPdf(true);
       await withLoading(async () => {
         await nextFrame();
-
+  
         const element = original.cloneNode(true);
-
+  
         // Ocultar controles (incluye "+ Agregar")
         element
           .querySelectorAll(
             '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
           )
           .forEach((el) => el && (el.style.display = 'none'));
-
+  
         // Ocultar columna de acciones
         element
           .querySelectorAll('th:nth-child(4), td:nth-child(4)')
           .forEach((col) => (col.style.display = 'none'));
-
+  
         // Ocultar sección de IVA
         const ivaSection = element.querySelector('.iva-section');
         if (ivaSection) ivaSection.style.display = 'none';
-
+  
         // ⬇️ Ocultar el subtítulo "Genera y administra presupuestos."
         const subtitle = element.querySelector('.brand-text .subtitle');
         if (subtitle) subtitle.style.display = 'none';
-
-        // Ajustar tamaño del logo
+  
+        // ⬅️ Contacto para impresión (se inserta debajo del header existente)
+        (() => {
+          const head = element.querySelector('.proforma-head');
+          const contacto = document.createElement('div');
+          contacto.setAttribute(
+            'style',
+            'display:flex;flex-wrap:wrap;gap:18px;margin:8px 0 12px 0;font-size:12px;color:#333;'
+          );
+          contacto.innerHTML = `
+            <div><strong>Tel:</strong> (506) 2222-2222</div>
+            <div><strong>Email:</strong> info@taller2h.com</div>
+            <div><strong>Dirección:</strong> San José, Costa Rica</div>
+            <div><strong>Cédula Jurídica:</strong> 123145644</div>
+          `;
+          if (head && head.parentNode) {
+            head.parentNode.insertBefore(contacto, head.nextSibling);
+          } else {
+            element.insertBefore(contacto, element.firstChild);
+          }
+        })();
+  
+        // (opcional) si quieres forzar tamaño del logo en el PDF:
         const logoImg = element.querySelector('.proforma-logo img');
         if (logoImg) {
           logoImg.style.width = '120px';
           logoImg.style.height = 'auto';
           logoImg.style.objectFit = 'contain';
         }
-
+  
         const options = {
           margin: 10,
           filename: `proforma-${numeroProforma ?? ''}.pdf`,
           html2canvas: { scale: 3, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         };
-
+  
         await html2pdf().set(options).from(element).save();
       }, 'Generando PDF…');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
+  
 
 
   // 👇 validación/normalización de inputs vehículo (incluye "modelo")
