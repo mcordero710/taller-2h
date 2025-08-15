@@ -12,10 +12,7 @@
 .proforma-page {
   min-height: 100svh;
   padding: 24px;
-  background:
-    radial-gradient(800px 500px at 5% -10%, #e0f2fe 0, transparent 40%),
-    radial-gradient(800px 500px at 105% 40%, #fee2e2 0, transparent 38%),
-    linear-gradient(180deg, #f8fafc, #eef2f7);
+  background: linear-gradient(180deg, #fafbff, #f3f5f9); /* suave y grisáceo */
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
@@ -319,7 +316,7 @@
   z-index: 1;
   background: #0f172a;
   color: #fff;
-  text-align: left;
+  text-align: center;
   padding: 12px;
 }
 
@@ -578,18 +575,30 @@
 
 /* Print */
 @media print {
-
+  /* Oculta todos los controles y el botón Agregar */
   .boton-descargar,
+  .boton-guardar,
+  .boton-nueva,
   .iva-section,
-  .proforma-toolbar {
+  .proforma-toolbar,
+  .btn-add {
     display: none !important;
   }
 
+  /* Columna de acciones de la tabla */
   .proforma-tabla th:nth-child(4),
   .proforma-tabla td:nth-child(4) {
     display: none !important;
   }
+
+  /* Logo más controlado para impresión */
+  .proforma-logo img {
+    width: 120px !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
 }
+
 
 @media (max-width:900px) {
   .grid-two {

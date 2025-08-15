@@ -1,40 +1,117 @@
+/* Hereda variables si existen (Clientes.css); añade fallbacks */
+:root {
+  --pg-bg: var(--card, #fff);
+  --pg-stroke: var(--stroke, rgba(15, 23, 42, .08));
+  --pg-text: var(--text, #0f172a);
+  --pg-muted: var(--muted, #64748b);
+  --pg-primary: var(--primary, #111827);
+  --pg-accent: var(--accent, #0ea5e9);
+}
+
 .pagination-footer {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 2rem;
-    padding: 1rem 0;
-    font-size: 0.95rem;
-    color: #2d3748;
-    border-top: 1px solid #e2e8f0;
+  margin-top: 16px;
+  padding: 12px 8px 4px;
+  border-top: 1px solid var(--pg-stroke);
+  display: flex;
+  justify-content: center;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--pg-text);
+  background: transparent;
+}
+
+/* Lista de páginas */
+.pager-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  margin: 0 4px;
+  padding: 0;
+}
+
+.pager-ellipsis {
+  padding: 0 4px;
+  color: var(--pg-muted);
+  user-select: none;
+}
+
+/* Botones base */
+.pager-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: var(--pg-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .06s, filter .15s, box-shadow .15s, border-color .15s;
+}
+
+.pager-btn:hover:not(:disabled) {
+  filter: brightness(1.03);
+  border-color: #dbe3ee;
+}
+
+.pager-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.pager-btn:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--pg-accent) 30%, transparent);
+  border-color: color-mix(in oklab, var(--pg-accent) 45%, #e5e7eb);
+}
+
+/* Números */
+.pager-number {
+  min-width: 36px;
+  padding: 0 12px;
+}
+
+.pager-number.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--pg-primary), #0b1220 75%);
+  border-color: #0b1220;
+  box-shadow: 0 6px 14px rgba(2, 6, 23, .10), inset 0 0 0 1px rgba(255, 255, 255, .06);
+}
+
+/* Flechas / extremos */
+.pager-first,
+.pager-prev,
+.pager-next,
+.pager-last {
+  width: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+/* Disabled */
+.pager-btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: var(--pg-muted);
+}
+
+/* Info */
+.pager-info {
+  margin-left: 8px;
+  color: var(--pg-muted);
+  font-size: 13px;
+}
+
+/* Responsive: ocultar info en pantallas chicas */
+@media (max-width: 600px) {
+  .pager-info {
+    display: none;
   }
-  
-  .pagination-footer button {
-    padding: 0.4rem 0.8rem;
-    font-size: 1rem;
-    background-color: #2b6cb0;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-  
-  .pagination-footer button:disabled {
-    background-color: #cbd5e0;
-    color: white;
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-  
-  .pagination-footer button:hover:not(:disabled) {
-    background-color: #2c5282;
-  }
-  
-  .pagination-footer span {
-    font-weight: 500;
-    min-width: 120px;
-    text-align: center;
-  }
-  
+}

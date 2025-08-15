@@ -1,6 +1,10 @@
-/* ======================= */
-/* ====== Layout UI ====== */
-/* ======================= */
+.ordenesTrabajo-proforma-page {
+  min-height: 100svh;
+  padding: 24px;
+  background: linear-gradient(180deg, #fafbff, #f3f5f9); /* suave gris/azulado */
+  color: #0f172a;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
 
 .ot-wrapper {
   max-width: 1080px;

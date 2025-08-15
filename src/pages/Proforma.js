@@ -1,3 +1,4 @@
+// src/pages/Proforma.jsx
 import React, { useState, useEffect } from 'react';
 import './Proforma.css';
 import { db, obtenerNumeroProforma, actualizarNumeroProforma } from '../firebase/firebase';
@@ -9,11 +10,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faSave, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 import { FiTrash2 } from 'react-icons/fi';
+// Loader global
+import { useLoading } from '../components/ui/LoadingContext';
 
 const Proforma = () => {
   const [cedula, setCedula] = useState('');
   const [cliente, setCliente] = useState(null);
-  const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', anio: '', color: '' });
+
+  // 👇 ahora incluye "modelo"
+  const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', modelo: '', anio: '', color: '' });
+
   const [reparaciones, setReparaciones] = useState([]);
   const [total, setTotal] = useState(0);
   const [ivaChecked, setIvaChecked] = useState(false);
@@ -24,7 +30,15 @@ const Proforma = () => {
   const [fecha, setFecha] = useState(null);
   const [proformaId, setProformaId] = useState(null);
   const [buscarProforma, setBuscarProforma] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+
+  // flags UI
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const { withLoading } = useLoading();
+  const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
   const location = useLocation();
   const proformaDesdeDetalle = location.state?.proforma;
@@ -45,41 +59,55 @@ const Proforma = () => {
   };
 
   const handleBuscarProforma = async (numero) => {
-    setIsLoading(true);  // Activar el loading
+    const n = String(numero || '').trim();
+    if (!/^\d+$/.test(n)) {
+      toast.info('Ingrese un número de proforma válido.');
+      return;
+    }
+
     try {
-      const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(numero)));
-      const snapshot = await getDocs(q);
-  
-      if (snapshot.empty) {
-        toast.error(`No se encontró la proforma #${numero}`);
-        setIsLoading(false); // Desactivar el loading
-        return;
-      }
-  
-      const docSnap = snapshot.docs[0];
-      const data = docSnap.data();
-  
-      setNumeroProforma(data.numero);
-      setCedula(data.cliente?.cedula || '');
-      setCliente(data.cliente);
-      setVehiculo(data.vehiculo || { placa: '', marca: '', anio: '', color: '' });
-      setReparaciones(data.reparaciones || []);
-      setIvaChecked(data.iva > 0);
-      setIvaAmount(data.iva || 0);
-      setTotal(data.total || 0);
-      setFecha(data.fecha || new Date().toLocaleDateString());
-      setProformaGuardada(false);
-      setIsClienteLoaded(true);
-      setProformaId(docSnap.id);
-      toast.success(`Proforma #${data.numero} cargada correctamente`);
+      setIsSearching(true);
+      await withLoading(async () => {
+        await nextFrame();
+        const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(n, 10)));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+          toast.error(`No se encontró la proforma #${n}`);
+          return;
+        }
+
+        const docSnap = snapshot.docs[0];
+        const data = docSnap.data();
+
+        setNumeroProforma(data.numero);
+        setCedula(data.cliente?.cedula || '');
+        setCliente(data.cliente || null);
+        // 👇 soporta proformas antiguas sin "modelo"
+        setVehiculo({
+          placa: data.vehiculo?.placa || '',
+          marca: data.vehiculo?.marca || '',
+          modelo: data.vehiculo?.modelo || '',
+          anio: data.vehiculo?.anio || '',
+          color: data.vehiculo?.color || '',
+        });
+        setReparaciones(data.reparaciones || []);
+        setIvaChecked((data.iva || 0) > 0);
+        setIvaAmount(data.iva || 0);
+        setTotal(data.total || 0);
+        setFecha(data.fecha || new Date().toLocaleDateString());
+        setProformaGuardada(false);
+        setIsClienteLoaded(true);
+        setProformaId(docSnap.id);
+        toast.success(`Proforma #${data.numero} cargada correctamente`);
+      }, 'Buscando proforma…');
     } catch (error) {
-      console.error("Error al buscar proforma:", error);
+      console.error('Error al buscar proforma:', error);
       toast.error('Ocurrió un error al cargar la proforma');
     } finally {
-      setIsLoading(false); // Desactivar el loading
+      setIsSearching(false);
     }
   };
-  
 
   useEffect(() => {
     if (cedula === '') {
@@ -93,19 +121,28 @@ const Proforma = () => {
   useEffect(() => {
     const fetchNumeroProforma = async () => {
       if (!proformaDesdeDetalle) {
-        const numero = await obtenerNumeroProforma();
-        setNumeroProforma(numero);
+        await withLoading(async () => {
+          const numero = await obtenerNumeroProforma();
+          setNumeroProforma(numero);
+        }, 'Cargando proforma…');
       }
     };
     fetchNumeroProforma();
-  }, [proformaDesdeDetalle]);
+  }, [proformaDesdeDetalle, withLoading]);
 
   useEffect(() => {
     if (proformaDesdeDetalle) {
       setNumeroProforma(proformaDesdeDetalle.numero || null);
       setCedula(proformaDesdeDetalle.cliente?.cedula || '');
       setCliente(proformaDesdeDetalle.cliente || null);
-      setVehiculo(proformaDesdeDetalle.vehiculo || { placa: '', marca: '', anio: '', color: '' });
+      // 👇 soporta que venga o no "modelo"
+      setVehiculo({
+        placa: proformaDesdeDetalle.vehiculo?.placa || '',
+        marca: proformaDesdeDetalle.vehiculo?.marca || '',
+        modelo: proformaDesdeDetalle.vehiculo?.modelo || '',
+        anio: proformaDesdeDetalle.vehiculo?.anio || '',
+        color: proformaDesdeDetalle.vehiculo?.color || '',
+      });
       setReparaciones(proformaDesdeDetalle.reparaciones || []);
       setIvaChecked((proformaDesdeDetalle.iva || 0) > 0);
       setIvaAmount(proformaDesdeDetalle.iva || 0);
@@ -119,18 +156,28 @@ const Proforma = () => {
   }, [proformaDesdeDetalle]);
 
   const handleNuevaProforma = async () => {
-    setCedula('');
-    setCliente(null);
-    setVehiculo({ placa: '', marca: '', anio: '', color: '' });
-    setReparaciones([]);
-    setTotal(0);
-    setIvaChecked(false);
-    setIvaAmount(0);
-    setIsClienteLoaded(false);
-    setBuscarProforma('');
-    const numero = await obtenerNumeroProforma();
-    setNumeroProforma(numero);
-    setProformaGuardada(false);
+    try {
+      setIsCreatingNew(true);
+      await withLoading(async () => {
+        await nextFrame();
+        setCedula('');
+        setCliente(null);
+        setVehiculo({ placa: '', marca: '', modelo: '', anio: '', color: '' });
+        setReparaciones([]);
+        setTotal(0);
+        setIvaChecked(false);
+        setIvaAmount(0);
+        setIsClienteLoaded(false);
+        setBuscarProforma('');
+        const numero = await obtenerNumeroProforma();
+        setNumeroProforma(numero);
+        setProformaGuardada(false);
+        setProformaId(null);
+        setFecha(new Date().toLocaleDateString());
+      }, 'Nueva proforma…');
+    } finally {
+      setIsCreatingNew(false);
+    }
   };
 
   const handleReparacionChange = (index, field, value) => {
@@ -145,7 +192,6 @@ const Proforma = () => {
     setReparaciones(nuevas);
   };
 
-  // === Confirmación estandarizada (igual a Órdenes de Trabajo) ===
   const confirmarEliminarReparacion = async (idx) => {
     eliminarReparacionPorIndex(idx);
     toast.success('Reparación eliminada', { autoClose: 1800 });
@@ -155,9 +201,7 @@ const Proforma = () => {
     toast.info(
       ({ closeToast }) => (
         <div className="toast-confirm-container">
-          <p className="toast-confirm-message">
-            ¿Seguro que deseas eliminar esta reparación?
-          </p>
+          <p className="toast-confirm-message">¿Seguro que deseas eliminar esta reparación?</p>
           <div className="toast-confirm-buttons">
             <button
               className="btn-confirm eliminar"
@@ -184,7 +228,6 @@ const Proforma = () => {
       }
     );
   };
-  // === fin confirmación ===
 
   const agregarReparacion = () => {
     setReparaciones([...reparaciones, { concepto: '', precio: 0 }]);
@@ -207,7 +250,8 @@ const Proforma = () => {
   const handleGuardarProforma = async () => {
     if (!cliente) return toast.error('Debe cargar un cliente válido.');
     if (reparaciones.length === 0) return toast.error('Debe agregar al menos una reparación.');
-    if (!vehiculo.placa || !vehiculo.marca || !vehiculo.anio || !vehiculo.color) {
+    // 👇 ahora también exige "modelo"
+    if (!vehiculo.placa || !vehiculo.marca || !vehiculo.modelo || !vehiculo.anio || !vehiculo.color) {
       return toast.error('Debe completar todos los datos del vehículo.');
     }
 
@@ -222,104 +266,140 @@ const Proforma = () => {
     };
 
     try {
-      if (proformaId) {
-        await updateDoc(doc(db, 'proformas', proformaId), nuevaProforma);
-        toast.success('¡Proforma actualizada con éxito!');
-      } else {
-        const docRef = await addDoc(collection(db, 'proformas'), nuevaProforma);
-        setProformaId(docRef.id);
-        await actualizarNumeroProforma(numeroProforma + 1);
-        toast.success('¡Proforma guardada con éxito!');
-      }
-      setProformaGuardada(true);
+      setIsSaving(true);
+      await withLoading(async () => {
+        if (proformaId) {
+          await updateDoc(doc(db, 'proformas', proformaId), nuevaProforma);
+          toast.success('¡Proforma actualizada con éxito!');
+        } else {
+          const docRef = await addDoc(collection(db, 'proformas'), nuevaProforma);
+          setProformaId(docRef.id);
+          await actualizarNumeroProforma(numeroProforma + 1);
+          toast.success('¡Proforma guardada con éxito!');
+        }
+        setProformaGuardada(true);
+      }, proformaId ? 'Actualizando proforma…' : 'Guardando proforma…');
     } catch (error) {
       toast.error('Error al guardar la proforma');
       console.error(error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDescargarPDF = () => {
-    const element = document.getElementById('proformaPrintable').cloneNode(true);
-
-    element.querySelectorAll(
-      '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar'
-    ).forEach(el => el && (el.style.display = 'none'));
-
-    element.querySelectorAll('th:nth-child(4), td:nth-child(4)')
-      .forEach(col => col.style.display = 'none');
-
-    const ivaSection = element.querySelector('.iva-section');
-    if (ivaSection) ivaSection.style.display = 'none';
-
-    const logoImg = element.querySelector('.proforma-logo img');
-    if (logoImg) logoImg.style.width = '150px';
-
-    const options = {
-      margin: 10,
-      filename: `proforma-${numeroProforma ?? ''}.pdf`,
-      html2canvas: { scale: 3, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    };
-
-    html2pdf(element, options);
+  const handleDescargarPDF = async () => {
+    const original = document.getElementById('proformaPrintable');
+    if (!original) return;
+  
+    try {
+      setIsGeneratingPdf(true);
+      await withLoading(async () => {
+        await nextFrame();
+  
+        const element = original.cloneNode(true);
+  
+        // Ocultar controles (incluye "+ Agregar")
+        element
+          .querySelectorAll(
+            '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
+          )
+          .forEach((el) => el && (el.style.display = 'none'));
+  
+        // Ocultar columna de acciones
+        element
+          .querySelectorAll('th:nth-child(4), td:nth-child(4)')
+          .forEach((col) => (col.style.display = 'none'));
+  
+        // Ocultar sección de IVA
+        const ivaSection = element.querySelector('.iva-section');
+        if (ivaSection) ivaSection.style.display = 'none';
+  
+        // ⬇️ Ocultar el subtítulo "Genera y administra presupuestos."
+        const subtitle = element.querySelector('.brand-text .subtitle');
+        if (subtitle) subtitle.style.display = 'none';
+  
+        // Ajustar tamaño del logo
+        const logoImg = element.querySelector('.proforma-logo img');
+        if (logoImg) {
+          logoImg.style.width = '120px';
+          logoImg.style.height = 'auto';
+          logoImg.style.objectFit = 'contain';
+        }
+  
+        const options = {
+          margin: 10,
+          filename: `proforma-${numeroProforma ?? ''}.pdf`,
+          html2canvas: { scale: 3, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        };
+  
+        await html2pdf().set(options).from(element).save();
+      }, 'Generando PDF…');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
-
+  
+  
+  // 👇 validación/normalización de inputs vehículo (incluye "modelo")
   const handleInputChange = (campo, value) => {
-    if (campo === 'marca' || campo === 'color') {
-      setVehiculo({ ...vehiculo, [campo]: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ]/g, '') });
+    if (campo === 'marca') {
+      // Solo letras y espacios
+      setVehiculo(v => ({ ...v, marca: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ ]/g, '') }));
+    } else if (campo === 'color') {
+      // Solo letras, espacios y guiones (p.ej. "Gris-Perla")
+      setVehiculo(v => ({ ...v, color: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ\- ]/g, '') }));
+    } else if (campo === 'modelo') {
+      // Letras, números, espacios y guiones (ej: "CX-5", "320i")
+      setVehiculo(v => ({ ...v, modelo: value.replace(/[^A-Za-z0-9áéíóúÁÉÍÓÚüÜ\- ]/g, '') }));
     } else if (campo === 'anio') {
-      setVehiculo({ ...vehiculo, [campo]: value.replace(/\D/g, '') });
+      // Solo dígitos
+      setVehiculo(v => ({ ...v, anio: value.replace(/\D/g, '') }));
     } else {
-      setVehiculo({ ...vehiculo, [campo]: value });
+      setVehiculo(v => ({ ...v, [campo]: value }));
     }
   };
+
+  const busy = isSearching || isSaving || isCreatingNew || isGeneratingPdf;
 
   return (
     <div className="proforma-page">
-    <ToastContainer
-      enableMultiContainer
-      containerId="center-toast"
-      className="center-toast-container"
-      newestOnTop
-      closeOnClick={false}
-    />
+      <ToastContainer
+        enableMultiContainer
+        containerId="center-toast"
+        className="center-toast-container"
+        newestOnTop
+        closeOnClick={false}
+      />
 
-    {/* Mostrar el spinner de carga mientras isLoading sea true */}
-    {isLoading && (
-      <div className="loading-overlay">
-        <div className="spinner"></div>
-        <p>Buscando proforma...</p>
-      </div>
-    )}
-
-    <div className="proforma-wrapper" id="proformaPrintable">
-      {/* Contenido de la página */}
-      <header className="proforma-head">
-        <div className="head-left">
-          <div className="proforma-logo">
-            <img src={logo} alt="Logo Taller 2H" className="logo" />
+      <div className="proforma-wrapper" id="proformaPrintable">
+        {/* Header */}
+        <header className="proforma-head">
+          <div className="head-left">
+            <div className="proforma-logo">
+              <img src={logo} alt="Logo Taller 2H" className="logo" />
+            </div>
+            <div className="brand-text">
+              <h2>Proforma</h2>
+              <p className="subtitle">Genera y administra presupuestos.</p>
+            </div>
           </div>
-          <div className="brand-text">
-            <h2>Proforma</h2>
-            <p className="subtitle">Genera y administra presupuestos.</p>
+          <div className="head-right">
+            <button
+              className="boton-guardar"
+              onClick={handleGuardarProforma}
+              disabled={!isClienteLoaded || proformaGuardada || busy}
+            >
+              <FontAwesomeIcon icon={faSave} /> {isSaving ? 'Guardando…' : 'Guardar'}
+            </button>
+            <button className="boton-nueva" onClick={handleNuevaProforma} disabled={busy}>
+              <FontAwesomeIcon icon={faPlus} /> {isCreatingNew ? 'Creando…' : 'Nueva'}
+            </button>
+            <button className="boton-descargar" onClick={handleDescargarPDF} disabled={busy}>
+              <FontAwesomeIcon icon={faDownload} /> {isGeneratingPdf ? 'Generando…' : 'PDF'}
+            </button>
           </div>
-        </div>
-        <div className="head-right">
-          <button
-            className="boton-guardar"
-            onClick={handleGuardarProforma}
-            disabled={!isClienteLoaded || proformaGuardada}
-          >
-            <FontAwesomeIcon icon={faSave} /> Guardar
-          </button>
-          <button className="boton-nueva" onClick={handleNuevaProforma}>
-            <FontAwesomeIcon icon={faPlus} /> Nueva
-          </button>
-          <button className="boton-descargar" onClick={handleDescargarPDF}>
-            <FontAwesomeIcon icon={faDownload} /> PDF
-          </button>
-        </div>
-      </header>
+        </header>
 
         {/* Toolbar */}
         <div className="proforma-toolbar">
@@ -336,6 +416,7 @@ const Proforma = () => {
               className="input-buscar"
               value={buscarProforma}
               onChange={(e) => setBuscarProforma(e.target.value)}
+              disabled={busy}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleBuscarProforma(e.target.value);
                 if (e.key && !/^\d$/.test(e.key) && e.key !== 'Backspace') e.preventDefault();
@@ -354,6 +435,7 @@ const Proforma = () => {
               type="text"
               className="cedula-input"
               value={cedula}
+              disabled={busy}
               onChange={(e) => setCedula(e.target.value.replace(/\D/g, '').slice(0, 9))}
             />
             {cliente && (
@@ -368,30 +450,49 @@ const Proforma = () => {
           <div className="card-section">
             <h3>Vehículo</h3>
             <div className="vehiculo-detalle">
-              {['placa', 'marca', 'anio', 'color'].map((campo) => {
+              {/* orden: Placa, Marca, Modelo, Año, Color */}
+              {['placa', 'marca', 'modelo', 'anio', 'color'].map((campo) => {
                 const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
+
+                const commonProps = {
+                  id: campo,
+                  type: 'text',
+                  placeholder: label,
+                  value: vehiculo[campo] ?? '',
+                  disabled: busy,
+                  onChange: (e) => handleInputChange(campo, e.target.value),
+                };
+
                 return (
                   <div className="input-group" key={campo}>
                     <label htmlFor={campo}>{label}</label>
-                    <input
-                      id={campo}
-                      type="text"
-                      placeholder={label}
-                      value={vehiculo[campo]}
-                      onChange={(e) => handleInputChange(campo, e.target.value)}
-                    />
+
+                    {campo === 'color' ? (
+                      <input
+                        {...commonProps}
+                        inputMode="text"
+                        pattern="[A-Za-zÁÉÍÓÚáéíóúÜü\s\-]+"
+                        onKeyDown={(e) => {
+                          // Bloquea números (incluye numpad)
+                          if (/\d/.test(e.key)) e.preventDefault();
+                        }}
+                      />
+                    ) : (
+                      <input {...commonProps} />
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
+
         </section>
 
         {/* Tabla reparaciones */}
         <div className="tabla-wrap">
           <div className="tabla-headbar">
             <h3>Detalle de reparaciones</h3>
-            <button className="btn-add" onClick={agregarReparacion}>+ Agregar</button>
+            <button className="btn-add" onClick={agregarReparacion} disabled={busy}>+ Agregar</button>
           </div>
 
           <table className="proforma-tabla">
@@ -410,6 +511,7 @@ const Proforma = () => {
                     <input
                       type="text"
                       value={r.concepto}
+                      disabled={busy}
                       onChange={(e) => handleReparacionChange(index, 'concepto', e.target.value)}
                     />
                   </td>
@@ -417,6 +519,7 @@ const Proforma = () => {
                     <input
                       type="number"
                       value={r.precio}
+                      disabled={busy}
                       onChange={(e) => handleReparacionChange(index, 'precio', e.target.value)}
                     />
                   </td>
@@ -428,6 +531,7 @@ const Proforma = () => {
                       onClick={() => askDelete(index)}
                       aria-label="Eliminar reparación"
                       title="Eliminar"
+                      disabled={busy}
                     >
                       <FiTrash2 />
                     </button>
@@ -452,6 +556,7 @@ const Proforma = () => {
                 checked={ivaChecked}
                 onChange={handleIvaChange}
                 aria-label="Aplicar Factura Electrónica (13%)"
+                disabled={busy}
               />
               <span className="slider" aria-hidden="true"></span>
             </label>
@@ -464,7 +569,6 @@ const Proforma = () => {
             <p className="total-line"><strong>Total:</strong> ₡{total.toFixed(2)}</p>
           </div>
         </section>
-
 
         {/* Footer notas */}
         <footer className="proforma-footer">

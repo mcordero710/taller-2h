@@ -1,3 +1,12 @@
+/* Fondo y tipografía como en Clientes */
+.buscar-proforma-page {
+  min-height: 100svh;
+  padding: 24px;
+  background: linear-gradient(180deg, #fafbff, #f3f5f9); /* suave gris/azulado */
+  color: #0f172a;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
 /* Contenedor principal */
 .buscar-proforma-wrapper {
   max-width: 1200px;

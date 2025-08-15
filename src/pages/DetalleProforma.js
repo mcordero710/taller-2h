@@ -11,25 +11,29 @@ const DetalleProforma = () => {
     return <p>No se proporcionó información de la proforma.</p>;
   }
 
-  const { vehiculo } = proforma;
+  // Asegura que vehiculo exista y usa fallback “—” en campos faltantes
+  const vehiculo = proforma.vehiculo || {};
 
   const redirigirAProforma = () => {
     navigate('/proforma', { state: { proforma } });
   };
 
   return (
-    <div className="detalle-proforma-wrapper">
-      <h2>Detalle del Vehículo</h2>
-      <ul>
-        <li><strong>Placa:</strong> {vehiculo.placa}</li>
-        <li><strong>Marca:</strong> {vehiculo.marca}</li>
-        <li><strong>Año:</strong> {vehiculo.anio}</li>
-        <li><strong>Color:</strong> {vehiculo.color}</li>
-      </ul>
+    <div className="detalle-proforma-page">
+      <div className="detalle-proforma-wrapper">
+        <h2>Detalle del Vehículo</h2>
+        <ul>
+          <li><strong>Placa:</strong> {vehiculo.placa ?? '—'}</li>
+          <li><strong>Marca:</strong> {vehiculo.marca ?? '—'}</li>
+          <li><strong>Modelo:</strong> {vehiculo.modelo ?? '—'}</li>
+          <li><strong>Año:</strong> {vehiculo.anio ?? '—'}</li>
+          <li><strong>Color:</strong> {vehiculo.color ?? '—'}</li>
+        </ul>
 
-      <button className="boton-principal" onClick={redirigirAProforma}>
-        Editar o Imprimir Proforma
-      </button>
+        <button className="boton-principal" onClick={redirigirAProforma}>
+          Editar o Imprimir Proforma
+        </button>
+      </div>
     </div>
   );
 };
