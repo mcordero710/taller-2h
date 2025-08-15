@@ -12,9 +12,14 @@
 /* reset */
 *,
 *::before,
-*::after { box-sizing: border-box; }
+*::after {
+  box-sizing: border-box;
+}
 
-html, body { margin: 0; }
+html,
+body {
+  margin: 0;
+}
 
 /* Página */
 .clientes-page {
@@ -79,7 +84,10 @@ html, body { margin: 0; }
 }
 
 /* Buscador */
-.search { position: relative; width: min(420px, 100%); }
+.search {
+  position: relative;
+  width: min(420px, 100%);
+}
 
 .search-input {
   width: 100%;
@@ -91,7 +99,9 @@ html, body { margin: 0; }
   transition: border-color .15s, box-shadow .15s;
 }
 
-.search-input::placeholder { color: #9aa5b1; }
+.search-input::placeholder {
+  color: #9aa5b1;
+}
 
 .search-input:focus {
   outline: 0;
@@ -100,63 +110,148 @@ html, body { margin: 0; }
 }
 
 .search-icon {
-  position: absolute; left: 10px; top: 50%;
-  transform: translateY(-50%); color: #94a3b8;
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
 }
 
 .search-clear {
-  position: absolute; right: 6px; top: 50%;
+  position: absolute;
+  right: 6px;
+  top: 50%;
   transform: translateY(-50%);
-  width: 32px; height: 32px; display: grid; place-items: center;
-  border: 0; background: transparent; border-radius: 8px; cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 /* Botón Agregar (compacto) */
 .boton-agregar {
-  --bg1: #0b1220; --bg2: #0f172a; --ring: rgba(14, 165, 233, .35);
-  display: inline-flex; align-items: center; gap: .5rem;
-  padding: .68rem 1rem; border-radius: 12px; font-weight: 700; font-size: .98rem;
-  color: #fff; background-image: linear-gradient(135deg, var(--bg2), var(--bg1) 85%);
+  --bg1: #0b1220;
+  --bg2: #0f172a;
+  --ring: rgba(14, 165, 233, .35);
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .68rem 1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: .98rem;
+  color: #fff;
+  background-image: linear-gradient(135deg, var(--bg2), var(--bg1) 85%);
   border: 1px solid rgba(15, 23, 42, .8);
   box-shadow: 0 8px 18px rgba(2, 6, 23, .12), inset 0 0 0 1px rgba(255, 255, 255, .04);
-  cursor: pointer; transition: transform .06s, filter .15s, box-shadow .15s;
+  cursor: pointer;
+  transition: transform .06s, filter .15s, box-shadow .15s;
 }
+
 .boton-agregar::before {
-  content: "+"; display: inline-grid; place-items: center;
-  width: 26px; height: 26px; border-radius: 999px; font-weight: 900;
-  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-weight: 900;
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
 }
-.boton-agregar:hover { filter: brightness(1.06); }
-.boton-agregar:active { transform: translateY(1px); }
-.boton-agregar:focus-visible { outline: 0; box-shadow: 0 0 0 4px var(--ring); }
-.boton-agregar--sm { width:auto!important; padding:6px 10px; font-size:.88rem; border-radius:10px; gap:.4rem; }
-.boton-agregar--sm::before { width:20px; height:20px; font-size:13px; }
+
+.boton-agregar:hover {
+  filter: brightness(1.06);
+}
+
+.boton-agregar:active {
+  transform: translateY(1px);
+}
+
+.boton-agregar:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px var(--ring);
+}
+
+.boton-agregar--sm {
+  width: auto !important;
+  padding: 6px 10px;
+  font-size: .88rem;
+  border-radius: 10px;
+  gap: .4rem;
+}
+
+.boton-agregar--sm::before {
+  width: 20px;
+  height: 20px;
+  font-size: 13px;
+}
 
 /* Botones genéricos */
 .btn-primary {
-  display:inline-flex; align-items:center; gap:8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background-image: linear-gradient(135deg, var(--primary), #0b1220 75%);
-  color:#fff; border:1px solid #0b1220; padding:10px 14px; border-radius:12px; font-weight:700;
+  color: #fff;
+  border: 1px solid #0b1220;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 700;
   transition: filter .15s, transform .06s;
 }
-.btn-primary:hover { filter: brightness(1.05); }
-.btn-primary:active { transform: translateY(1px); }
+
+.btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
 
 .btn-light {
-  background:#fff; border:1px solid #e5e7eb; color:var(--primary);
-  padding:10px 14px; border-radius:12px; font-weight:600;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  color: var(--primary);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
 }
 
 .btn-icon {
-  width:28px; height:28px; display:inline-grid; place-items:center;
-  border:1px solid #e5e7eb; background:#fff; border-radius:10px; cursor:pointer;
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
   transition: transform .06s, filter .15s;
 }
-.btn-icon:hover { filter: brightness(1.05); }
-.btn-icon:active { transform: translateY(1px); }
-.btn-icon--edit { border-color:#dbe3ee; }
-.btn-icon--edit svg { width:14px; height:14px; color:#111827; }
+
+.btn-icon:hover {
+  filter: brightness(1.05);
+}
+
+.btn-icon:active {
+  transform: translateY(1px);
+}
+
+.btn-icon--edit {
+  border-color: #dbe3ee;
+}
+
+.btn-icon--edit svg {
+  width: 14px;
+  height: 14px;
+  color: #111827;
+}
 
 /* Tabla */
 .table-wrap {
@@ -172,22 +267,34 @@ html, body { margin: 0; }
   border-collapse: separate;
   border-spacing: 0;
   font-size: 14px;
-  table-layout: fixed; /* mantenemos fixed */
+  table-layout: fixed;
 }
 
 .tabla-clientes thead th {
-  position: sticky; top: 0; z-index: 1;
-  background: #0f172a; color: #fff; text-align: left; padding: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #0f172a;
+  color: #fff;
+  text-align: left;
+  padding: 12px;
 }
 
 .tabla-clientes tbody td {
-  padding: 12px; border-top: 1px solid #f1f5f9; vertical-align: middle;
+  padding: 12px;
+  border-top: 1px solid #f1f5f9;
+  vertical-align: middle;
 }
 
-.tabla-clientes tbody tr:nth-child(odd) { background: #fafafa; }
-.tabla-clientes tbody tr:hover { background: #f1f5ff; }
+.tabla-clientes tbody tr:nth-child(odd) {
+  background: #fafafa;
+}
 
-/* Acciones: ancho mayor y centrado */
+.tabla-clientes tbody tr:hover {
+  background: #f1f5ff;
+}
+
+/* Acciones (scopeado a esta tabla) */
 .th-actions {
   width: 96px;
   min-width: 96px;
@@ -195,17 +302,18 @@ html, body { margin: 0; }
   padding-left: 4px;
   padding-right: 4px;
 }
-.td-actions {
+
+.tabla-clientes tbody td.td-actions {
   width: 96px;
   min-width: 96px;
-  padding-left: 2px;
-  padding-right: 2px;
+  padding-left: 4px;
+  padding-right: 4px;
   display: grid;
   place-items: center;
-  gap: 0;
   text-align: center;
 }
-/* Texto del th de acciones */
+
+/* Texto de "Acciones" (por si lo usas) */
 .th-actions-text {
   display: inline-block;
   font-size: 13px;
@@ -214,96 +322,228 @@ html, body { margin: 0; }
 }
 
 /* Vacío */
-.empty { text-align: center; color: var(--muted); padding: 20px; }
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 20px;
+}
 
 /* Modal */
 .modal-overlay {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(8, 15, 35, .45); backdrop-filter: blur(2px);
-  display: grid; place-items: center; padding: 16px;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(8, 15, 35, .45);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 16px;
 }
-.modal, .modal-content {
-  width: min(680px, 100%); background:#fff; border-radius:16px;
-  border:1px solid #e5e7eb; box-shadow:0 24px 60px rgba(2,6,23,.22); padding:16px;
+
+.modal,
+.modal-content {
+  width: min(680px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 24px 60px rgba(2, 6, 23, .22);
+  padding: 16px;
 }
+
 .modal-head {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:4px 4px 10px; border-bottom:1px solid #eef2f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 4px 10px;
+  border-bottom: 1px solid #eef2f7;
 }
-.modal-head h3, .modal-content h3 {
-  margin:0 0 12px; font-size:18px; color:var(--primary); font-weight:800;
+
+.modal-head h3,
+.modal-content h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  color: var(--primary);
+  font-weight: 800;
 }
 
 /* Form del modal */
-.modal-form, .formulario {
-  display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding-top:4px;
+.modal-form,
+.formulario {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding-top: 4px;
 }
-.modal-form label, .formulario label { display:grid; gap:6px; font-size:13px; color:var(--primary); }
-.modal-form input, .formulario input {
-  width:100%; padding:10px 12px; border-radius:10px; border:1px solid #e5e7eb;
-  font-size:14px; background:#fff;
+
+.modal-form label,
+.formulario label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--primary);
 }
-.modal-form input:focus, .formulario input:focus {
-  outline:0; border-color:var(--accent); box-shadow:0 0 0 4px rgba(14,165,233,.15);
+
+.modal-form input,
+.formulario input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  background: #fff;
 }
-.span-2 { grid-column: span 2; }
+
+.modal-form input:focus,
+.formulario input:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, .15);
+}
+
+.span-2 {
+  grid-column: span 2;
+}
 
 /* Acciones modal */
-.modal-actions, .acciones {
-  display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:.5rem;
+.modal-actions,
+.acciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: .5rem;
 }
-.modal-actions .btn-primary, .modal-actions .btn-light, .acciones button {
-  width:100%; display:inline-flex; align-items:center; justify-content:center; text-align:center;
-  line-height:1; padding:12px 16px; border-radius:12px;
+
+.modal-actions .btn-primary,
+.modal-actions .btn-light,
+.acciones button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  padding: 12px 16px;
+  border-radius: 12px;
 }
-.acciones .cancelar { background:#fff; color:var(--primary); border:1px solid #e5e7eb; }
-.modal-actions button[type="submit"], .acciones button[type="submit"] {
-  color:#fff; background-image: linear-gradient(135deg, #0f172a, #0b1220 85%);
+
+.acciones .cancelar {
+  background: #fff;
+  color: var(--primary);
+  border: 1px solid #e5e7eb;
+}
+
+.modal-actions button[type="submit"],
+.acciones button[type="submit"] {
+  color: #fff;
+  background-image: linear-gradient(135deg, #0f172a, #0b1220 85%);
   border-color: rgba(15, 23, 42, .85);
   box-shadow: 0 8px 18px rgba(2, 6, 23, .12), inset 0 0 0 1px rgba(255, 255, 255, .05);
 }
-.modal-actions button[type="submit"]:hover, .acciones button[type="submit"]:hover { filter: brightness(1.05); }
-.modal-actions button[type="submit"]:active, .acciones button[type="submit"]:active { transform: translateY(1px); }
-.modal-actions button[type="submit"]:focus-visible, .acciones button[type="submit"]:focus-visible { outline:0; box-shadow:0 0 0 4px rgba(14,165,233,.35); }
+
+.modal-actions button[type="submit"]:hover,
+.acciones button[type="submit"]:hover {
+  filter: brightness(1.05);
+}
+
+.modal-actions button[type="submit"]:active,
+.acciones button[type="submit"]:active {
+  transform: translateY(1px);
+}
+
+.modal-actions button[type="submit"]:focus-visible,
+.acciones button[type="submit"]:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, .35);
+}
 
 /* Anchos por columna */
-.tabla-clientes th:nth-child(1), .tabla-clientes td:nth-child(1) { width: 120px; }   /* Cédula */
-.tabla-clientes th:nth-child(2), .tabla-clientes td:nth-child(2) { width: 150px; }   /* Nombre */
-.tabla-clientes th:nth-child(3), .tabla-clientes td:nth-child(3) { width: 150px; }   /* Apellido */
-.tabla-clientes th:nth-child(4), .tabla-clientes td:nth-child(4) { width: 120px; }   /* Teléfono */
+.tabla-clientes th:nth-child(1),
+.tabla-clientes td:nth-child(1) {
+  width: 120px;
+}
 
-/* Correo compacto con elipsis (ajustado para dar espacio a Acciones) */
+/* Cédula */
+.tabla-clientes th:nth-child(2),
+.tabla-clientes td:nth-child(2) {
+  width: 150px;
+}
+
+/* Nombre */
+.tabla-clientes th:nth-child(3),
+.tabla-clientes td:nth-child(3) {
+  width: 150px;
+}
+
+/* Apellido */
+.tabla-clientes th:nth-child(4),
+.tabla-clientes td:nth-child(4) {
+  width: 120px;
+}
+
+/* Teléfono */
 .tabla-clientes th:nth-child(5),
 .tabla-clientes td:nth-child(5) {
   width: 190px;
   max-width: 190px;
+  /* Correo */
 }
-.email-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; }
+
+.email-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 4px;
+}
 
 /* Responsive */
 @media (max-width:720px) {
-  .clientes-header { flex-direction: column; align-items: flex-start; gap: 6px; }
-  .toolbar { flex-wrap: wrap; }
-  .modal-form, .formulario { grid-template-columns: 1fr; }
-  .span-2 { grid-column: span 1; }
+  .clientes-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .modal-form,
+  .formulario {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: span 1;
+  }
 }
 
 /* Centrar el título "Acciones" explícitamente */
-.tabla-clientes thead th.th-actions { text-align: center !important; padding-left: 4px; padding-right: 4px; }
+.tabla-clientes thead th.th-actions {
+  text-align: center !important;
+}
 
 /* Variante responsive: mostrar “Acc” en lugar de “Acciones” */
-@media (max-width: 1024px) {
-  .th-actions .th-actions-text { display: none; }
-  .th-actions::after { content: "Acc"; font-weight: 700; }
+@media (max-width:1024px) {
+  .th-actions .th-actions-text {
+    display: none;
+  }
+
+  .th-actions::after {
+    content: "Acc";
+    font-weight: 700;
+  }
 }
 
 /* Utilidad: centrar toda la columna cuando el <th> tiene .is-center */
-.tabla-clientes thead th.is-center { text-align: center; }
+.tabla-clientes thead th.is-center {
+  text-align: center;
+}
 
-/* Aplica a las celdas del body según la posición del <th> centrado */
 .tabla-clientes:has(thead th.is-center:nth-child(1)) tbody td:nth-child(1),
 .tabla-clientes:has(thead th.is-center:nth-child(2)) tbody td:nth-child(2),
 .tabla-clientes:has(thead th.is-center:nth-child(3)) tbody td:nth-child(3),
 .tabla-clientes:has(thead th.is-center:nth-child(4)) tbody td:nth-child(4),
 .tabla-clientes:has(thead th.is-center:nth-child(5)) tbody td:nth-child(5),
-.tabla-clientes:has(thead th.is-center:nth-child(6)) tbody td:nth-child(6) { text-align: center; }
+.tabla-clientes:has(thead th.is-center:nth-child(6)) tbody td:nth-child(6) {
+  text-align: center;
+}

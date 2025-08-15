@@ -2,7 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Clientes.css';
 
 import { db } from '../firebase/firebase';
-import { collection, addDoc, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  doc,
+  updateDoc,
+  getDocs,
+  query,
+  where,
+} from 'firebase/firestore';
 
 import { toast } from 'react-toastify';
 import Pagination from '../components/Pagination/Pagination';
@@ -92,11 +101,38 @@ const Clientes = () => {
     setShowModal(true);
   };
 
+  // === Validación de cédula única (local + Firestore) ===
+  const cedulaExiste = async (cedula, omitId = null) => {
+    const ced = (cedula || '').trim();
+
+    // Chequeo local
+    const existeLocal = clientes.some(
+      (c) => (c.cedula || '').trim() === ced && c.id !== omitId
+    );
+    if (existeLocal) return true;
+
+    // Doble chequeo en Firestore por si el snapshot aún no refleja cambios
+    const qRef = query(collection(db, 'clientes'), where('cedula', '==', ced));
+    const snap = await getDocs(qRef);
+    const existeRemoto = snap.docs.some((d) => d.id !== omitId);
+    return existeRemoto;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.cedula || !formData.nombre || !formData.telefono) {
       toast.error('Completa cédula, nombre y teléfono.');
+      return;
+    }
+
+    // Validar unicidad antes de guardar
+    const duplicada = await cedulaExiste(
+      formData.cedula,
+      editMode ? selectedClientId : null
+    );
+    if (duplicada) {
+      toast.error('La cédula ya existe en el sistema.');
       return;
     }
 
@@ -191,6 +227,7 @@ const Clientes = () => {
                 <th>Teléfono</th>
                 <th>Correo</th>
                 <th className="th-actions is-center">
+                  <span className="th-actions-text">Acciones</span>
                 </th>
               </tr>
             </thead>
