@@ -355,6 +355,12 @@ const OrdenesDeTrabajo = () => {
     }, 'Eliminando reparación…');
   };
 
+  // arriba de return()
+  const faltaCono = !cono.trim();
+  const saveDisabled = !vehiculo || faltaCono || reparaciones.length === 0;
+  const printDisabled = !vehiculo || faltaCono || reparaciones.length === 0;
+
+
   return (
     <div className="ordenesTrabajo-proforma-page">
       <div className="ot-wrapper">
@@ -531,13 +537,36 @@ const OrdenesDeTrabajo = () => {
 
         <div className="footer-actions no-print">
           <button className="btn btn--ghost btn--sm" onClick={limpiar}>Limpiar</button>
-          <button className="btn btn--sm" onClick={guardarOT} disabled={!vehiculo || !cono.trim() || reparaciones.length === 0}>
-            <FaSave className="mr-6" /> {otId ? 'Actualizar Orden' : 'Guardar Orden de Trabajo'}
-          </button>
-          <button className="btn btn--ghost btn--sm" onClick={imprimirOT} disabled={!vehiculo || !cono.trim() || reparaciones.length === 0}>
-            Imprimir / Guardar PDF
-          </button>
+
+          {/* Guardar — tooltip si falta cono */}
+          <span
+            className="tip-wrap"
+            data-tip={faltaCono ? 'Debe ingresar el número de cono' : ''}
+          >
+            <button
+              className="btn btn--sm"
+              onClick={guardarOT}
+              disabled={saveDisabled}
+            >
+              <FaSave className="mr-6" /> {otId ? 'Actualizar Orden' : 'Guardar Orden de Trabajo'}
+            </button>
+          </span>
+
+          {/* Imprimir — tooltip si falta cono */}
+          <span
+            className="tip-wrap"
+            data-tip={faltaCono ? 'Debe ingresar el número de cono' : ''}
+          >
+            <button
+              className="btn btn--ghost btn--sm"
+              onClick={imprimirOT}
+              disabled={printDisabled}
+            >
+              Imprimir / Guardar PDF
+            </button>
+          </span>
         </div>
+
 
         {/* ======= Vista para imprimir ======= */}
         <div id="ot-print" className="ot-print">
