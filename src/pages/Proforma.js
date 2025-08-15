@@ -3,12 +3,12 @@ import './Proforma.css';
 import { db, obtenerNumeroProforma, actualizarNumeroProforma } from '../firebase/firebase';
 import { collection, getDocs, query, where, addDoc, updateDoc, doc } from 'firebase/firestore';
 import logo from '../assets/logo.png';
-import { FaTrashAlt } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faSave, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
+import { FiTrash2 } from 'react-icons/fi';
 
 const Proforma = () => {
   const [cedula, setCedula] = useState('');
@@ -24,6 +24,8 @@ const Proforma = () => {
   const [fecha, setFecha] = useState(null);
   const [proformaId, setProformaId] = useState(null);
   const [buscarProforma, setBuscarProforma] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
   const location = useLocation();
   const proformaDesdeDetalle = location.state?.proforma;
 
@@ -43,18 +45,20 @@ const Proforma = () => {
   };
 
   const handleBuscarProforma = async (numero) => {
+    setIsLoading(true);  // Activar el loading
     try {
       const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(numero)));
       const snapshot = await getDocs(q);
-
+  
       if (snapshot.empty) {
         toast.error(`No se encontró la proforma #${numero}`);
+        setIsLoading(false); // Desactivar el loading
         return;
       }
-
+  
       const docSnap = snapshot.docs[0];
       const data = docSnap.data();
-
+  
       setNumeroProforma(data.numero);
       setCedula(data.cliente?.cedula || '');
       setCliente(data.cliente);
@@ -71,8 +75,11 @@ const Proforma = () => {
     } catch (error) {
       console.error("Error al buscar proforma:", error);
       toast.error('Ocurrió un error al cargar la proforma');
+    } finally {
+      setIsLoading(false); // Desactivar el loading
     }
   };
+  
 
   useEffect(() => {
     if (cedula === '') {
@@ -93,7 +100,6 @@ const Proforma = () => {
     fetchNumeroProforma();
   }, [proformaDesdeDetalle]);
 
-  // ✅ Carga automática si vienes desde DetalleProforma
   useEffect(() => {
     if (proformaDesdeDetalle) {
       setNumeroProforma(proformaDesdeDetalle.numero || null);
@@ -107,7 +113,7 @@ const Proforma = () => {
       setFecha(proformaDesdeDetalle.fecha || new Date().toLocaleDateString());
       setProformaGuardada(false);
       setIsClienteLoaded(true);
-      setProformaId(proformaDesdeDetalle.id || null); // Asegúrate de incluirlo desde DetalleProforma si quieres editar
+      setProformaId(proformaDesdeDetalle.id || null);
       toast.info(`Editando proforma #${proformaDesdeDetalle.numero}`);
     }
   }, [proformaDesdeDetalle]);
@@ -133,22 +139,61 @@ const Proforma = () => {
     setReparaciones(nuevas);
   };
 
-  const eliminarReparacion = (index) => {
+  const eliminarReparacionPorIndex = (index) => {
     const nuevas = [...reparaciones];
     nuevas.splice(index, 1);
     setReparaciones(nuevas);
   };
 
+  // === Confirmación estandarizada (igual a Órdenes de Trabajo) ===
+  const confirmarEliminarReparacion = async (idx) => {
+    eliminarReparacionPorIndex(idx);
+    toast.success('Reparación eliminada', { autoClose: 1800 });
+  };
+
+  const askDelete = (idx) => {
+    toast.info(
+      ({ closeToast }) => (
+        <div className="toast-confirm-container">
+          <p className="toast-confirm-message">
+            ¿Seguro que deseas eliminar esta reparación?
+          </p>
+          <div className="toast-confirm-buttons">
+            <button
+              className="btn-confirm eliminar"
+              onClick={async () => {
+                await confirmarEliminarReparacion(idx);
+                closeToast();
+              }}
+            >
+              Eliminar
+            </button>
+            <button className="btn-confirm cancelar" onClick={closeToast}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        containerId: 'center-toast',
+        className: 'toast-confirm-wrapper'
+      }
+    );
+  };
+  // === fin confirmación ===
+
   const agregarReparacion = () => {
     setReparaciones([...reparaciones, { concepto: '', precio: 0 }]);
   };
 
-  const handleIvaChange = () => {
-    setIvaChecked(!ivaChecked);
-  };
+  const handleIvaChange = () => setIvaChecked(!ivaChecked);
 
   useEffect(() => {
-    let suma = reparaciones.reduce((acc, r) => acc + r.precio, 0);
+    let suma = reparaciones.reduce((acc, r) => acc + (Number(r.precio) || 0), 0);
     if (ivaChecked) {
       const iva = suma * 0.13;
       setIvaAmount(iva);
@@ -160,17 +205,10 @@ const Proforma = () => {
   }, [reparaciones, ivaChecked]);
 
   const handleGuardarProforma = async () => {
-    if (!cliente) {
-      toast.error('Debe cargar un cliente válido.');
-      return;
-    }
-    if (reparaciones.length === 0) {
-      toast.error('Debe agregar al menos una reparación.');
-      return;
-    }
+    if (!cliente) return toast.error('Debe cargar un cliente válido.');
+    if (reparaciones.length === 0) return toast.error('Debe agregar al menos una reparación.');
     if (!vehiculo.placa || !vehiculo.marca || !vehiculo.anio || !vehiculo.color) {
-      toast.error('Debe completar todos los datos del vehículo.');
-      return;
+      return toast.error('Debe completar todos los datos del vehículo.');
     }
 
     const nuevaProforma = {
@@ -202,34 +240,29 @@ const Proforma = () => {
 
   const handleDescargarPDF = () => {
     const element = document.getElementById('proformaPrintable').cloneNode(true);
-  
-    // Ocultar cosas que no van en el PDF
+
     element.querySelectorAll(
-      '.boton-eliminar, .boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma'
+      '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar'
     ).forEach(el => el && (el.style.display = 'none'));
-  
-    // Ocultar la 4ta columna (eliminar)
+
     element.querySelectorAll('th:nth-child(4), td:nth-child(4)')
       .forEach(col => col.style.display = 'none');
-  
-    // Ocultar IVA checkbox (como ya hacías)
+
     const ivaSection = element.querySelector('.iva-section');
     if (ivaSection) ivaSection.style.display = 'none';
-  
-    // Asegurar logo grande en el PDF (por si el clon aplica otra medida)
+
     const logoImg = element.querySelector('.proforma-logo img');
     if (logoImg) logoImg.style.width = '150px';
-  
+
     const options = {
       margin: 10,
       filename: `proforma-${numeroProforma ?? ''}.pdf`,
-      html2canvas: { scale: 3, useCORS: true }, // useCORS ayuda con imágenes
+      html2canvas: { scale: 3, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
-  
+
     html2pdf(element, options);
   };
-  
 
   const handleInputChange = (campo, value) => {
     if (campo === 'marca' || campo === 'color') {
@@ -242,65 +275,79 @@ const Proforma = () => {
   };
 
   return (
+    <div className="proforma-page">
+    <ToastContainer
+      enableMultiContainer
+      containerId="center-toast"
+      className="center-toast-container"
+      newestOnTop
+      closeOnClick={false}
+    />
+
+    {/* Mostrar el spinner de carga mientras isLoading sea true */}
+    {isLoading && (
+      <div className="loading-overlay">
+        <div className="spinner"></div>
+        <p>Buscando proforma...</p>
+      </div>
+    )}
+
     <div className="proforma-wrapper" id="proformaPrintable">
-      <header className="proforma-header">
-        <div className="proforma-top">
+      {/* Contenido de la página */}
+      <header className="proforma-head">
+        <div className="head-left">
           <div className="proforma-logo">
             <img src={logo} alt="Logo Taller 2H" className="logo" />
           </div>
-          <div className="proforma-contact">
-            <p><strong>Tel:</strong> (506) 2222-2222</p>
-            <p><strong>Email:</strong> info@taller2h.com</p>
-            <p><strong>Dirección:</strong> San José, Costa Rica</p>
-            <p><strong>Cédula Jurídica:</strong> 123145644</p>
-
-            <button
-              className="boton-guardar"
-              onClick={handleGuardarProforma}
-              disabled={!isClienteLoaded || proformaGuardada}
-            >
-              <FontAwesomeIcon icon={faSave} /> Guardar Proforma
-            </button>
-
-            <button className="boton-nueva" onClick={handleNuevaProforma}>
-              <FontAwesomeIcon icon={faPlus} /> Nueva Proforma
-            </button>
-
-            <button className="boton-descargar" onClick={handleDescargarPDF}>
-              <FontAwesomeIcon icon={faDownload} /> Descargar PDF
-            </button>
+          <div className="brand-text">
+            <h2>Proforma</h2>
+            <p className="subtitle">Genera y administra presupuestos.</p>
           </div>
         </div>
-        <h1>PROFORMA</h1>
-        <div className="buscar-proforma">
-          <label htmlFor="buscarProforma">Buscar Proforma</label>
-          <input
-            id="buscarProforma"
-            type="text"
-            className="input-buscar"
-            value={buscarProforma}
-            onChange={(e) => setBuscarProforma(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleBuscarProforma(e.target.value);
-              }
-              if (e.key && !/^\d$/.test(e.key) && e.key !== 'Backspace') {
-                e.preventDefault();
-              }
-            }}
-          />
+        <div className="head-right">
+          <button
+            className="boton-guardar"
+            onClick={handleGuardarProforma}
+            disabled={!isClienteLoaded || proformaGuardada}
+          >
+            <FontAwesomeIcon icon={faSave} /> Guardar
+          </button>
+          <button className="boton-nueva" onClick={handleNuevaProforma}>
+            <FontAwesomeIcon icon={faPlus} /> Nueva
+          </button>
+          <button className="boton-descargar" onClick={handleDescargarPDF}>
+            <FontAwesomeIcon icon={faDownload} /> PDF
+          </button>
         </div>
       </header>
 
-      <div id="proformaContent">
-        <h2>N° Proforma: {numeroProforma ? numeroProforma : '___________'}</h2>
-
-        <section className="proforma-info">
-          <div className="factura-detalle">
-            <p><strong>Fecha:</strong> {fecha ? fecha : new Date().toLocaleDateString()}</p>
+        {/* Toolbar */}
+        <div className="proforma-toolbar">
+          <div className="datos-mini">
+            <span className="badge">N° {numeroProforma ?? '—'}</span>
+            <span className="fecha-mini">Fecha: {fecha || new Date().toLocaleDateString()}</span>
           </div>
 
-          <div className="cliente-detalle">
+          <div className="buscar-proforma">
+            <label htmlFor="buscarProforma">Buscar Proforma</label>
+            <input
+              id="buscarProforma"
+              type="text"
+              className="input-buscar"
+              value={buscarProforma}
+              onChange={(e) => setBuscarProforma(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleBuscarProforma(e.target.value);
+                if (e.key && !/^\d$/.test(e.key) && e.key !== 'Backspace') e.preventDefault();
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Grid info */}
+        <section className="grid-two">
+          <div className="card-section">
+            <h3>Cliente</h3>
             <label htmlFor="cedula">Cédula del cliente</label>
             <input
               id="cedula"
@@ -317,84 +364,109 @@ const Proforma = () => {
               </div>
             )}
           </div>
+
+          <div className="card-section">
+            <h3>Vehículo</h3>
+            <div className="vehiculo-detalle">
+              {['placa', 'marca', 'anio', 'color'].map((campo) => {
+                const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
+                return (
+                  <div className="input-group" key={campo}>
+                    <label htmlFor={campo}>{label}</label>
+                    <input
+                      id={campo}
+                      type="text"
+                      placeholder={label}
+                      value={vehiculo[campo]}
+                      onChange={(e) => handleInputChange(campo, e.target.value)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </section>
 
-        <section className="vehiculo-detalle">
-          {['placa', 'marca', 'anio', 'color'].map((campo) => {
-            const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
-            return (
-              <div className="input-group" key={campo}>
-                <label htmlFor={campo}>{label}</label>
-                <input
-                  id={campo}
-                  type="text"
-                  placeholder={label}
-                  value={vehiculo[campo]}
-                  onChange={(e) => handleInputChange(campo, e.target.value)}
-                />
-              </div>
-            );
-          })}
-        </section>
+        {/* Tabla reparaciones */}
+        <div className="tabla-wrap">
+          <div className="tabla-headbar">
+            <h3>Detalle de reparaciones</h3>
+            <button className="btn-add" onClick={agregarReparacion}>+ Agregar</button>
+          </div>
 
-        <table className="proforma-tabla">
-          <thead>
-            <tr>
-              <th>Descripción</th>
-              <th>Monto</th>
-              <th>Total</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {reparaciones.map((r, index) => (
-              <tr key={index}>
-                <td>
-                  <input
-                    type="text"
-                    value={r.concepto}
-                    onChange={(e) => handleReparacionChange(index, 'concepto', e.target.value)}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    value={r.precio}
-                    onChange={(e) => handleReparacionChange(index, 'precio', e.target.value)}
-                  />
-                </td>
-                <td>₡{(r.precio).toFixed(2)}</td>
-                <td>
-                  <button className="boton-eliminar" onClick={() => eliminarReparacion(index)}>
-                    <FaTrashAlt />
-                  </button>
-                </td>
+          <table className="proforma-tabla">
+            <thead>
+              <tr>
+                <th>Descripción</th>
+                <th>Monto</th>
+                <th>Total</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="proforma-actions">
-          <button onClick={agregarReparacion}>+ Agregar Reparación</button>
+            </thead>
+            <tbody>
+              {reparaciones.map((r, index) => (
+                <tr key={index}>
+                  <td>
+                    <input
+                      type="text"
+                      value={r.concepto}
+                      onChange={(e) => handleReparacionChange(index, 'concepto', e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={r.precio}
+                      onChange={(e) => handleReparacionChange(index, 'precio', e.target.value)}
+                    />
+                  </td>
+                  <td>₡{Number(r.precio || 0).toFixed(2)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-icon btn-icon--danger"
+                      onClick={() => askDelete(index)}
+                      aria-label="Eliminar reparación"
+                      title="Eliminar"
+                    >
+                      <FiTrash2 />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {reparaciones.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="empty">Sin reparaciones. Agrega al menos una.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        <section className="iva-section">
-          <label>
-            <input
-              type="checkbox"
-              checked={ivaChecked}
-              onChange={handleIvaChange}
-            />
-            Factura Electrónica (13%)
-          </label>
+        {/* Totales + IVA */}
+        <section className="totales-row">
+          <div className="iva-section">
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={ivaChecked}
+                onChange={handleIvaChange}
+                aria-label="Aplicar Factura Electrónica (13%)"
+              />
+              <span className="slider" aria-hidden="true"></span>
+            </label>
+            <span className="switch-label">Factura Electrónica (13%)</span>
+          </div>
+
+          <div className="proforma-totales card-totales">
+            <p><strong>Subtotal:</strong> ₡{(total - ivaAmount).toFixed(2)}</p>
+            {ivaChecked && <p><strong>IVA (13%):</strong> ₡{ivaAmount.toFixed(2)}</p>}
+            <p className="total-line"><strong>Total:</strong> ₡{total.toFixed(2)}</p>
+          </div>
         </section>
 
-        <div className="proforma-totales">
-          <p><strong>Subtotal:</strong> ₡{(total - ivaAmount).toFixed(2)}</p>
-          {ivaChecked && <p><strong>IVA (13%):</strong> ₡{ivaAmount.toFixed(2)}</p>}
-          <p><strong>Total:</strong> ₡{total.toFixed(2)}</p>
-        </div>
 
+        {/* Footer notas */}
         <footer className="proforma-footer">
           <div className="proforma-nota">
             <h4>Nota:</h4>
@@ -408,8 +480,8 @@ const Proforma = () => {
             <h4>Información Adicional:</h4>
             <ol>
               <li>Condiciones de pago: 50% pago adelantado y 50% contra entrega.</li>
-              <li>En caso de necesitar algún repuesto adicional, se le indicará una vez procedamos con el desarme del vehículo.</li>
-              <li>Monto de repuestos por tiempo limitado y sujeto a cambio por parte de la agencia vendedora.</li>
+              <li>Si se requieren repuestos adicionales, se informará tras el desarme.</li>
+              <li>Precios de repuestos sujetos a cambios del proveedor.</li>
               <li>Validez de la oferta: 10 días.</li>
             </ol>
           </div>
@@ -418,7 +490,6 @@ const Proforma = () => {
       </div>
     </div>
   );
-
 };
 
 export default Proforma;

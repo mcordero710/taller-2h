@@ -191,7 +191,6 @@ const Clientes = () => {
                 <th>Teléfono</th>
                 <th>Correo</th>
                 <th className="th-actions is-center">
-                  <span className="th-actions-text">Editar</span>
                 </th>
               </tr>
             </thead>
