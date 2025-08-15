@@ -41,17 +41,6 @@ const Layout = () => {
                   <span>Factura</span>
                 </Link>
               </li>
-
-              <Link to="/proveedores">
-                <FaTruck className="menu-icon" />
-                <span>Proveedores</span>
-              </Link>
-            </li>
-            <li>
-              <Link to="/inventario">
-                <FaBoxes className="menu-icon" />
-                <span>Inventario</span>
-              </Link>
             </li>
             <li>
               <Link to="/ordenes">
