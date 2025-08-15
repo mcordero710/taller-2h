@@ -250,15 +250,16 @@ const Proforma = () => {
   const handleGuardarProforma = async () => {
     if (!cliente) return toast.error('Debe cargar un cliente válido.');
     if (reparaciones.length === 0) return toast.error('Debe agregar al menos una reparación.');
-    // 👇 ahora también exige "modelo"
-    if (!vehiculo.placa || !vehiculo.marca || !vehiculo.modelo || !vehiculo.anio || !vehiculo.color) {
-      return toast.error('Debe completar todos los datos del vehículo.');
+
+    // 🔹 Placa OPCIONAL: solo validamos marca, modelo, año y color
+    if (!vehiculo.marca || !vehiculo.modelo || !vehiculo.anio || !vehiculo.color) {
+      return toast.error('Debe completar marca, modelo, año y color del vehículo.');
     }
 
     const nuevaProforma = {
       numero: numeroProforma,
       cliente,
-      vehiculo,
+      vehiculo, // puede llevar placa '' si no la tienen aún
       reparaciones,
       total,
       iva: ivaChecked ? ivaAmount : 0,
@@ -287,6 +288,7 @@ const Proforma = () => {
     }
   };
 
+
   const handleDescargarPDF = async () => {
     const original = document.getElementById('proformaPrintable');
     if (!original) return;
@@ -298,27 +300,126 @@ const Proforma = () => {
   
         const element = original.cloneNode(true);
   
-        // Ocultar controles (incluye "+ Agregar")
+        // 1) Ocultar controles/acciones de la UI
         element
           .querySelectorAll(
             '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
           )
           .forEach((el) => el && (el.style.display = 'none'));
   
-        // Ocultar columna de acciones
+        // Columna de acciones de la tabla
         element
           .querySelectorAll('th:nth-child(4), td:nth-child(4)')
           .forEach((col) => (col.style.display = 'none'));
   
-        // Ocultar sección de IVA
+        // Ocultar toggle IVA
         const ivaSection = element.querySelector('.iva-section');
         if (ivaSection) ivaSection.style.display = 'none';
   
-        // ⬇️ Ocultar el subtítulo "Genera y administra presupuestos."
+        // Ocultar subtítulo bajo "Proforma"
         const subtitle = element.querySelector('.brand-text .subtitle');
         if (subtitle) subtitle.style.display = 'none';
   
-        // Ajustar tamaño del logo
+        // 2) Info del TALLER ARRIBA A LA DERECHA, en vertical
+        (() => {
+          const head = element.querySelector('.proforma-head');
+  
+          // usa o crea el contenedor derecho del header
+          let right = head?.querySelector('.head-right');
+          if (!right) {
+            right = document.createElement('div');
+            right.className = 'head-right';
+            head?.appendChild(right);
+          }
+  
+          // limpia botones y lo convierte en columna de texto
+          right.innerHTML = '';
+          right.setAttribute(
+            'style',
+            'margin-left:auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:#111;line-height:1.35;'
+          );
+  
+          // Ajusta a tus datos reales
+          const lines = [
+            'Taller automotriz 2H S.A',
+            'Tel: 62756427',
+            'Email: taller2hrosario@gmail.com',
+            'Cédula Jurídica: 3-101-930294',
+            // 'Dirección: San José, Costa Rica', // opcional
+          ];
+  
+          lines.forEach((txt, i) => {
+            const div = document.createElement('div');
+            if (i === 0) div.style.fontWeight = '700'; // nombre del taller en negrita
+            div.textContent = txt;
+            right.appendChild(div);
+          });
+        })();
+  
+        // 3) Utilidad para filas de texto
+        const makeRow = (label, value = '') => {
+          const row = document.createElement('div');
+          row.setAttribute(
+            'style',
+            'display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:14px;'
+          );
+          const l = document.createElement('strong');
+          l.textContent = `${label}:`;
+          l.setAttribute('style', 'min-width:140px;color:#0f172a;');
+          const v = document.createElement('span');
+          v.textContent = value ?? '';
+          v.setAttribute('style', 'color:#334155;white-space:pre-wrap;');
+          row.appendChild(l);
+          row.appendChild(v);
+          return row;
+        };
+  
+        // 3.a) Cliente como texto (sin inputs)
+        (() => {
+          const clienteCard = Array.from(element.querySelectorAll('.card-section'))
+            .find(sec => (sec.querySelector('h3')?.textContent || '').toLowerCase().includes('cliente'));
+          if (!clienteCard) return;
+  
+          clienteCard.innerHTML = '';
+          const title = document.createElement('h3');
+          title.textContent = 'Cliente';
+          title.setAttribute('style', 'margin:0 0 8px;font-size:16px;color:#0f172a;');
+          const block = document.createElement('div');
+          block.setAttribute('style', 'padding:4px 2px;');
+  
+          block.appendChild(makeRow('Cédula', (cedula || '').toString()));
+          block.appendChild(makeRow('Nombre', cliente ? `${cliente.nombre ?? ''} ${cliente.apellido ?? ''}`.trim() : ''));
+          block.appendChild(makeRow('Teléfono', cliente?.telefono ?? ''));
+          block.appendChild(makeRow('Correo', cliente?.correo ?? ''));
+  
+          clienteCard.appendChild(title);
+          clienteCard.appendChild(block);
+        })();
+  
+        // 3.b) Vehículo como texto (sin inputs) — Placa puede ir vacía
+        (() => {
+          const vehiculoCard = Array.from(element.querySelectorAll('.card-section'))
+            .find(sec => (sec.querySelector('h3')?.textContent || '').toLowerCase().includes('vehículo'));
+          if (!vehiculoCard) return;
+  
+          vehiculoCard.innerHTML = '';
+          const title = document.createElement('h3');
+          title.textContent = 'Vehículo';
+          title.setAttribute('style', 'margin:0 0 8px;font-size:16px;color:#0f172a;');
+          const block = document.createElement('div');
+          block.setAttribute('style', 'padding:4px 2px;');
+  
+          block.appendChild(makeRow('Placa', vehiculo?.placa ?? ''));
+          block.appendChild(makeRow('Marca', vehiculo?.marca ?? ''));
+          block.appendChild(makeRow('Modelo', vehiculo?.modelo ?? ''));
+          block.appendChild(makeRow('Año', vehiculo?.anio ?? ''));
+          block.appendChild(makeRow('Color', vehiculo?.color ?? ''));
+  
+          vehiculoCard.appendChild(title);
+          vehiculoCard.appendChild(block);
+        })();
+  
+        // 4) Logo un poco más grande
         const logoImg = element.querySelector('.proforma-logo img');
         if (logoImg) {
           logoImg.style.width = '120px';
@@ -339,7 +440,6 @@ const Proforma = () => {
       setIsGeneratingPdf(false);
     }
   };
-  
   
   // 👇 validación/normalización de inputs vehículo (incluye "modelo")
   const handleInputChange = (campo, value) => {
@@ -450,9 +550,11 @@ const Proforma = () => {
           <div className="card-section">
             <h3>Vehículo</h3>
             <div className="vehiculo-detalle">
-              {/* orden: Placa, Marca, Modelo, Año, Color */}
               {['placa', 'marca', 'modelo', 'anio', 'color'].map((campo) => {
-                const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
+                const label =
+                  campo === 'anio' ? 'Año' :
+                    campo === 'placa' ? 'Placa (opcional)' :
+                      campo.charAt(0).toUpperCase() + campo.slice(1);
 
                 const commonProps = {
                   id: campo,
@@ -466,16 +568,12 @@ const Proforma = () => {
                 return (
                   <div className="input-group" key={campo}>
                     <label htmlFor={campo}>{label}</label>
-
                     {campo === 'color' ? (
                       <input
                         {...commonProps}
                         inputMode="text"
-                        pattern="[A-Za-zÁÉÍÓÚáéíóúÜü\s\-]+"
-                        onKeyDown={(e) => {
-                          // Bloquea números (incluye numpad)
-                          if (/\d/.test(e.key)) e.preventDefault();
-                        }}
+                        pattern="[A-Za-zÁÉÍÓÚáéíóúÜü\\s\\-]+"
+                        onKeyDown={(e) => { if (/\d/.test(e.key)) e.preventDefault(); }}
                       />
                     ) : (
                       <input {...commonProps} />
