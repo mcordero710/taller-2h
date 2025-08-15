@@ -1,5 +1,5 @@
 // src/pages/OrdenesDeTrabajo.jsx
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import './OrdenesDeTrabajo.css';
 import { toast, ToastContainer } from 'react-toastify';
 import { FaSearch, FaCar, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaHashtag } from 'react-icons/fa';
@@ -21,15 +21,6 @@ import {
 import { useLoading } from '../components/ui/LoadingContext';
 
 const OrdenesDeTrabajo = () => {
-  const vehiculosMock = useMemo(
-    () => [
-      { placa: 'ABC123', marca: 'Toyota', anio: 2015, color: 'Rojo' },
-      { placa: 'BCD456', marca: 'Hyundai', anio: 2018, color: 'Azul' },
-      { placa: 'PQR789', marca: 'Kia', anio: 2020, color: 'Blanco' },
-      { placa: 'CR123456', marca: 'Nissan', anio: 2016, color: 'Gris' },
-    ],
-    []
-  );
   const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
   const [placa, setPlaca] = useState('');
@@ -130,6 +121,7 @@ const OrdenesDeTrabajo = () => {
     setVehiculo({
       placa: placaDoc,
       marca: ot.vehiculo?.marca || '',
+      modelo: ot.vehiculo?.modelo || '',
       anio: ot.vehiculo?.anio || '',
       color: ot.vehiculo?.color || '',
     });
@@ -161,6 +153,7 @@ const OrdenesDeTrabajo = () => {
     setVehiculo({
       placa: placaDoc,
       marca: p.vehiculo?.marca || '',
+      modelo: p.vehiculo?.modelo || '',
       anio: p.vehiculo?.anio || p.vehiculo?.ano || '',
       color: p.vehiculo?.color || '',
     });
@@ -183,7 +176,13 @@ const OrdenesDeTrabajo = () => {
     const vehSnap = await getDoc(vehRef);
     if (vehSnap.exists()) {
       const v = vehSnap.data();
-      setVehiculo({ placa: placaUpper, marca: v.marca || '', anio: v.anio || v.ano || '', color: v.color || '' });
+      setVehiculo({
+        placa: placaUpper,
+        marca: v.marca || '',
+        modelo: v.vehiculo?.modelo || '',
+        anio: v.anio || v.ano || '',
+        color: v.color || ''
+      });
       await loadUltimaOT(placaUpper, { preserveProforma: true });
       return { origen: 'vehiculos' };
     }
@@ -198,13 +197,6 @@ const OrdenesDeTrabajo = () => {
       setVehiculo({ placa: placaUpper, marca: info.marca || '', anio: info.anio || info.ano || '', color: info.color || '' });
       await loadUltimaOT(placaUpper, { preserveProforma: true });
       return { origen: 'proformas' };
-    }
-
-    const mock = vehiculosMock.find(v => v.placa.toUpperCase() === placaUpper);
-    if (mock) {
-      setVehiculo({ ...mock, placa: placaUpper });
-      await loadUltimaOT(placaUpper, { preserveProforma: true });
-      return { origen: 'mock' };
     }
 
     return null;
@@ -311,7 +303,13 @@ const OrdenesDeTrabajo = () => {
     const payload = {
       placa: placaNorm,
       placaRaw: vehiculo?.placa || placa,
-      vehiculo: { marca: vehiculo?.marca || '', anio: Number(vehiculo?.anio) || vehiculo?.anio || '', color: vehiculo?.color || '', placa: placaNorm },
+      vehiculo: {
+        marca: vehiculo?.marca || '',
+        modelo: vehiculo?.modelo || '',
+        anio: Number(vehiculo?.anio) || vehiculo?.anio || '',
+        color: vehiculo?.color || '',
+        placa: placaNorm
+      },
       numeroCono: cono.trim(),
       reparaciones: reparaciones.map(r => ({ texto: r.texto })),
       estado: 'abierta',
@@ -546,9 +544,6 @@ const OrdenesDeTrabajo = () => {
           <div className="otp-header">
             <img src={logo} alt="Taller 2H" className="otp-logo" />
             <div className="otp-empresa">
-              <div><strong>Tel:</strong> (506) 2222-2222</div>
-              <div><strong>Email:</strong> info@taller2h.com</div>
-              <div><strong>Dirección:</strong> San José, Costa Rica</div>
               <div className="otp-fecha">
                 <strong>Fecha:</strong>{' '}
                 {new Date().toLocaleDateString('es-CR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
@@ -562,6 +557,7 @@ const OrdenesDeTrabajo = () => {
             {proformaNumero && <div><strong>Proforma:</strong> {proformaNumero}</div>}
             <div><strong>Placa:</strong> {vehiculo?.placa || placa}</div>
             <div><strong>Marca:</strong> {vehiculo?.marca}</div>
+            <div><strong>Modelo:</strong> {vehiculo?.modelo || ''}</div>
             <div><strong>Año:</strong> {vehiculo?.anio}</div>
             <div><strong>Color:</strong> {vehiculo?.color}</div>
           </div>
