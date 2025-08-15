@@ -316,7 +316,7 @@
   z-index: 1;
   background: #0f172a;
   color: #fff;
-  text-align: left;
+  text-align: center;
   padding: 12px;
 }
 
@@ -575,18 +575,30 @@
 
 /* Print */
 @media print {
-
+  /* Oculta todos los controles y el botón Agregar */
   .boton-descargar,
+  .boton-guardar,
+  .boton-nueva,
   .iva-section,
-  .proforma-toolbar {
+  .proforma-toolbar,
+  .btn-add {
     display: none !important;
   }
 
+  /* Columna de acciones de la tabla */
   .proforma-tabla th:nth-child(4),
   .proforma-tabla td:nth-child(4) {
     display: none !important;
   }
+
+  /* Logo más controlado para impresión */
+  .proforma-logo img {
+    width: 120px !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
 }
+
 
 @media (max-width:900px) {
   .grid-two {

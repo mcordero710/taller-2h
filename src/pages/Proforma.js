@@ -1,3 +1,4 @@
+// src/pages/Proforma.jsx
 import React, { useState, useEffect } from 'react';
 import './Proforma.css';
 import { db, obtenerNumeroProforma, actualizarNumeroProforma } from '../firebase/firebase';
@@ -9,14 +10,16 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faSave, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 import { FiTrash2 } from 'react-icons/fi';
-
-// 👇 Loader global
+// Loader global
 import { useLoading } from '../components/ui/LoadingContext';
 
 const Proforma = () => {
   const [cedula, setCedula] = useState('');
   const [cliente, setCliente] = useState(null);
-  const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', anio: '', color: '' });
+
+  // 👇 ahora incluye "modelo"
+  const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', modelo: '', anio: '', color: '' });
+
   const [reparaciones, setReparaciones] = useState([]);
   const [total, setTotal] = useState(0);
   const [ivaChecked, setIvaChecked] = useState(false);
@@ -28,7 +31,7 @@ const Proforma = () => {
   const [proformaId, setProformaId] = useState(null);
   const [buscarProforma, setBuscarProforma] = useState('');
 
-  // flags UI (para deshabilitar controles)
+  // flags UI
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -65,7 +68,7 @@ const Proforma = () => {
     try {
       setIsSearching(true);
       await withLoading(async () => {
-        await nextFrame(); // deja que se pinte el overlay
+        await nextFrame();
         const q = query(collection(db, 'proformas'), where('numero', '==', parseInt(n, 10)));
         const snapshot = await getDocs(q);
 
@@ -80,7 +83,14 @@ const Proforma = () => {
         setNumeroProforma(data.numero);
         setCedula(data.cliente?.cedula || '');
         setCliente(data.cliente || null);
-        setVehiculo(data.vehiculo || { placa: '', marca: '', anio: '', color: '' });
+        // 👇 soporta proformas antiguas sin "modelo"
+        setVehiculo({
+          placa: data.vehiculo?.placa || '',
+          marca: data.vehiculo?.marca || '',
+          modelo: data.vehiculo?.modelo || '',
+          anio: data.vehiculo?.anio || '',
+          color: data.vehiculo?.color || '',
+        });
         setReparaciones(data.reparaciones || []);
         setIvaChecked((data.iva || 0) > 0);
         setIvaAmount(data.iva || 0);
@@ -125,7 +135,14 @@ const Proforma = () => {
       setNumeroProforma(proformaDesdeDetalle.numero || null);
       setCedula(proformaDesdeDetalle.cliente?.cedula || '');
       setCliente(proformaDesdeDetalle.cliente || null);
-      setVehiculo(proformaDesdeDetalle.vehiculo || { placa: '', marca: '', anio: '', color: '' });
+      // 👇 soporta que venga o no "modelo"
+      setVehiculo({
+        placa: proformaDesdeDetalle.vehiculo?.placa || '',
+        marca: proformaDesdeDetalle.vehiculo?.marca || '',
+        modelo: proformaDesdeDetalle.vehiculo?.modelo || '',
+        anio: proformaDesdeDetalle.vehiculo?.anio || '',
+        color: proformaDesdeDetalle.vehiculo?.color || '',
+      });
       setReparaciones(proformaDesdeDetalle.reparaciones || []);
       setIvaChecked((proformaDesdeDetalle.iva || 0) > 0);
       setIvaAmount(proformaDesdeDetalle.iva || 0);
@@ -145,7 +162,7 @@ const Proforma = () => {
         await nextFrame();
         setCedula('');
         setCliente(null);
-        setVehiculo({ placa: '', marca: '', anio: '', color: '' });
+        setVehiculo({ placa: '', marca: '', modelo: '', anio: '', color: '' });
         setReparaciones([]);
         setTotal(0);
         setIvaChecked(false);
@@ -175,7 +192,6 @@ const Proforma = () => {
     setReparaciones(nuevas);
   };
 
-  // Confirmación con toast
   const confirmarEliminarReparacion = async (idx) => {
     eliminarReparacionPorIndex(idx);
     toast.success('Reparación eliminada', { autoClose: 1800 });
@@ -234,7 +250,8 @@ const Proforma = () => {
   const handleGuardarProforma = async () => {
     if (!cliente) return toast.error('Debe cargar un cliente válido.');
     if (reparaciones.length === 0) return toast.error('Debe agregar al menos una reparación.');
-    if (!vehiculo.placa || !vehiculo.marca || !vehiculo.anio || !vehiculo.color) {
+    // 👇 ahora también exige "modelo"
+    if (!vehiculo.placa || !vehiculo.marca || !vehiculo.modelo || !vehiculo.anio || !vehiculo.color) {
       return toast.error('Debe completar todos los datos del vehículo.');
     }
 
@@ -273,47 +290,73 @@ const Proforma = () => {
   const handleDescargarPDF = async () => {
     const original = document.getElementById('proformaPrintable');
     if (!original) return;
-
+  
     try {
       setIsGeneratingPdf(true);
       await withLoading(async () => {
         await nextFrame();
+  
         const element = original.cloneNode(true);
-
-        element.querySelectorAll('.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar')
-          .forEach(el => el && (el.style.display = 'none'));
-
-        element.querySelectorAll('th:nth-child(4), td:nth-child(4)')
-          .forEach(col => (col.style.display = 'none'));
-
+  
+        // Ocultar controles (incluye "+ Agregar")
+        element
+          .querySelectorAll(
+            '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
+          )
+          .forEach((el) => el && (el.style.display = 'none'));
+  
+        // Ocultar columna de acciones
+        element
+          .querySelectorAll('th:nth-child(4), td:nth-child(4)')
+          .forEach((col) => (col.style.display = 'none'));
+  
+        // Ocultar sección de IVA
         const ivaSection = element.querySelector('.iva-section');
         if (ivaSection) ivaSection.style.display = 'none';
-
+  
+        // ⬇️ Ocultar el subtítulo "Genera y administra presupuestos."
+        const subtitle = element.querySelector('.brand-text .subtitle');
+        if (subtitle) subtitle.style.display = 'none';
+  
+        // Ajustar tamaño del logo
         const logoImg = element.querySelector('.proforma-logo img');
-        if (logoImg) logoImg.style.width = '150px';
-
+        if (logoImg) {
+          logoImg.style.width = '120px';
+          logoImg.style.height = 'auto';
+          logoImg.style.objectFit = 'contain';
+        }
+  
         const options = {
           margin: 10,
           filename: `proforma-${numeroProforma ?? ''}.pdf`,
           html2canvas: { scale: 3, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         };
-
-        // usar cadena de métodos para poder await
+  
         await html2pdf().set(options).from(element).save();
       }, 'Generando PDF…');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
-
+  
+  
+  // 👇 validación/normalización de inputs vehículo (incluye "modelo")
   const handleInputChange = (campo, value) => {
-    if (campo === 'marca' || campo === 'color') {
-      setVehiculo({ ...vehiculo, [campo]: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ]/g, '') });
+    if (campo === 'marca') {
+      // Solo letras y espacios
+      setVehiculo(v => ({ ...v, marca: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ ]/g, '') }));
+    } else if (campo === 'color') {
+      // Solo letras, espacios y guiones (p.ej. "Gris-Perla")
+      setVehiculo(v => ({ ...v, color: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ\- ]/g, '') }));
+    } else if (campo === 'modelo') {
+      // Letras, números, espacios y guiones (ej: "CX-5", "320i")
+      setVehiculo(v => ({ ...v, modelo: value.replace(/[^A-Za-z0-9áéíóúÁÉÍÓÚüÜ\- ]/g, '') }));
     } else if (campo === 'anio') {
-      setVehiculo({ ...vehiculo, [campo]: value.replace(/\D/g, '') });
+      // Solo dígitos
+      setVehiculo(v => ({ ...v, anio: value.replace(/\D/g, '') }));
     } else {
-      setVehiculo({ ...vehiculo, [campo]: value });
+      setVehiculo(v => ({ ...v, [campo]: value }));
     }
   };
 
@@ -407,24 +450,42 @@ const Proforma = () => {
           <div className="card-section">
             <h3>Vehículo</h3>
             <div className="vehiculo-detalle">
-              {['placa', 'marca', 'anio', 'color'].map((campo) => {
+              {/* orden: Placa, Marca, Modelo, Año, Color */}
+              {['placa', 'marca', 'modelo', 'anio', 'color'].map((campo) => {
                 const label = campo === 'anio' ? 'Año' : campo.charAt(0).toUpperCase() + campo.slice(1);
+
+                const commonProps = {
+                  id: campo,
+                  type: 'text',
+                  placeholder: label,
+                  value: vehiculo[campo] ?? '',
+                  disabled: busy,
+                  onChange: (e) => handleInputChange(campo, e.target.value),
+                };
+
                 return (
                   <div className="input-group" key={campo}>
                     <label htmlFor={campo}>{label}</label>
-                    <input
-                      id={campo}
-                      type="text"
-                      placeholder={label}
-                      value={vehiculo[campo]}
-                      disabled={busy}
-                      onChange={(e) => handleInputChange(campo, e.target.value)}
-                    />
+
+                    {campo === 'color' ? (
+                      <input
+                        {...commonProps}
+                        inputMode="text"
+                        pattern="[A-Za-zÁÉÍÓÚáéíóúÜü\s\-]+"
+                        onKeyDown={(e) => {
+                          // Bloquea números (incluye numpad)
+                          if (/\d/.test(e.key)) e.preventDefault();
+                        }}
+                      />
+                    ) : (
+                      <input {...commonProps} />
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
+
         </section>
 
         {/* Tabla reparaciones */}
