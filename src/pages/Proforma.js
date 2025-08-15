@@ -300,45 +300,63 @@ const Proforma = () => {
   
         const element = original.cloneNode(true);
   
-        // 1) Ocultar controles/acciones
+        // 1) Ocultar controles/acciones de la UI
         element
           .querySelectorAll(
             '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
           )
           .forEach((el) => el && (el.style.display = 'none'));
   
-        // ocultar columna de acciones en tabla
+        // Columna de acciones de la tabla
         element
           .querySelectorAll('th:nth-child(4), td:nth-child(4)')
           .forEach((col) => (col.style.display = 'none'));
   
-        // ocultar toggle IVA en impresión
+        // Ocultar toggle IVA
         const ivaSection = element.querySelector('.iva-section');
         if (ivaSection) ivaSection.style.display = 'none';
   
-        // ocultar subtítulo
+        // Ocultar subtítulo bajo "Proforma"
         const subtitle = element.querySelector('.brand-text .subtitle');
         if (subtitle) subtitle.style.display = 'none';
   
-        // 2) Bloque de información de contacto bajo el header
+        // 2) Info del TALLER ARRIBA A LA DERECHA, en vertical
         (() => {
           const head = element.querySelector('.proforma-head');
-          const contacto = document.createElement('div');
-          contacto.setAttribute(
+  
+          // usa o crea el contenedor derecho del header
+          let right = head?.querySelector('.head-right');
+          if (!right) {
+            right = document.createElement('div');
+            right.className = 'head-right';
+            head?.appendChild(right);
+          }
+  
+          // limpia botones y lo convierte en columna de texto
+          right.innerHTML = '';
+          right.setAttribute(
             'style',
-            'display:flex;flex-wrap:wrap;gap:18px;margin:8px 0 12px 0;font-size:12px;color:#333;'
+            'margin-left:auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:#111;line-height:1.35;'
           );
-          contacto.innerHTML = `
-            <div><strong></strong>Taller automotriz 2H S.A</div>
-            <div><strong>Tel:</strong>62756427</div>
-            <div><strong>Email:</strong>taller2hrosario@gmail.com</div>
-            <div><strong>Cédula Jurídica:</strong>3-101-930294</div>
-          `;
-          if (head && head.parentNode) head.parentNode.insertBefore(contacto, head.nextSibling);
-          else element.insertBefore(contacto, element.firstChild);
+  
+          // Ajusta a tus datos reales
+          const lines = [
+            'Taller automotriz 2H S.A',
+            'Tel: 62756427',
+            'Email: taller2hrosario@gmail.com',
+            'Cédula Jurídica: 3-101-930294',
+            // 'Dirección: San José, Costa Rica', // opcional
+          ];
+  
+          lines.forEach((txt, i) => {
+            const div = document.createElement('div');
+            if (i === 0) div.style.fontWeight = '700'; // nombre del taller en negrita
+            div.textContent = txt;
+            right.appendChild(div);
+          });
         })();
   
-        // 3) Cliente y Vehículo como texto limpio (sin inputs)
+        // 3) Utilidad para filas de texto
         const makeRow = (label, value = '') => {
           const row = document.createElement('div');
           row.setAttribute(
@@ -349,20 +367,19 @@ const Proforma = () => {
           l.textContent = `${label}:`;
           l.setAttribute('style', 'min-width:140px;color:#0f172a;');
           const v = document.createElement('span');
-          v.textContent = value ?? ''; // si no hay, queda vacío
+          v.textContent = value ?? '';
           v.setAttribute('style', 'color:#334155;white-space:pre-wrap;');
           row.appendChild(l);
           row.appendChild(v);
           return row;
         };
   
-        // 3.a) Sección Cliente
+        // 3.a) Cliente como texto (sin inputs)
         (() => {
           const clienteCard = Array.from(element.querySelectorAll('.card-section'))
             .find(sec => (sec.querySelector('h3')?.textContent || '').toLowerCase().includes('cliente'));
           if (!clienteCard) return;
   
-          // limpiar todo y reconstruir
           clienteCard.innerHTML = '';
           const title = document.createElement('h3');
           title.textContent = 'Cliente';
@@ -379,7 +396,7 @@ const Proforma = () => {
           clienteCard.appendChild(block);
         })();
   
-        // 3.b) Sección Vehículo
+        // 3.b) Vehículo como texto (sin inputs) — Placa puede ir vacía
         (() => {
           const vehiculoCard = Array.from(element.querySelectorAll('.card-section'))
             .find(sec => (sec.querySelector('h3')?.textContent || '').toLowerCase().includes('vehículo'));
@@ -392,9 +409,7 @@ const Proforma = () => {
           const block = document.createElement('div');
           block.setAttribute('style', 'padding:4px 2px;');
   
-          // Placa -> si no hay, valor vacío (sin "—")
           block.appendChild(makeRow('Placa', vehiculo?.placa ?? ''));
-  
           block.appendChild(makeRow('Marca', vehiculo?.marca ?? ''));
           block.appendChild(makeRow('Modelo', vehiculo?.modelo ?? ''));
           block.appendChild(makeRow('Año', vehiculo?.anio ?? ''));
@@ -404,7 +419,7 @@ const Proforma = () => {
           vehiculoCard.appendChild(block);
         })();
   
-        // 4) Logo más grande en PDF
+        // 4) Logo un poco más grande
         const logoImg = element.querySelector('.proforma-logo img');
         if (logoImg) {
           logoImg.style.width = '120px';
@@ -426,7 +441,6 @@ const Proforma = () => {
     }
   };
   
-
   // 👇 validación/normalización de inputs vehículo (incluye "modelo")
   const handleInputChange = (campo, value) => {
     if (campo === 'marca') {
