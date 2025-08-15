@@ -250,24 +250,24 @@ const Factura = () => {
   // Confirm toast -> al dar "Eliminar" llama a esta con overlay
   const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
-const confirmarEliminacion = async (gastoId) => {
-  try {
-    setDeletingGastoId(gastoId);
-    setIsDeletingGasto(true);
-    await withLoading(async () => {
-      // 👇 Deja que React pinte el overlay ANTES de borrar
-      await nextFrame();
+  const confirmarEliminacion = async (gastoId) => {
+    try {
+      setDeletingGastoId(gastoId);
+      setIsDeletingGasto(true);
+      await withLoading(async () => {
+        // 👇 Deja que React pinte el overlay ANTES de borrar
+        await nextFrame();
 
-      const gastoRef = doc(db, 'gastos', gastoId);
-      await deleteDoc(gastoRef);
-      await cargarGastos(proforma.id);
-      toast.success('Gasto eliminado exitosamente', { autoClose: 2500 });
-    }, 'Eliminando gasto…');
-  } finally {
-    setIsDeletingGasto(false);
-    setDeletingGastoId(null);
-  }
-};
+        const gastoRef = doc(db, 'gastos', gastoId);
+        await deleteDoc(gastoRef);
+        await cargarGastos(proforma.id);
+        toast.success('Gasto eliminado exitosamente', { autoClose: 2500 });
+      }, 'Eliminando gasto…');
+    } finally {
+      setIsDeletingGasto(false);
+      setDeletingGastoId(null);
+    }
+  };
 
 
   const eliminarGasto = async (gastoId) => {
@@ -378,252 +378,254 @@ const confirmarEliminacion = async (gastoId) => {
   };
 
   return (
-    <div className="factura-wrapper">
-      <ToastContainer
-        enableMultiContainer
-        containerId="center-toast"
-        className="center-toast-container"
-        newestOnTop={true}
-        closeOnClick={false}
-      />
+    <div className="factura-proforma-page">
+      <div className="factura-wrapper">
+        <ToastContainer
+          enableMultiContainer
+          containerId="center-toast"
+          className="center-toast-container"
+          newestOnTop={true}
+          closeOnClick={false}
+        />
 
-      <div className="fecha-factura-centro">
-        Fecha: {new Date().toLocaleDateString('es-CR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        })}
-      </div>
-
-      <h2 className="factura-header">Factura</h2>
-
-      <div className="buscar-proforma-barra">
-        <label htmlFor="proformaInput" className="buscar-proforma-label">Número de Proforma:</label>
-        <div className="buscar-proforma-campos">
-          <input
-            id="proformaInput"
-            type="text"
-            value={numeroProforma}
-            onChange={(e) => setNumeroProforma(e.target.value)}
-            onKeyDown={onBuscarKeyDown}
-            disabled={isSearching}
-          />
-          <button className="boton-accion" onClick={buscarProforma} disabled={isSearching}>
-            {isSearching ? 'Buscando…' : 'Buscar'}
-          </button>
+        <div className="fecha-factura-centro">
+          Fecha: {new Date().toLocaleDateString('es-CR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          })}
         </div>
-      </div>
 
-      {proforma && (
-        <div id="factura-pdf" className="factura-pdf">
-          <div className="factura-contacto-cliente">
-            <div className="factura-contacto">
-              <p>Tel: (506) 2222-2222</p>
-              <p>Email: info@taller2h.com</p>
-              <p>Dirección: San José, Costa Rica</p>
-              <p>Cédula Jurídica: 123145644</p>
-            </div>
+        <h2 className="factura-header">Factura</h2>
 
-            {cliente && (
-              <div className="factura-cliente">
-                <p>Cliente: <strong>{cliente.nombre} {cliente.apellido}</strong></p>
-                <p>Cédula: <strong>{cliente.cedula}</strong></p>
-              </div>
-            )}
-          </div>
-
-          {/* Resumen de la proforma */}
-          <table className="factura-tabla-resumen">
-            <thead>
-              <tr>
-                <th>Total Proforma</th>
-                <th>Gastos</th>
-                <th>Total Final</th>
-                <th>Abonado</th>
-                <th>Saldo Pendiente</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{proforma.total.toLocaleString()}</td>
-                <td>{totalGastos.toLocaleString()}</td>
-                <td>{totalFinal.toLocaleString()}</td>
-                <td>{totalAbonado.toLocaleString()}</td>
-                <td>{saldoPendiente.toLocaleString()}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Formularios para ingresar gastos y abonos */}
-          <div className="grupo-gasto-column">
-            <div className="grupo-gasto-inputs">
-              <label htmlFor="detalleGasto">Detalle del Gasto:</label>
-              <input
-                id="detalleGasto"
-                type="text"
-                value={detalleGasto}
-                onChange={(e) => setDetalleGasto(e.target.value)}
-                disabled={busy}
-              />
-            </div>
-
-            <div className="grupo-gasto-inputs">
-              <label htmlFor="montoGasto">Monto del Gasto:</label>
-              <input
-                id="montoGasto"
-                type="number"
-                value={montoGasto}
-                onChange={(e) => setMontoGasto(e.target.value)}
-                disabled={busy}
-              />
-            </div>
-
-            <button className="boton-accion" onClick={ingresarGasto} disabled={busy}>
-              {isSavingGasto ? 'Guardando…' : 'Ingresar Gasto'}
+        <div className="buscar-proforma-barra">
+          <label htmlFor="proformaInput" className="buscar-proforma-label">Número de Proforma:</label>
+          <div className="buscar-proforma-campos">
+            <input
+              id="proformaInput"
+              type="text"
+              value={numeroProforma}
+              onChange={(e) => setNumeroProforma(e.target.value)}
+              onKeyDown={onBuscarKeyDown}
+              disabled={isSearching}
+            />
+            <button className="boton-accion" onClick={buscarProforma} disabled={isSearching}>
+              {isSearching ? 'Buscando…' : 'Buscar'}
             </button>
           </div>
+        </div>
 
-          <div className="buscar-proforma-barra">
-            <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
-            <div className="buscar-proforma-campos">
-              <input
-                id="montoAbono"
-                type="number"
-                value={abono}
-                onChange={(e) => setAbono(e.target.value)}
-                disabled={saldoPendiente <= 0 || busy}
-              />
-              <button
-                className="boton-accion"
-                onClick={ingresarAbono}
-                disabled={saldoPendiente <= 0 || busy}
-              >
-                {isSavingAbono ? 'Registrando…' : 'Ingresar Abono'}
+        {proforma && (
+          <div id="factura-pdf" className="factura-pdf">
+            <div className="factura-contacto-cliente">
+              <div className="factura-contacto">
+                <p>Tel: (506) 2222-2222</p>
+                <p>Email: info@taller2h.com</p>
+                <p>Dirección: San José, Costa Rica</p>
+                <p>Cédula Jurídica: 123145644</p>
+              </div>
+
+              {cliente && (
+                <div className="factura-cliente">
+                  <p>Cliente: <strong>{cliente.nombre} {cliente.apellido}</strong></p>
+                  <p>Cédula: <strong>{cliente.cedula}</strong></p>
+                </div>
+              )}
+            </div>
+
+            {/* Resumen de la proforma */}
+            <table className="factura-tabla-resumen">
+              <thead>
+                <tr>
+                  <th>Total Proforma</th>
+                  <th>Gastos</th>
+                  <th>Total Final</th>
+                  <th>Abonado</th>
+                  <th>Saldo Pendiente</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{proforma.total.toLocaleString()}</td>
+                  <td>{totalGastos.toLocaleString()}</td>
+                  <td>{totalFinal.toLocaleString()}</td>
+                  <td>{totalAbonado.toLocaleString()}</td>
+                  <td>{saldoPendiente.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Formularios para ingresar gastos y abonos */}
+            <div className="grupo-gasto-column">
+              <div className="grupo-gasto-inputs">
+                <label htmlFor="detalleGasto">Detalle del Gasto:</label>
+                <input
+                  id="detalleGasto"
+                  type="text"
+                  value={detalleGasto}
+                  onChange={(e) => setDetalleGasto(e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+
+              <div className="grupo-gasto-inputs">
+                <label htmlFor="montoGasto">Monto del Gasto:</label>
+                <input
+                  id="montoGasto"
+                  type="number"
+                  value={montoGasto}
+                  onChange={(e) => setMontoGasto(e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+
+              <button className="boton-accion" onClick={ingresarGasto} disabled={busy}>
+                {isSavingGasto ? 'Guardando…' : 'Ingresar Gasto'}
               </button>
             </div>
+
+            <div className="buscar-proforma-barra">
+              <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
+              <div className="buscar-proforma-campos">
+                <input
+                  id="montoAbono"
+                  type="number"
+                  value={abono}
+                  onChange={(e) => setAbono(e.target.value)}
+                  disabled={saldoPendiente <= 0 || busy}
+                />
+                <button
+                  className="boton-accion"
+                  onClick={ingresarAbono}
+                  disabled={saldoPendiente <= 0 || busy}
+                >
+                  {isSavingAbono ? 'Registrando…' : 'Ingresar Abono'}
+                </button>
+              </div>
+            </div>
+
+            <button className="boton-accion btn-descargar" onClick={descargarPDF} disabled={busy}>
+              {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
+            </button>
+
+            {/* Historial de abonos */}
+            {abonos.length > 0 && (
+              <div className="historial-abonos">
+                <h3>Historial de Abonos</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {abonos.map((ab, index) => (
+                      <tr key={index}>
+                        <td>{ab.fecha}</td>
+                        <td>{ab.monto.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Historial de gastos */}
+            {gastos.length > 0 && (
+              <div className="historial-gastos">
+                <h3>Gastos Registrados</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Detalle</th>
+                      <th>Monto</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gastos.map((g, index) => (
+                      <tr key={index}>
+                        <td>{g.fecha}</td>
+                        <td>
+                          {editGasto && editGasto.id === g.id ? (
+                            <input
+                              type="text"
+                              value={newDetalle}
+                              onChange={(e) => setNewDetalle(e.target.value)}
+                              disabled={busy}
+                            />
+                          ) : (
+                            g.detalle
+                          )}
+                        </td>
+                        <td>
+                          {editGasto && editGasto.id === g.id ? (
+                            <input
+                              type="number"
+                              value={newMonto}
+                              onChange={(e) => setNewMonto(e.target.value)}
+                              disabled={busy}
+                            />
+                          ) : (
+                            g.monto.toLocaleString()
+                          )}
+                        </td>
+                        <td>
+                          {editGasto && editGasto.id === g.id ? (
+                            <>
+                              <button onClick={() => guardarEdicion(g.id)} disabled={busy}>
+                                <FaSave />
+                              </button>
+                              <button onClick={cancelarEdicion} disabled={busy}>
+                                <FaTimes />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => editarGasto(g)} disabled={busy}>
+                                <FaEdit />
+                              </button>
+                              <button
+                                onClick={() => eliminarGasto(g.id)}
+                                disabled={busy || deletingGastoId === g.id}
+                                className={deletingGastoId === g.id ? 'btn-eliminando' : ''}
+                                aria-busy={deletingGastoId === g.id}
+                              >
+                                {deletingGastoId === g.id ? 'Eliminando…' : <FaTrashAlt />}
+                              </button>
+
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {saldoPendiente === 0 && (
+              <>
+                <div className="nota-final-cliente">
+                  <p>
+                    <strong>Nota:</strong> Al firmar esta factura, el cliente confirma que ha recibido el vehículo conforme
+                    y acepta que <strong>una vez retirado del taller, no se ofrece garantía por daños posteriores</strong>
+                    que no estén relacionados con los servicios prestados. Se recomienda revisar el vehículo antes de su entrega.
+                  </p>
+                </div>
+
+                <div className="firma-cliente">
+                  <label>Firma del Cliente:</label>
+                  <div className="linea-firma" />
+                </div>
+              </>
+            )}
+
           </div>
-
-          <button className="boton-accion btn-descargar" onClick={descargarPDF} disabled={busy}>
-            {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
-          </button>
-
-          {/* Historial de abonos */}
-          {abonos.length > 0 && (
-            <div className="historial-abonos">
-              <h3>Historial de Abonos</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Monto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {abonos.map((ab, index) => (
-                    <tr key={index}>
-                      <td>{ab.fecha}</td>
-                      <td>{ab.monto.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Historial de gastos */}
-          {gastos.length > 0 && (
-            <div className="historial-gastos">
-              <h3>Gastos Registrados</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Detalle</th>
-                    <th>Monto</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {gastos.map((g, index) => (
-                    <tr key={index}>
-                      <td>{g.fecha}</td>
-                      <td>
-                        {editGasto && editGasto.id === g.id ? (
-                          <input
-                            type="text"
-                            value={newDetalle}
-                            onChange={(e) => setNewDetalle(e.target.value)}
-                            disabled={busy}
-                          />
-                        ) : (
-                          g.detalle
-                        )}
-                      </td>
-                      <td>
-                        {editGasto && editGasto.id === g.id ? (
-                          <input
-                            type="number"
-                            value={newMonto}
-                            onChange={(e) => setNewMonto(e.target.value)}
-                            disabled={busy}
-                          />
-                        ) : (
-                          g.monto.toLocaleString()
-                        )}
-                      </td>
-                      <td>
-                        {editGasto && editGasto.id === g.id ? (
-                          <>
-                            <button onClick={() => guardarEdicion(g.id)} disabled={busy}>
-                              <FaSave />
-                            </button>
-                            <button onClick={cancelarEdicion} disabled={busy}>
-                              <FaTimes />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => editarGasto(g)} disabled={busy}>
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => eliminarGasto(g.id)}
-                              disabled={busy || deletingGastoId === g.id}
-                              className={deletingGastoId === g.id ? 'btn-eliminando' : ''}
-                              aria-busy={deletingGastoId === g.id}
-                            >
-                              {deletingGastoId === g.id ? 'Eliminando…' : <FaTrashAlt />}
-                            </button>
-
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {saldoPendiente === 0 && (
-            <>
-              <div className="nota-final-cliente">
-                <p>
-                  <strong>Nota:</strong> Al firmar esta factura, el cliente confirma que ha recibido el vehículo conforme
-                  y acepta que <strong>una vez retirado del taller, no se ofrece garantía por daños posteriores</strong>
-                  que no estén relacionados con los servicios prestados. Se recomienda revisar el vehículo antes de su entrega.
-                </p>
-              </div>
-
-              <div className="firma-cliente">
-                <label>Firma del Cliente:</label>
-                <div className="linea-firma" />
-              </div>
-            </>
-          )}
-
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -44,6 +44,11 @@ const Clientes = () => {
   const { show, hide, withLoading } = useLoading();
   const firstLoadRef = useRef(true);
 
+  // Flags para deshabilitar UI mientras hay tareas
+  const [isCheckingCedula, setIsCheckingCedula] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const busy = isCheckingCedula || isSaving;
+
   // Initial load (subscribe to collection)
   useEffect(() => {
     show('Cargando clientes…');
@@ -82,6 +87,7 @@ const Clientes = () => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   const openCreate = () => {
+    if (busy) return;
     setEditMode(false);
     setSelectedClientId(null);
     setFormData({ cedula: '', nombre: '', apellido: '', telefono: '', correo: '' });
@@ -89,6 +95,7 @@ const Clientes = () => {
   };
 
   const handleEdit = (cliente) => {
+    if (busy) return;
     setFormData({
       cedula: cliente.cedula || '',
       nombre: cliente.nombre || '',
@@ -104,14 +111,13 @@ const Clientes = () => {
   // === Validación de cédula única (local + Firestore) ===
   const cedulaExiste = async (cedula, omitId = null) => {
     const ced = (cedula || '').trim();
-
     // Chequeo local
     const existeLocal = clientes.some(
       (c) => (c.cedula || '').trim() === ced && c.id !== omitId
     );
     if (existeLocal) return true;
 
-    // Doble chequeo en Firestore por si el snapshot aún no refleja cambios
+    // Doble chequeo remoto
     const qRef = query(collection(db, 'clientes'), where('cedula', '==', ced));
     const snap = await getDocs(qRef);
     const existeRemoto = snap.docs.some((d) => d.id !== omitId);
@@ -126,17 +132,22 @@ const Clientes = () => {
       return;
     }
 
-    // Validar unicidad antes de guardar
-    const duplicada = await cedulaExiste(
-      formData.cedula,
-      editMode ? selectedClientId : null
-    );
+    // 1) Validar unicidad con loader
+    setIsCheckingCedula(true);
+    const duplicada = await withLoading(
+      () => cedulaExiste(formData.cedula, editMode ? selectedClientId : null),
+      'Validando cédula…'
+    ).catch(() => false);
+    setIsCheckingCedula(false);
+
     if (duplicada) {
       toast.error('La cédula ya existe en el sistema.');
       return;
     }
 
+    // 2) Guardar con loader
     try {
+      setIsSaving(true);
       await withLoading(async () => {
         if (editMode) {
           const ref = doc(db, 'clientes', selectedClientId);
@@ -155,6 +166,8 @@ const Clientes = () => {
     } catch (err) {
       console.error('Error al guardar:', err);
       toast.error('Error al guardar el cliente');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -174,7 +187,7 @@ const Clientes = () => {
 
   return (
     <div className="clientes-page">
-      <div className="clientes-card">
+      <div className="clientes-card" aria-busy={busy}>
         {/* Header */}
         <header className="clientes-header">
           <div>
@@ -184,7 +197,11 @@ const Clientes = () => {
             </p>
           </div>
 
-          <button className="boton-agregar boton-agregar--sm" onClick={openCreate}>
+          <button
+            className="boton-agregar boton-agregar--sm"
+            onClick={openCreate}
+            disabled={busy}
+          >
             Agregar Cliente
           </button>
         </header>
@@ -199,12 +216,14 @@ const Clientes = () => {
               placeholder="Buscar por cédula, nombre, correo…"
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              disabled={busy}
             />
             {searchTerm && (
               <button
                 className="search-clear"
                 onClick={clearSearch}
                 aria-label="Limpiar búsqueda"
+                disabled={busy}
               >
                 <FiX />
               </button>
@@ -235,8 +254,8 @@ const Clientes = () => {
               {currentClients.map((cliente) => (
                 <tr
                   key={cliente.id}
-                  onDoubleClick={() => handleEdit(cliente)}
-                  style={{ cursor: 'pointer' }}
+                  onDoubleClick={() => !busy && handleEdit(cliente)}
+                  style={{ cursor: busy ? 'default' : 'pointer' }}
                 >
                   <td>{cliente.cedula}</td>
                   <td>{cliente.nombre}</td>
@@ -250,6 +269,7 @@ const Clientes = () => {
                       onClick={() => handleEdit(cliente)}
                       aria-label="Editar"
                       title="Editar"
+                      disabled={busy}
                     >
                       <FiEdit2 />
                     </button>
@@ -271,7 +291,7 @@ const Clientes = () => {
           currentPage={currentPage}
           totalItems={filtered.length}
           itemsPerPage={clientsPerPage}
-          onPageChange={setCurrentPage}
+          onPageChange={(p) => !busy && setCurrentPage(p)}
         />
       </div>
 
@@ -288,6 +308,7 @@ const Clientes = () => {
                 className="btn-icon"
                 onClick={() => setShowModal(false)}
                 aria-label="Cerrar"
+                disabled={busy}
               >
                 <FiX />
               </button>
@@ -302,6 +323,7 @@ const Clientes = () => {
                   onChange={handleNumberOnlyChange}
                   inputMode="numeric"
                   required
+                  disabled={busy || editMode} /* si editas, no permitir cambiar cédula */
                 />
               </label>
 
@@ -312,6 +334,7 @@ const Clientes = () => {
                   value={formData.nombre}
                   onChange={handleChange}
                   required
+                  disabled={busy}
                 />
               </label>
 
@@ -321,6 +344,7 @@ const Clientes = () => {
                   name="apellido"
                   value={formData.apellido}
                   onChange={handleChange}
+                  disabled={busy}
                 />
               </label>
 
@@ -332,6 +356,7 @@ const Clientes = () => {
                   onChange={handleNumberOnlyChange}
                   inputMode="numeric"
                   required
+                  disabled={busy}
                 />
               </label>
 
@@ -343,6 +368,7 @@ const Clientes = () => {
                   value={formData.correo}
                   onChange={handleChange}
                   placeholder="nombre@correo.com"
+                  disabled={busy}
                 />
               </label>
 
@@ -351,11 +377,16 @@ const Clientes = () => {
                   type="button"
                   className="btn-light cancelar"
                   onClick={() => setShowModal(false)}
+                  disabled={busy}
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-primary">
-                  {editMode ? 'Guardar cambios' : 'Guardar'}
+                <button type="submit" className="btn-primary" disabled={busy}>
+                  {isSaving
+                    ? 'Guardando…'
+                    : editMode
+                    ? 'Guardar cambios'
+                    : 'Guardar'}
                 </button>
               </div>
             </form>
