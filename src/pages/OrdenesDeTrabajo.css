@@ -233,14 +233,7 @@ textarea:focus {
   }
 }
 
-/* Mensajes */
-.msg-warn {
-  font-size: 13px;
-  color: #b45309;
-  align-self: center;
-}
-
-/* Tabla */
+/* ======= Tabla ======= */
 .tabla {
   width: 100%;
   border-collapse: collapse;
@@ -259,6 +252,15 @@ textarea:focus {
   border-bottom: 1px solid #eef2f7;
 }
 
+/* Header centrado para Acciones */
+.tabla thead th.th-actions {
+  width: 220px;
+  min-width: 220px;
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
 .tabla tbody td {
   padding: 10px 12px;
   border-bottom: 1px solid #f3f4f6;
@@ -275,11 +277,16 @@ textarea:focus {
   font-weight: 600;
 }
 
+/* Celda de acciones (alineada con el header) */
 .td-actions {
-  text-align: right;
+  width: 220px;
+  min-width: 220px;
   display: flex;
+  justify-content: center;
+  /* ← centramos los íconos */
+  align-items: center;
   gap: 8px;
-  justify-content: flex-end;
+  text-align: center;
 }
 
 .input-inline {
@@ -293,6 +300,22 @@ textarea:focus {
 .input-inline:focus {
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+/* Etiqueta “Acc” en responsive */
+.th-actions-text {
+  display: inline-block;
+}
+
+@media (max-width: 1024px) {
+  .th-actions-text {
+    display: none;
+  }
+
+  .th-actions::after {
+    content: "Acc";
+    font-weight: 600;
+  }
 }
 
 /* Footer */
@@ -418,14 +441,6 @@ textarea:focus {
   color: #fff;
 }
 
-/* Ajuste de la celda de acciones */
-.td-actions {
-  display: flex;
-  gap: 6px;
-  justify-content: flex-end;
-  align-items: center;
-}
-
 /* Título con badge de Cono */
 .otp-title {
   display: inline-flex;
@@ -445,8 +460,6 @@ textarea:focus {
   background: #f9fafb;
   color: #111827;
 }
-
-
 
 /* ===================================== */
 /* =========== Modo impresión ========== */

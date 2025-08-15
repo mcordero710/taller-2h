@@ -1,3 +1,4 @@
+// src/pages/OrdenesDeTrabajo.jsx
 import React, { useMemo, useState } from 'react';
 import './OrdenesDeTrabajo.css';
 import { toast, ToastContainer } from 'react-toastify';
@@ -49,6 +50,19 @@ const OrdenesDeTrabajo = () => {
     if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
     const [mes, dia, anio] = fechaStr.split('/');
     return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
+  };
+
+  // === NUEVO: toma reparaciones de la proforma y las lleva al formato local {id, texto}
+  const setReparacionesDesdeProforma = (p) => {
+    const items = Array.isArray(p.reparaciones) ? p.reparaciones : [];
+    const mapped = items
+      .map((r, i) => ({
+        id: `pf-${p.id}-${i}`,
+        // tolera nombres distintos por versiones anteriores
+        texto: String(r.concepto ?? r.descripcion ?? r.texto ?? r.detalle ?? '').trim(),
+      }))
+      .filter(x => x.texto.length > 0);
+    setReparaciones(mapped);
   };
 
   // ===== Última OT por placa (con opción de preservar proforma en pantalla) =====
@@ -153,7 +167,12 @@ const OrdenesDeTrabajo = () => {
     // ⬇️ El usuario buscó por proforma: mantenla en pantalla
     setProformaNumero(String(p.numero || ''));
 
+    // Primero podemos cargar la última OT (para cono, etc.), preservando la proforma en pantalla
     if (placaDoc) await loadUltimaOT(placaDoc, { preserveProforma: true });
+
+    // Luego, sobreescribimos las reparaciones con las de la proforma (lo que necesitas)
+    setReparacionesDesdeProforma(p);
+
     return p;
   };
 
@@ -278,7 +297,6 @@ const OrdenesDeTrabajo = () => {
     );
   };
 
-
   // ===== Guardar / Imprimir =====
   const puedeGuardarOT = !!vehiculo && cono.trim() && reparaciones.length > 0;
 
@@ -338,8 +356,6 @@ const OrdenesDeTrabajo = () => {
       toast.success('Reparación eliminada', { autoClose: 2000 });
     }, 'Eliminando reparación…');
   };
-
-
 
   return (
     <div className="ot-wrapper">
@@ -411,10 +427,6 @@ const OrdenesDeTrabajo = () => {
               <button type="button" className="btn" onClick={cargarDatos} disabled={loadingVehiculo}>
                 {loadingVehiculo ? 'Cargando…' : 'Cargar datos'}
               </button>
-
-              {vehiculo === null && !loadingVehiculo && (placa || proformaNumero || cono) && (
-                <span className="msg-warn">No se encontraron datos con los criterios ingresados.</span>
-              )}
             </div>
 
             {vehiculo && (
@@ -479,11 +491,12 @@ const OrdenesDeTrabajo = () => {
         <div className="card-body">
           <table className="tabla">
             <thead>
-              <tr>
-                <th style={{ width: 80 }}>#</th>
-                <th>Descripción</th>
-                <th style={{ width: 220, textAlign: 'right' }}>Acciones</th>
-              </tr>
+              <th style={{ width: 80 }}>#</th>
+              <th>Descripción</th>
+              {/* antes: <th style={{ width: 220, textAlign:'right' }}>Acciones</th> */}
+              <th className="th-actions">
+                <span className="th-actions-text">Acciones</span>
+              </th>
             </thead>
             <tbody>
               {reparaciones.length === 0 && (
