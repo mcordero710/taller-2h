@@ -337,10 +337,10 @@ const Factura = () => {
         const rightBox = document.createElement('div');
         rightBox.setAttribute('style', 'text-align:right; font-size:12px; color:#333; line-height:1.3;');
         rightBox.innerHTML = `
-          <div><strong>Tel:</strong> (506) 2222-2222</div>
-          <div><strong>Email:</strong> info@taller2h.com</div>
-          <div><strong>Dirección:</strong> San José, Costa Rica</div>
-          <div><strong>Cédula Jurídica:</strong> 123145644</div>
+          <div><strong></strong>Taller automotriz 2H S.A</div>
+          <div><strong>Tel:</strong> 62756427</div>
+          <div><strong>Correo:</strong> taller2hrosario@gmail.com</div>
+          <div><strong>Cédula Jurídica:</strong> 3-101930294</div>
           <div style="margin-top:6px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
         `;
 
@@ -418,12 +418,7 @@ const Factura = () => {
         {proforma && (
           <div id="factura-pdf" className="factura-pdf">
             <div className="factura-contacto-cliente">
-              <div className="factura-contacto">
-                <p>Tel: (506) 2222-2222</p>
-                <p>Email: info@taller2h.com</p>
-                <p>Dirección: San José, Costa Rica</p>
-                <p>Cédula Jurídica: 123145644</p>
-              </div>
+              
 
               {cliente && (
                 <div className="factura-cliente">

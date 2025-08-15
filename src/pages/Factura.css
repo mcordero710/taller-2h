@@ -505,6 +505,85 @@
   
 }
 
+/* ============================
+   Encabezados coloreados (UI)
+   ============================ */
+/* === Encabezados del resumen: un solo color azul === */
+.factura-proforma-page {
+  --hdr-bg: #0f172a;   /* el mismo azul oscuro de las otras tablas */
+  --hdr-text: #ffffff;
+}
+
+/* Fuerza el mismo color en todas las columnas del resumen */
+.factura-tabla-resumen thead th {
+  background: var(--hdr-bg) !important;
+  color: var(--hdr-text) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .2px;
+  border-color: transparent;
+}
+
+  
+  /* Redondeo y clip para que se vea bien el fondo del thead */
+  .factura-tabla-resumen,
+  .historial-abonos table,
+  .historial-gastos table {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  /* ---------- Resumen (colores por columna) ---------- */
+  .factura-tabla-resumen thead th {
+    color: var(--hdr-text);
+    font-weight: 700;
+    letter-spacing: .2px;
+    text-transform: uppercase;
+    border-color: transparent;
+  }
+  
+  .factura-tabla-resumen thead th:nth-child(1) { background: var(--col-proforma); }
+  .factura-tabla-resumen thead th:nth-child(2) { background: var(--col-gastos); }
+  .factura-tabla-resumen thead th:nth-child(3) { background: var(--col-total); }
+  .factura-tabla-resumen thead th:nth-child(4) { background: var(--col-abonado); }
+  .factura-tabla-resumen thead th:nth-child(5) { background: var(--col-saldo); }
+  
+  /* ---------- Historiales (mismo color para todo el thead) ---------- */
+  .historial-abonos table thead th,
+  .historial-gastos table thead th {
+    background: var(--hdr-bg);
+    color: var(--hdr-text);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .2px;
+    border-color: #1f2937;
+  }
+  
+  /* opcional: hace que el header quede fijo si hay scroll en tablas largas
+  .historial-abonos table thead th,
+  .historial-gastos table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  */
+  
+  /* ============================
+     Versión impresión (b/n)
+     ============================ */
+  @media print {
+    .factura-tabla-resumen thead th,
+    .historial-abonos table thead th,
+    .historial-gastos table thead th {
+      background: #fff !important;
+      color: #000 !important;
+      border-color: #333 !important;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+  }
+  
+
 
 
 

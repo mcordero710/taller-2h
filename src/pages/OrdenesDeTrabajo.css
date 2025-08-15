@@ -180,7 +180,7 @@ textarea:focus {
   background: #f9fafb;
 }
 
-/* Buttons */
+/* =============== Buttons (ACTUALIZADO) =============== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -189,20 +189,20 @@ textarea:focus {
   background: #111827;
   color: #fff;
   border: 1px solid #111827;
-  border-radius: 10px;
+  border-radius: 12px;             /* curva consistente */
   padding: 10px 14px;
   cursor: pointer;
   transition: transform .05s, filter .15s, background .15s;
   min-height: 40px;
+  font-weight: 700;
 }
 
-.btn:hover {
-  filter: brightness(1.05);
-}
+.btn:hover { filter: brightness(1.05); }
 
 .btn:disabled {
   opacity: .6;
   cursor: not-allowed;
+  filter: none;                    /* sin brillo en disabled */
 }
 
 .btn--ghost {
@@ -211,7 +211,41 @@ textarea:focus {
   border-color: #e5e7eb;
 }
 
-.btn--danger {
+.btn--ghost:disabled {
+  background: #fff;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+}
+
+/* Tamaño pequeño con misma curva */
+.btn--sm {
+  padding: 8px 12px;
+  min-height: 36px;
+  font-size: 13px;
+  border-radius: 12px;             /* explícito para evitar curvas distintas */
+}
+
+/* Botones solo-ícono (32x32) */
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 12px;
+  display: inline-grid;
+  place-items: center;
+  gap: 0;
+  line-height: 0;
+}
+
+.btn-icon svg { width: 16px; height: 16px; }
+
+.btn-icon--ghost {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.btn-icon--danger {
   background: #ef4444;
   border-color: #ef4444;
   color: #fff;
@@ -232,9 +266,7 @@ textarea:focus {
 }
 
 @keyframes spin {
-  to {
-    transform: translateY(-50%) rotate(360deg);
-  }
+  to { transform: translateY(-50%) rotate(360deg); }
 }
 
 /* ======= Tabla ======= */
@@ -277,9 +309,7 @@ textarea:focus {
   color: #6b7280;
 }
 
-.idx {
-  font-weight: 600;
-}
+.idx { font-weight: 600; }
 
 /* Celda de acciones (alineada con el header) */
 .td-actions {
@@ -287,7 +317,6 @@ textarea:focus {
   min-width: 220px;
   display: flex;
   justify-content: center;
-  /* ← centramos los íconos */
   align-items: center;
   gap: 8px;
   text-align: center;
@@ -307,15 +336,10 @@ textarea:focus {
 }
 
 /* Etiqueta “Acc” en responsive */
-.th-actions-text {
-  display: inline-block;
-}
+.th-actions-text { display: inline-block; }
 
 @media (max-width: 1024px) {
-  .th-actions-text {
-    display: none;
-  }
-
+  .th-actions-text { display: none; }
   .th-actions::after {
     content: "Acc";
     font-weight: 600;
@@ -337,16 +361,13 @@ textarea:focus {
 /* IMPORTANTE: no usar display:none; lo dejamos fuera de pantalla pero renderizable */
 .ot-print {
   position: fixed;
-  left: -10000px;
-  /* fuera del viewport */
+  left: -10000px;  /* fuera del viewport */
   top: 0;
-  width: 816px;
-  /* ~8.5" a 96dpi */
+  width: 816px;    /* ~8.5" a 96dpi */
   background: #fff;
   padding: 20px;
   z-index: -1;
-  opacity: 1;
-  /* visible para el rasterizador */
+  opacity: 1;      /* visible para el rasterizador */
   pointer-events: none;
 }
 
@@ -357,7 +378,6 @@ textarea:focus {
   print-color-adjust: exact;
 }
 
-/* Estilos internos de la plantilla (para cuando se imprima o se vea en el clon) */
 .otp-header {
   display: flex;
   justify-content: space-between;
@@ -377,11 +397,13 @@ textarea:focus {
   color: #333;
 }
 
-.otp-fecha {
-  margin-top: 6px;
-}
+.otp-fecha { margin-top: 6px; }
 
+/* Título + badge de Cono */
 .otp-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin: 6px 0 14px;
   font-size: 20px;
 }
@@ -407,53 +429,6 @@ textarea:focus {
   text-align: left;
 }
 
-/* Tamaño pequeño para botones con texto */
-.btn--sm {
-  padding: 8px 12px;
-  min-height: 32px;
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-/* Botones solo-ícono (32x32) */
-.btn-icon {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: 8px;
-  display: inline-grid;
-  place-items: center;
-  gap: 0;
-  line-height: 0;
-}
-
-.btn-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Variantes */
-.btn-icon--ghost {
-  background: #fff;
-  color: #111827;
-  border: 1px solid #e5e7eb;
-}
-
-.btn-icon--danger {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: #fff;
-}
-
-/* Título con badge de Cono */
-.otp-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin: 6px 0 14px;
-  font-size: 20px;
-}
-
 /* Badge del cono */
 .otp-cono {
   font-size: 13px;
@@ -469,13 +444,9 @@ textarea:focus {
 /* =========== Modo impresión ========== */
 /* ===================================== */
 @media print {
-  @page {
-    size: Letter;
-    margin: 0.5in;
-  }
+  @page { size: Letter; margin: 0.5in; }
 
-  html,
-  body {
+  html, body {
     margin: 0 !important;
     background: #fff !important;
     -webkit-print-color-adjust: exact;
@@ -483,15 +454,10 @@ textarea:focus {
   }
 
   /* Oculta toda la app */
-  body * {
-    visibility: hidden !important;
-  }
+  body * { visibility: hidden !important; }
 
   /* Muestra únicamente la plantilla */
-  #ot-print,
-  #ot-print * {
-    visibility: visible !important;
-  }
+  #ot-print, #ot-print * { visibility: visible !important; }
 
   /* La plantilla ocupa la página */
   #ot-print {
@@ -507,17 +473,88 @@ textarea:focus {
   }
 
   /* Por si quedaran controles */
-  .no-print,
-  .btn,
-  button,
-  input,
-  textarea,
-  .spinner {
+  .no-print, .btn, button, input, textarea, .spinner {
     display: none !important;
   }
 }
 
 /* Que html2pdf respete saltos si algún día los usas */
-.html2pdf__page-break {
-  page-break-after: always;
+.html2pdf__page-break { page-break-after: always; }
+
+/* ========================= */
+/* Tooltips para botones     */
+/* ========================= */
+.tip-wrap {
+  position: relative;
+  display: inline-flex;     /* no rompe la forma del botón */
 }
+
+.tip-wrap[data-tip]:not([data-tip=""]):hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  z-index: 20;
+}
+
+.tip-wrap[data-tip]:not([data-tip=""]):hover::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #111827;
+  z-index: 20;
+}
+
+/* Asegura la curva del botón dentro del wrapper */
+/* ===== Footer actions - mejora layout de botones ===== */
+.footer-actions {
+  display: flex;
+  flex-wrap: wrap;          /* permite bajar a 2 líneas si no caben */
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 16px;
+}
+
+/* ¡No crecer! Evita que "Limpiar" se haga enorme */
+.footer-actions .btn {
+  flex: 0 0 auto;           /* no grow, no shrink */
+  width: auto;              /* ignora posibles width:100% globales */
+  white-space: nowrap;      /* que no corte el texto de los botones */
+  border-radius: 12px;      /* misma curva en todos */
+  min-height: 36px;         /* alto consistente en el footer */
+  padding: 10px 14px;       /* misma sensación táctil */
+}
+
+/* Variante ghost en footer, más sutil */
+.footer-actions .btn--ghost {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.footer-actions .btn--ghost:disabled {
+  color: #9ca3af;
+}
+
+/* En pantallas pequeñas: full width y apilados bonitos */
+@media (max-width: 620px) {
+  .footer-actions {
+    justify-content: stretch;
+  }
+  .footer-actions .btn {
+    flex: 1 1 auto;         /* ahora sí, que ocupen ancho completo */
+  }
+}
+
