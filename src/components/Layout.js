@@ -1,12 +1,25 @@
 import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
-import { FaUsers, FaTruck, FaBoxes, FaTools, FaFileAlt, FaSearch,FaFileInvoice } from 'react-icons/fa'; // Agregar FaSearch para Buscar Proforma
-import { ToastContainer } from 'react-toastify';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { FaUsers, FaTools, FaFileAlt, FaSearch, FaFileInvoice, FaSignOutAlt } from 'react-icons/fa';
+import { ToastContainer, toast } from 'react-toastify';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase/firebase';
 import 'react-toastify/dist/ReactToastify.css';
 import './Layout.css';
-import logo from '../assets/logo.png'; // Asegúrate de que la ruta al logo sea correcta
+import logo from '../assets/logo.png';
 
 const Layout = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (e) {
+      toast.error('No se pudo cerrar sesión');
+    }
+  };
+
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -14,6 +27,7 @@ const Layout = () => {
           <img src={logo} alt="Taller 2H" className="logo" />
           <span className="logo-text">Taller 2H</span>
         </div>
+
         <nav>
           <ul>
             <li>
@@ -29,18 +43,16 @@ const Layout = () => {
               </Link>
             </li>
             <li>
-              <Link to="/buscar-proforma"> {/* Nuevo enlace para buscar proforma */}
+              <Link to="/buscar-proforma">
                 <FaSearch className="menu-icon" />
                 <span>Buscar Proforma</span>
               </Link>
             </li>
             <li>
-              <li>
-                <Link to="/factura">
-                  <FaFileInvoice className="menu-icon" />
-                  <span>Factura</span>
-                </Link>
-              </li>
+              <Link to="/factura">
+                <FaFileInvoice className="menu-icon" />
+                <span>Factura</span>
+              </Link>
             </li>
             <li>
               <Link to="/ordenes">
@@ -50,23 +62,29 @@ const Layout = () => {
             </li>
           </ul>
         </nav>
+
+        {/* --- Cerrar sesión al fondo --- */}
+        <div className="sidebar-logout">
+          <button className="logout-link" onClick={handleLogout}>
+            <FaSignOutAlt className="menu-icon menu-icon--sm" />
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
       </aside>
 
       <main className="main-content">
         <Outlet />
       </main>
 
-      {/* Contenedor de notificaciones */}
       <ToastContainer
         position="top-center"
         autoClose={2500}
-        hideProgressBar={true}
+        hideProgressBar
         closeButton={false}
-        closeOnClick={true}
+        closeOnClick
         pauseOnHover={false}
         draggable={false}
       />
-
     </div>
   );
 };
