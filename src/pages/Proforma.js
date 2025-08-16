@@ -288,74 +288,69 @@ const Proforma = () => {
     }
   };
 
-
   const handleDescargarPDF = async () => {
     const original = document.getElementById('proformaPrintable');
     if (!original) return;
-  
+
     try {
       setIsGeneratingPdf(true);
       await withLoading(async () => {
         await nextFrame();
-  
+
         const element = original.cloneNode(true);
-  
+
         // 1) Ocultar controles/acciones de la UI
         element
           .querySelectorAll(
             '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
           )
           .forEach((el) => el && (el.style.display = 'none'));
-  
-        // Columna de acciones de la tabla
+
+        // Columna de acciones de la tabla (ahora es la 3ra)
         element
-          .querySelectorAll('th:nth-child(4), td:nth-child(4)')
+          .querySelectorAll('th:nth-child(3), td:nth-child(3)')
           .forEach((col) => (col.style.display = 'none'));
-  
+
         // Ocultar toggle IVA
         const ivaSection = element.querySelector('.iva-section');
         if (ivaSection) ivaSection.style.display = 'none';
-  
+
         // Ocultar subtítulo bajo "Proforma"
         const subtitle = element.querySelector('.brand-text .subtitle');
         if (subtitle) subtitle.style.display = 'none';
-  
+
         // 2) Info del TALLER ARRIBA A LA DERECHA, en vertical
         (() => {
           const head = element.querySelector('.proforma-head');
-  
-          // usa o crea el contenedor derecho del header
+
           let right = head?.querySelector('.head-right');
           if (!right) {
             right = document.createElement('div');
             right.className = 'head-right';
             head?.appendChild(right);
           }
-  
-          // limpia botones y lo convierte en columna de texto
+
           right.innerHTML = '';
           right.setAttribute(
             'style',
             'margin-left:auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:#111;line-height:1.35;'
           );
-  
-          // Ajusta a tus datos reales
+
           const lines = [
             'Taller automotriz 2H S.A',
             'Tel: 62756427',
             'Email: taller2hrosario@gmail.com',
             'Cédula Jurídica: 3-101-930294',
-            // 'Dirección: San José, Costa Rica', // opcional
           ];
-  
+
           lines.forEach((txt, i) => {
             const div = document.createElement('div');
-            if (i === 0) div.style.fontWeight = '700'; // nombre del taller en negrita
+            if (i === 0) div.style.fontWeight = '700';
             div.textContent = txt;
             right.appendChild(div);
           });
         })();
-  
+
         // 3) Utilidad para filas de texto
         const makeRow = (label, value = '') => {
           const row = document.createElement('div');
@@ -373,52 +368,52 @@ const Proforma = () => {
           row.appendChild(v);
           return row;
         };
-  
+
         // 3.a) Cliente como texto (sin inputs)
         (() => {
           const clienteCard = Array.from(element.querySelectorAll('.card-section'))
             .find(sec => (sec.querySelector('h3')?.textContent || '').toLowerCase().includes('cliente'));
           if (!clienteCard) return;
-  
+
           clienteCard.innerHTML = '';
           const title = document.createElement('h3');
           title.textContent = 'Cliente';
           title.setAttribute('style', 'margin:0 0 8px;font-size:16px;color:#0f172a;');
           const block = document.createElement('div');
           block.setAttribute('style', 'padding:4px 2px;');
-  
+
           block.appendChild(makeRow('Cédula', (cedula || '').toString()));
           block.appendChild(makeRow('Nombre', cliente ? `${cliente.nombre ?? ''} ${cliente.apellido ?? ''}`.trim() : ''));
           block.appendChild(makeRow('Teléfono', cliente?.telefono ?? ''));
           block.appendChild(makeRow('Correo', cliente?.correo ?? ''));
-  
+
           clienteCard.appendChild(title);
           clienteCard.appendChild(block);
         })();
-  
+
         // 3.b) Vehículo como texto (sin inputs) — Placa puede ir vacía
         (() => {
           const vehiculoCard = Array.from(element.querySelectorAll('.card-section'))
             .find(sec => (sec.querySelector('h3')?.textContent || '').toLowerCase().includes('vehículo'));
           if (!vehiculoCard) return;
-  
+
           vehiculoCard.innerHTML = '';
           const title = document.createElement('h3');
           title.textContent = 'Vehículo';
           title.setAttribute('style', 'margin:0 0 8px;font-size:16px;color:#0f172a;');
           const block = document.createElement('div');
           block.setAttribute('style', 'padding:4px 2px;');
-  
+
           block.appendChild(makeRow('Placa', vehiculo?.placa ?? ''));
           block.appendChild(makeRow('Marca', vehiculo?.marca ?? ''));
           block.appendChild(makeRow('Modelo', vehiculo?.modelo ?? ''));
           block.appendChild(makeRow('Año', vehiculo?.anio ?? ''));
           block.appendChild(makeRow('Color', vehiculo?.color ?? ''));
-  
+
           vehiculoCard.appendChild(title);
           vehiculoCard.appendChild(block);
         })();
-  
+
         // 4) Logo un poco más grande
         const logoImg = element.querySelector('.proforma-logo img');
         if (logoImg) {
@@ -426,34 +421,30 @@ const Proforma = () => {
           logoImg.style.height = 'auto';
           logoImg.style.objectFit = 'contain';
         }
-  
+
         const options = {
           margin: 10,
           filename: `proforma-${numeroProforma ?? ''}.pdf`,
           html2canvas: { scale: 3, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         };
-  
+
         await html2pdf().set(options).from(element).save();
       }, 'Generando PDF…');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
-  
+
   // 👇 validación/normalización de inputs vehículo (incluye "modelo")
   const handleInputChange = (campo, value) => {
     if (campo === 'marca') {
-      // Solo letras y espacios
       setVehiculo(v => ({ ...v, marca: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ ]/g, '') }));
     } else if (campo === 'color') {
-      // Solo letras, espacios y guiones (p.ej. "Gris-Perla")
       setVehiculo(v => ({ ...v, color: value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜ\- ]/g, '') }));
     } else if (campo === 'modelo') {
-      // Letras, números, espacios y guiones (ej: "CX-5", "320i")
       setVehiculo(v => ({ ...v, modelo: value.replace(/[^A-Za-z0-9áéíóúÁÉÍÓÚüÜ\- ]/g, '') }));
     } else if (campo === 'anio') {
-      // Solo dígitos
       setVehiculo(v => ({ ...v, anio: value.replace(/\D/g, '') }));
     } else {
       setVehiculo(v => ({ ...v, [campo]: value }));
@@ -496,7 +487,7 @@ const Proforma = () => {
               <FontAwesomeIcon icon={faPlus} /> {isCreatingNew ? 'Creando…' : 'Nueva'}
             </button>
             <button className="boton-descargar" onClick={handleDescargarPDF} disabled={busy}>
-              <FontAwesomeIcon icon={faDownload} /> {isGeneratingPdf ? 'Generando…' : 'PDF'}
+              <FontAwesomeIcon icon={faDownload} /> {isGeneratingPdf ? 'Generando…' : 'Descargar Proforma'}
             </button>
           </div>
         </header>
@@ -596,16 +587,15 @@ const Proforma = () => {
           <table className="proforma-tabla">
             <thead>
               <tr>
-                <th>Descripción</th>
-                <th>Monto</th>
-                <th>Total</th>
-                <th></th>
+                <th className="th-desc">Descripción</th>
+                <th className="th-monto">Monto</th>
+                <th className="th-acciones"></th>
               </tr>
             </thead>
             <tbody>
               {reparaciones.map((r, index) => (
                 <tr key={index}>
-                  <td>
+                  <td className="td-desc">
                     <input
                       type="text"
                       value={r.concepto}
@@ -613,16 +603,16 @@ const Proforma = () => {
                       onChange={(e) => handleReparacionChange(index, 'concepto', e.target.value)}
                     />
                   </td>
-                  <td>
+                  <td className="td-monto">
                     <input
                       type="number"
+                      className="input-monto"
                       value={r.precio}
                       disabled={busy}
                       onChange={(e) => handleReparacionChange(index, 'precio', e.target.value)}
                     />
                   </td>
-                  <td>₡{Number(r.precio || 0).toFixed(2)}</td>
-                  <td>
+                  <td className="td-acciones">
                     <button
                       type="button"
                       className="btn-icon btn-icon--danger"
@@ -638,7 +628,7 @@ const Proforma = () => {
               ))}
               {reparaciones.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="empty">Sin reparaciones. Agrega al menos una.</td>
+                  <td colSpan="3" className="empty">Sin reparaciones. Agrega al menos una.</td>
                 </tr>
               )}
             </tbody>

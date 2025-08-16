@@ -25,7 +25,8 @@ body {
 .clientes-page {
   min-height: 100svh;
   padding: 24px;
-  background: linear-gradient(180deg, #fafbff, #f3f5f9); /* suave y grisáceo */
+  background: linear-gradient(180deg, #fafbff, #f3f5f9);
+  /* suave y grisáceo */
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
@@ -543,4 +544,62 @@ body {
 .tabla-clientes:has(thead th.is-center:nth-child(5)) tbody td:nth-child(5),
 .tabla-clientes:has(thead th.is-center:nth-child(6)) tbody td:nth-child(6) {
   text-align: center;
+}
+
+/* ===== Hover verde para "Agregar cliente" ===== */
+:root {
+  --success: #10b981;
+  /* verde */
+  --success-dark: #0f766e;
+  /* borde/sombra */
+}
+
+/* transición suave también para cambio de fondo */
+.clientes-page .boton-agregar {
+  transition: transform .06s, filter .15s, box-shadow .15s, background .15s, border-color .15s;
+}
+
+/* hover/focus en verde */
+.clientes-page .boton-agregar:hover,
+.clientes-page .boton-agregar:focus-visible {
+  background-image: none;
+  /* quita el gradiente oscuro */
+  background: var(--success);
+  border-color: var(--success-dark);
+  filter: none;
+  box-shadow: 0 8px 18px rgba(16, 185, 129, .22), inset 0 0 0 1px rgba(255, 255, 255, .05);
+}
+
+/* variante compacta, por si usas .boton-agregar--sm */
+.clientes-page .boton-agregar--sm:hover,
+.clientes-page .boton-agregar--sm:focus-visible {
+  background-image: none;
+  background: var(--success);
+  border-color: var(--success-dark);
+}
+
+/* ===== Hover verde para "Guardar" ===== */
+:root {
+  --success: #10b981;
+  /* verde */
+  --success-dark: #0f766e;
+  /* borde/sombra */
+}
+
+/* Transición suave */
+.clientes-page .modal-actions button[type="submit"],
+.clientes-page .acciones button[type="submit"] {
+  transition: transform .06s, filter .15s, box-shadow .15s, background .15s, border-color .15s;
+}
+
+/* Hover/focus en verde (modal/form de Clientes) */
+.clientes-page .modal-actions button[type="submit"]:hover,
+.clientes-page .modal-actions button[type="submit"]:focus-visible,
+.clientes-page .acciones button[type="submit"]:hover,
+.clientes-page .acciones button[type="submit"]:focus-visible {
+  background-image: none;
+  background: var(--success);
+  border-color: var(--success-dark);
+  filter: none;
+  box-shadow: 0 8px 18px rgba(16, 185, 129, .22), inset 0 0 0 1px rgba(255, 255, 255, .05);
 }
