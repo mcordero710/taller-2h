@@ -49,7 +49,7 @@ const Login = () => {
       await withLoading(async () => {
         await signInWithEmailAndPassword(auth, email, password);
         // Navegamos dentro del withLoading para que el overlay se vea hasta cambiar de página
-        navigate('/home');
+        navigate('/clientes');
       }, 'Iniciando sesión…');
     } catch (error) {
       const errorMessage = getErrorMessage(error.code);
