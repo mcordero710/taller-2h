@@ -13,12 +13,23 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FB_APP_ID,
 };
 
+
 if (!firebaseConfig.apiKey) {
   // Te ayuda a detectar si faltan variables
   // (no rompe, solo avisa en consola)
   // eslint-disable-next-line no-console
   console.warn('⚠️ Firebase ENV no configuradas. Revisa tus .env o Secrets de GitHub.');
 }
+
+if (process.env.NODE_ENV === 'development') {
+  console.log('[ENV CHECK]', {
+    NODE_ENV: process.env.NODE_ENV,
+    PROJECT: process.env.REACT_APP_FB_PROJECT_ID,
+    APIKEY_LEN: (process.env.REACT_APP_FB_API_KEY || '').length,
+    APIKEY_START: (process.env.REACT_APP_FB_API_KEY || '').slice(0, 6),
+  });
+}
+
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
