@@ -1,43 +1,40 @@
 // src/firebase/firebase.js
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
-// Configuración de Firebase
+// ⚙️ Config desde ENV (CRA solo expone REACT_APP_*)
 const firebaseConfig = {
-  apiKey: 'AIzaSyC4nrGxWj6XJvXwqn4GP0bE5AGg9yUDvf0',
-  authDomain: 'taller-2h-4b2a1.firebaseapp.com',
-  projectId: 'taller-2h-4b2a1',
-  storageBucket: 'taller-2h-4b2a1.firebasestorage.app',
-  messagingSenderId: '606248266110',
-  appId: '1:606248266110:web:e078977af4dddc3c79ab2f',
+  apiKey: process.env.REACT_APP_FB_API_KEY,
+  authDomain: process.env.REACT_APP_FB_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FB_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FB_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FB_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FB_APP_ID,
 };
 
-// Inicializar Firebase
+if (!firebaseConfig.apiKey) {
+  // Te ayuda a detectar si faltan variables
+  // (no rompe, solo avisa en consola)
+  // eslint-disable-next-line no-console
+  console.warn('⚠️ Firebase ENV no configuradas. Revisa tus .env o Secrets de GitHub.');
+}
+
 const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
-// Obtener instancias de Firebase
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// Función para obtener el número de proforma actual
-const obtenerNumeroProforma = async () => {
-  const docRef = doc(db, 'config', 'numeroProforma'); // Asegúrate de que este documento exista
+// === Funciones que ya usas ===
+export const obtenerNumeroProforma = async () => {
+  const docRef = doc(db, 'config', 'numeroProforma');
   const docSnap = await getDoc(docRef);
-
-  if (docSnap.exists()) {
-    return docSnap.data().numero;
-  } else {
-    // Si no existe el documento, devolvemos 1
-    return 1;
-  }
+  return docSnap.exists() ? docSnap.data().numero : 1;
 };
 
-// Función para actualizar el número de proforma
-const actualizarNumeroProforma = async (nuevoNumero) => {
-  const docRef = doc(db, 'config', 'numeroProforma'); 
+export const actualizarNumeroProforma = async (nuevoNumero) => {
+  const docRef = doc(db, 'config', 'numeroProforma');
   await setDoc(docRef, { numero: nuevoNumero });
 };
 
-// Exportar
-export { auth, signInWithEmailAndPassword, db, obtenerNumeroProforma, actualizarNumeroProforma };
+// Re-export del helper de auth para no romper tus imports existentes
+export { signInWithEmailAndPassword } from 'firebase/auth';
