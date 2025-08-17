@@ -632,3 +632,15 @@
   white-space: nowrap;
 }
 
+/* ===== Centrar texto en los inputs de "Monto" ===== */
+.proforma-tabla .td-monto input,
+.proforma-tabla .input-monto {
+  text-align: center !important;
+}
+
+/* (Opcional) placeholder centrado también */
+.proforma-tabla .td-monto input::placeholder {
+  text-align: center;
+}
+
+
