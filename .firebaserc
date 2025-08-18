@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "taller-2h-4b2a1"
+    "default": "taller2h-prod",
+    "prod": "taller2h-prod"
   }
 }
