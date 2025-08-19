@@ -13,7 +13,6 @@ import {
   getDocs,
   addDoc,
   doc,
-  getDoc,
   updateDoc,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -641,10 +640,21 @@ const OrdenesDeTrabajo = () => {
 
 
         {/* ======= Vista para imprimir ======= */}
+        {/* ======= Vista para imprimir ======= */}
         <div id="ot-print" className="ot-print">
+          {/* Encabezado compacto */}
           <div className="otp-header">
-            <img src={logo} alt="Taller 2H" className="otp-logo" />
+            <div className="otp-left">
+              <img src={logo} alt="Taller 2H" className="otp-logo" />
+              <div className="otp-titlewrap">
+                <h1 className="otp-title">Orden de Trabajo</h1>
+                <span className="otp-cono">Cono: {cono || '—'}</span>
+              </div>
+            </div>
             <div className="otp-empresa">
+              <div className="otp-line">Taller Automotriz 2H S.A</div>
+              <div className="otp-line">Céd. Jur.: 3-101-930294</div>
+              <div className="otp-line">Tel: 6275-6427 • taller2hrosario@gmail.com</div>
               <div className="otp-fecha">
                 <strong>Fecha:</strong>{' '}
                 {new Date().toLocaleDateString('es-CR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
@@ -652,23 +662,40 @@ const OrdenesDeTrabajo = () => {
             </div>
           </div>
 
-          <h2 className="otp-title">Orden de Trabajo <span className="otp-cono">Cono: {cono}</span></h2>
-
+          {/* Datos */}
           <div className="otp-datos">
             {proformaNumero && <div><strong>Proforma:</strong> {proformaNumero}</div>}
-            <div><strong>Placa:</strong> {vehiculo?.placa || placa}</div>
-            <div><strong>Marca:</strong> {vehiculo?.marca}</div>
-            <div><strong>Modelo:</strong> {vehiculo?.modelo || ''}</div>
-            <div><strong>Año:</strong> {vehiculo?.anio}</div>
-            <div><strong>Color:</strong> {vehiculo?.color}</div>
+            <div><strong>Placa:</strong> {vehiculo?.placa || placa || '—'}</div>
+            <div><strong>Marca:</strong> {vehiculo?.marca || '—'}</div>
+            <div><strong>Modelo:</strong> {vehiculo?.modelo || '—'}</div>
+            <div><strong>Año:</strong> {vehiculo?.anio || '—'}</div>
+            <div><strong>Color:</strong> {vehiculo?.color || '—'}</div>
           </div>
 
+          {/* Tabla con checkbox a la derecha */}
           <table className="otp-tabla">
-            <thead><tr><th style={{ width: 60 }}>#</th><th>Reparación</th></tr></thead>
+            <thead>
+              <tr>
+                <th style={{ width: 48 }}>#</th>
+                <th>Reparación</th>
+                <th className="otp-th-check">Listo</th>
+              </tr>
+            </thead>
             <tbody>
               {reparaciones.map((r, i) => (
-                <tr key={r.id}><td>{i + 1}</td><td>{r.texto}</td></tr>
+                <tr key={r.id}>
+                  <td>{i + 1}</td>
+                  <td>{r.texto}</td>
+                  <td className="otp-check"><span className="check-box" /></td>
+                </tr>
               ))}
+              {reparaciones.length === 0 && (
+                <tr>
+                  <td>—</td>
+                  <td>No hay reparaciones registradas</td>
+                  <td className="otp-check"><span className="check-box" /></td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
