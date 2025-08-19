@@ -302,7 +302,7 @@ const Proforma = () => {
         // 1) Ocultar controles/acciones de la UI
         element
           .querySelectorAll(
-            '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .proforma-toolbar, .btn-add'
+            '.boton-guardar, .boton-nueva, .boton-descargar, .buscar-proforma, .btn-add'
           )
           .forEach((el) => el && (el.style.display = 'none'));
 
@@ -446,6 +446,8 @@ const Proforma = () => {
       setVehiculo(v => ({ ...v, modelo: value.replace(/[^A-Za-z0-9áéíóúÁÉÍÓÚüÜ\- ]/g, '') }));
     } else if (campo === 'anio') {
       setVehiculo(v => ({ ...v, anio: value.replace(/\D/g, '') }));
+    } else if (campo === 'placa') {
+      setVehiculo(v => ({ ...v, placa: (value || '').toUpperCase() }));
     } else {
       setVehiculo(v => ({ ...v, [campo]: value }));
     }

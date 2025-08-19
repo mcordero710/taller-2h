@@ -563,13 +563,39 @@
 /* Print */
 @media print {
 
+  /* sigue ocultando lo mismo que ya pusiste */
   .boton-descargar,
   .boton-guardar,
   .boton-nueva,
   .iva-section,
-  .proforma-toolbar,
+  .buscar-proforma,
   .btn-add {
     display: none !important;
+  }
+
+  /* Asegura que el número y la fecha (badge) sí salgan */
+  .datos-mini {
+    display: inline-flex !important;
+  }
+
+  /* Quita sombras/bordes en papel para un look limpio */
+  .proforma-wrapper {
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Inputs se ven como texto en la impresión */
+  .proforma-tabla .td-desc input,
+  .proforma-tabla .td-monto input {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  /* (opcional) intenta preservar colores del badge en impresión */
+  .badge {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* Columna de acciones (3ra) */
@@ -584,6 +610,7 @@
     object-fit: contain !important;
   }
 }
+
 
 @media (max-width:900px) {
   .grid-two {
@@ -600,9 +627,12 @@
   border-radius: 8px;
   gap: 4px;
   line-height: 1;
-  flex: 0 0 auto;     /* evita que se estire en el flex */
-  width: auto;        /* asegura ancho al contenido */
-  white-space: nowrap;/* mantiene el tamaño al texto */
+  flex: 0 0 auto;
+  /* evita que se estire en el flex */
+  width: auto;
+  /* asegura ancho al contenido */
+  white-space: nowrap;
+  /* mantiene el tamaño al texto */
 }
 
 /* Centrar títulos del thead (Descripción / Monto) */
@@ -621,13 +651,16 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;          /* espacio entre botones */
-  flex-wrap: wrap;   /* por si no cabe en pantallas pequeñas */
+  gap: 8px;
+  /* espacio entre botones */
+  flex-wrap: wrap;
+  /* por si no cabe en pantallas pequeñas */
 }
 
 /* Anula el margen viejo y evita que se estiren */
 .proforma-head .head-right button {
-  margin-left: 0;    /* override de la regla anterior */
+  margin-left: 0;
+  /* override de la regla anterior */
   width: auto;
   white-space: nowrap;
 }
@@ -642,5 +675,3 @@
 .proforma-tabla .td-monto input::placeholder {
   text-align: center;
 }
-
-
