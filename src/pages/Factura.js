@@ -18,8 +18,11 @@ import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa';
 import { ToastContainer } from 'react-toastify';
 import logo from '../assets/logo.png';
 
+
 // Loader global
 import { useLoading } from '../components/ui/LoadingContext';
+
+
 
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
@@ -429,6 +432,7 @@ const Factura = () => {
       buscarProforma();
     }
   };
+  const fmt = (n) => Number(n ?? 0).toLocaleString('en-US');
 
   return (
     <div className="factura-proforma-page">
@@ -440,7 +444,7 @@ const Factura = () => {
           newestOnTop={true}
           closeOnClick={false}
         />
-
+  
         <div className="fecha-factura-centro">
           Fecha: {new Date().toLocaleDateString('es-CR', {
             year: 'numeric',
@@ -448,9 +452,9 @@ const Factura = () => {
             day: '2-digit',
           })}
         </div>
-
+  
         <h2 className="factura-header">Factura</h2>
-
+  
         <div className="buscar-proforma-barra">
           <label htmlFor="proformaInput" className="buscar-proforma-label">Número de Proforma:</label>
           <div className="buscar-proforma-campos">
@@ -467,7 +471,7 @@ const Factura = () => {
             </button>
           </div>
         </div>
-
+  
         {proforma && (
           <div id="factura-pdf" className="factura-pdf">
             <div className="factura-contacto-cliente">
@@ -478,7 +482,7 @@ const Factura = () => {
                 </div>
               )}
             </div>
-
+  
             {/* Resumen de la proforma */}
             <table className="factura-tabla-resumen">
               <thead>
@@ -492,15 +496,15 @@ const Factura = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td>{proforma.total.toLocaleString()}</td>
-                  <td>{totalGastos.toLocaleString()}</td>
-                  <td>{totalFinal.toLocaleString()}</td>
-                  <td>{totalAbonado.toLocaleString()}</td>
-                  <td>{saldoPendiente.toLocaleString()}</td>
+                  <td>{fmt(proforma.total)}</td>
+                  <td>{fmt(totalGastos)}</td>
+                  <td>{fmt(totalFinal)}</td>
+                  <td>{fmt(totalAbonado)}</td>
+                  <td>{fmt(saldoPendiente)}</td>
                 </tr>
               </tbody>
             </table>
-
+  
             {/* Formularios para ingresar gastos */}
             <div className="grupo-gasto-column">
               <div className="grupo-gasto-inputs">
@@ -513,7 +517,7 @@ const Factura = () => {
                   disabled={busy}
                 />
               </div>
-
+  
               <div className="grupo-gasto-inputs">
                 <label htmlFor="montoGasto">Monto del Gasto:</label>
                 <input
@@ -524,17 +528,15 @@ const Factura = () => {
                   disabled={busy}
                 />
               </div>
-
+  
               <button className="boton-accion" onClick={ingresarGasto} disabled={busy}>
                 {isSavingGasto ? 'Guardando…' : 'Ingresar Gasto'}
               </button>
             </div>
-
-            {/* === AQUÍ VA EL AJUSTE: Abono + Tabla de Reparaciones LADO A LADO === */}
-            <div
-              className="factura-abono-y-reparaciones"
-            >
-              {/* Columna izquierda: Monto del Abono (igual que ya lo tenías) */}
+  
+            {/* Abono + Tabla de Reparaciones */}
+            <div className="factura-abono-y-reparaciones">
+              {/* Izquierda: Abono */}
               <div>
                 <div className="buscar-proforma-barra">
                   <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
@@ -556,14 +558,13 @@ const Factura = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Columna derecha: Tabla de Reparaciones de la Proforma */}
-              {/* Columna derecha: Tabla de Reparaciones de la Proforma */}
+  
+              {/* Derecha: Reparaciones */}
               <div className="tabla-wrap">
                 <div className="tabla-headbar">
                   <h3>Reparaciones de la Proforma</h3>
                 </div>
-
+  
                 <table
                   className="proforma-tabla"
                   role="table"
@@ -587,7 +588,7 @@ const Factura = () => {
                       </th>
                     </tr>
                   </thead>
-
+  
                   <tbody style={{ listStyle: 'none', paddingLeft: 0 }}>
                     {reparaciones.length > 0 ? (
                       reparaciones.map((r, idx) => (
@@ -607,7 +608,7 @@ const Factura = () => {
                               whiteSpace: 'nowrap'
                             }}
                           >
-                            {'₡\u00A0' + Number(r.precio || 0).toLocaleString('es-CR')}
+                            {fmt(r.precio)}
                           </td>
                         </tr>
                       ))
@@ -621,14 +622,12 @@ const Factura = () => {
                   </tbody>
                 </table>
               </div>
-
             </div>
-            {/* === FIN AJUSTE === */}
-
+  
             <button className="boton-accion btn-descargar" onClick={descargarPDF} disabled={busy}>
               {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
             </button>
-
+  
             {/* Historial de abonos */}
             {abonos.length > 0 && (
               <div className="historial-abonos">
@@ -644,14 +643,14 @@ const Factura = () => {
                     {abonos.map((ab, index) => (
                       <tr key={index}>
                         <td>{ab.fecha}</td>
-                        <td>{ab.monto.toLocaleString()}</td>
+                        <td>{fmt(ab.monto)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             )}
-
+  
             {/* Historial de gastos */}
             {gastos.length > 0 && (
               <div className="historial-gastos">
@@ -690,7 +689,7 @@ const Factura = () => {
                               disabled={busy}
                             />
                           ) : (
-                            g.monto.toLocaleString()
+                            fmt(g.monto)
                           )}
                         </td>
                         <td>
@@ -725,7 +724,7 @@ const Factura = () => {
                 </table>
               </div>
             )}
-
+  
             {saldoPendiente === 0 && (
               <>
                 <div className="nota-final-cliente">
@@ -735,7 +734,7 @@ const Factura = () => {
                     que no estén relacionados con los servicios prestados. Se recomienda revisar el vehículo antes de su entrega.
                   </p>
                 </div>
-
+  
                 <div className="firma-cliente">
                   <label>Firma del Cliente:</label>
                   <div className="linea-firma" />
@@ -747,6 +746,7 @@ const Factura = () => {
       </div>
     </div>
   );
+  
 
 };
 
