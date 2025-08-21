@@ -33,6 +33,9 @@ const Factura = () => {
   const [editGasto, setEditGasto] = useState(null);
   const [newDetalle, setNewDetalle] = useState('');
   const [newMonto, setNewMonto] = useState('');
+  const [reparaciones, setReparaciones] = useState([]);
+
+
 
   // flags para deshabilitar controles
   const [isSearching, setIsSearching] = useState(false);
@@ -99,12 +102,26 @@ const Factura = () => {
         if (!snapshot.empty) {
           const docRef = snapshot.docs[0];
           const data = { id: docRef.id, ...docRef.data() };
+
+          // 👇 NUEVO: normaliza y guarda las reparaciones para la tabla
+          const repars = Array.isArray(data.reparaciones)
+            ? data.reparaciones.map((r) => ({
+              concepto: r.concepto ?? r.descripcion ?? '',
+              precio: Number(r.precio ?? r.monto ?? 0),
+            }))
+            : [];
+          setReparaciones(repars);
+
           setProforma(data);
           await Promise.all([cargarAbonos(docRef.id), cargarGastos(docRef.id)]);
+
+          // (opcional) feedback
+          // toast.success(`Proforma #${data.numero} cargada (${repars.length} reparaciones)`);
         } else {
           setProforma(null);
           setAbonos([]);
           setGastos([]);
+          setReparaciones([]); // 👈 NUEVO: limpia la tabla si no se encuentra
           toast.info('Proforma no encontrada.', { autoClose: 2500 });
         }
       }, 'Buscando factura…');
@@ -115,6 +132,7 @@ const Factura = () => {
       setIsSearching(false);
     }
   };
+
 
   const cargarAbonos = async (proformaId) => {
     const q = query(collection(db, 'abonos'), where('proformaId', '==', proformaId));
@@ -453,8 +471,6 @@ const Factura = () => {
         {proforma && (
           <div id="factura-pdf" className="factura-pdf">
             <div className="factura-contacto-cliente">
-
-
               {cliente && (
                 <div className="factura-cliente">
                   <p>Cliente: <strong>{cliente.nombre} {cliente.apellido}</strong></p>
@@ -485,7 +501,7 @@ const Factura = () => {
               </tbody>
             </table>
 
-            {/* Formularios para ingresar gastos y abonos */}
+            {/* Formularios para ingresar gastos */}
             <div className="grupo-gasto-column">
               <div className="grupo-gasto-inputs">
                 <label htmlFor="detalleGasto">Detalle del Gasto:</label>
@@ -514,25 +530,100 @@ const Factura = () => {
               </button>
             </div>
 
-            <div className="buscar-proforma-barra">
-              <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
-              <div className="buscar-proforma-campos">
-                <input
-                  id="montoAbono"
-                  type="number"
-                  value={abono}
-                  onChange={(e) => setAbono(e.target.value)}
-                  disabled={saldoPendiente <= 0 || busy}
-                />
-                <button
-                  className="boton-accion"
-                  onClick={ingresarAbono}
-                  disabled={saldoPendiente <= 0 || busy}
-                >
-                  {isSavingAbono ? 'Registrando…' : 'Ingresar Abono'}
-                </button>
+            {/* === AQUÍ VA EL AJUSTE: Abono + Tabla de Reparaciones LADO A LADO === */}
+            <div
+              className="factura-abono-y-reparaciones"
+            >
+              {/* Columna izquierda: Monto del Abono (igual que ya lo tenías) */}
+              <div>
+                <div className="buscar-proforma-barra">
+                  <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
+                  <div className="buscar-proforma-campos">
+                    <input
+                      id="montoAbono"
+                      type="number"
+                      value={abono}
+                      onChange={(e) => setAbono(e.target.value)}
+                      disabled={saldoPendiente <= 0 || busy}
+                    />
+                    <button
+                      className="boton-accion"
+                      onClick={ingresarAbono}
+                      disabled={saldoPendiente <= 0 || busy}
+                    >
+                      {isSavingAbono ? 'Registrando…' : 'Ingresar Abono'}
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* Columna derecha: Tabla de Reparaciones de la Proforma */}
+              {/* Columna derecha: Tabla de Reparaciones de la Proforma */}
+              <div className="tabla-wrap">
+                <div className="tabla-headbar">
+                  <h3>Reparaciones de la Proforma</h3>
+                </div>
+
+                <table
+                  className="proforma-tabla"
+                  role="table"
+                  style={{ listStyle: 'none' }}
+                >
+                  <thead>
+                    <tr role="row">
+                      <th
+                        role="columnheader"
+                        className="th-desc"
+                        style={{ textAlign: 'left', display: 'table-cell', listStyle: 'none' }}
+                      >
+                        Descripción
+                      </th>
+                      <th
+                        role="columnheader"
+                        className="th-monto"
+                        style={{ textAlign: 'right', display: 'table-cell', listStyle: 'none' }}
+                      >
+                        Monto
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody style={{ listStyle: 'none', paddingLeft: 0 }}>
+                    {reparaciones.length > 0 ? (
+                      reparaciones.map((r, idx) => (
+                        <tr key={idx} role="row">
+                          <td
+                            className="td-desc"
+                            style={{ textAlign: 'left', display: 'table-cell', listStyle: 'none' }}
+                          >
+                            {r.concepto || '—'}
+                          </td>
+                          <td
+                            className="td-monto"
+                            style={{
+                              textAlign: 'right',
+                              display: 'table-cell',
+                              listStyle: 'none',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {'₡\u00A0' + Number(r.precio || 0).toLocaleString('es-CR')}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={2} className="empty" style={{ textAlign: 'center' }}>
+                          Esta proforma no tiene reparaciones.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
             </div>
+            {/* === FIN AJUSTE === */}
 
             <button className="boton-accion btn-descargar" onClick={descargarPDF} disabled={busy}>
               {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
@@ -625,7 +716,6 @@ const Factura = () => {
                               >
                                 {deletingGastoId === g.id ? 'Eliminando…' : <FaTrashAlt />}
                               </button>
-
                             </>
                           )}
                         </td>
@@ -652,12 +742,12 @@ const Factura = () => {
                 </div>
               </>
             )}
-
           </div>
         )}
       </div>
     </div>
   );
+
 };
 
 export default Factura;
