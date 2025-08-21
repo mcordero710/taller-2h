@@ -18,8 +18,11 @@ import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa';
 import { ToastContainer } from 'react-toastify';
 import logo from '../assets/logo.png';
 
+
 // Loader global
 import { useLoading } from '../components/ui/LoadingContext';
+
+
 
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
@@ -33,6 +36,18 @@ const Factura = () => {
   const [editGasto, setEditGasto] = useState(null);
   const [newDetalle, setNewDetalle] = useState('');
   const [newMonto, setNewMonto] = useState('');
+  const [reparaciones, setReparaciones] = useState([]);
+  // info del vehículo (como en Proforma)
+  const [vehiculo, setVehiculo] = useState({
+    placa: '',
+    marca: '',
+    modelo: '',
+    anio: '',
+    color: '',
+  });
+
+
+
 
   // flags para deshabilitar controles
   const [isSearching, setIsSearching] = useState(false);
@@ -99,12 +114,38 @@ const Factura = () => {
         if (!snapshot.empty) {
           const docRef = snapshot.docs[0];
           const data = { id: docRef.id, ...docRef.data() };
+
+          // normaliza vehículo (soporta proformas viejas sin "modelo")
+          setVehiculo({
+            placa: data.vehiculo?.placa || '',
+            marca: data.vehiculo?.marca || '',
+            modelo: data.vehiculo?.modelo || '',
+            anio: data.vehiculo?.anio || '',
+            color: data.vehiculo?.color || '',
+          });
+
+
+          // 👇 NUEVO: normaliza y guarda las reparaciones para la tabla
+          const repars = Array.isArray(data.reparaciones)
+            ? data.reparaciones.map((r) => ({
+              concepto: r.concepto ?? r.descripcion ?? '',
+              precio: Number(r.precio ?? r.monto ?? 0),
+            }))
+            : [];
+          setReparaciones(repars);
+
           setProforma(data);
           await Promise.all([cargarAbonos(docRef.id), cargarGastos(docRef.id)]);
+
+          // (opcional) feedback
+          // toast.success(`Proforma #${data.numero} cargada (${repars.length} reparaciones)`);
         } else {
           setProforma(null);
           setAbonos([]);
           setGastos([]);
+          setReparaciones([]); // 👈 NUEVO: limpia la tabla si no se encuentra
+          setVehiculo({ placa: '', marca: '', modelo: '', anio: '', color: '' });
+
           toast.info('Proforma no encontrada.', { autoClose: 2500 });
         }
       }, 'Buscando factura…');
@@ -115,6 +156,7 @@ const Factura = () => {
       setIsSearching(false);
     }
   };
+
 
   const cargarAbonos = async (proformaId) => {
     const q = query(collection(db, 'abonos'), where('proformaId', '==', proformaId));
@@ -411,6 +453,7 @@ const Factura = () => {
       buscarProforma();
     }
   };
+  const fmt = (n) => Number(n ?? 0).toLocaleString('en-US');
 
   return (
     <div className="factura-proforma-page">
@@ -453,15 +496,22 @@ const Factura = () => {
         {proforma && (
           <div id="factura-pdf" className="factura-pdf">
             <div className="factura-contacto-cliente">
-
-
               {cliente && (
                 <div className="factura-cliente">
                   <p>Cliente: <strong>{cliente.nombre} {cliente.apellido}</strong></p>
                   <p>Cédula: <strong>{cliente.cedula}</strong></p>
                 </div>
               )}
+
+              {(vehiculo.marca || vehiculo.modelo || vehiculo.anio || vehiculo.color || vehiculo.placa) && (
+                <div className="factura-vehiculo">
+                  <p>Vehículo: <strong>{[vehiculo.marca, vehiculo.modelo].filter(Boolean).join(' ') || '—'}</strong></p>
+                  <p>Año: <strong>{vehiculo.anio || '—'}</strong> &nbsp;•&nbsp; Color: <strong>{vehiculo.color || '—'}</strong></p>
+                  <p>Placa: <strong>{vehiculo.placa || '—'}</strong></p>
+                </div>
+              )}
             </div>
+
 
             {/* Resumen de la proforma */}
             <table className="factura-tabla-resumen">
@@ -476,16 +526,16 @@ const Factura = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td>{proforma.total.toLocaleString()}</td>
-                  <td>{totalGastos.toLocaleString()}</td>
-                  <td>{totalFinal.toLocaleString()}</td>
-                  <td>{totalAbonado.toLocaleString()}</td>
-                  <td>{saldoPendiente.toLocaleString()}</td>
+                  <td>{fmt(proforma.total)}</td>
+                  <td>{fmt(totalGastos)}</td>
+                  <td>{fmt(totalFinal)}</td>
+                  <td>{fmt(totalAbonado)}</td>
+                  <td>{fmt(saldoPendiente)}</td>
                 </tr>
               </tbody>
             </table>
 
-            {/* Formularios para ingresar gastos y abonos */}
+            {/* Formularios para ingresar gastos */}
             <div className="grupo-gasto-column">
               <div className="grupo-gasto-inputs">
                 <label htmlFor="detalleGasto">Detalle del Gasto:</label>
@@ -514,23 +564,93 @@ const Factura = () => {
               </button>
             </div>
 
-            <div className="buscar-proforma-barra">
-              <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
-              <div className="buscar-proforma-campos">
-                <input
-                  id="montoAbono"
-                  type="number"
-                  value={abono}
-                  onChange={(e) => setAbono(e.target.value)}
-                  disabled={saldoPendiente <= 0 || busy}
-                />
-                <button
-                  className="boton-accion"
-                  onClick={ingresarAbono}
-                  disabled={saldoPendiente <= 0 || busy}
+            {/* Abono + Tabla de Reparaciones */}
+            <div className="factura-abono-y-reparaciones">
+              {/* Izquierda: Abono */}
+              <div>
+                <div className="buscar-proforma-barra">
+                  <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
+                  <div className="buscar-proforma-campos">
+                    <input
+                      id="montoAbono"
+                      type="number"
+                      value={abono}
+                      onChange={(e) => setAbono(e.target.value)}
+                      disabled={saldoPendiente <= 0 || busy}
+                    />
+                    <button
+                      className="boton-accion"
+                      onClick={ingresarAbono}
+                      disabled={saldoPendiente <= 0 || busy}
+                    >
+                      {isSavingAbono ? 'Registrando…' : 'Ingresar Abono'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Derecha: Reparaciones */}
+              <div className="tabla-wrap">
+                <div className="tabla-headbar">
+                  <h3>Reparaciones</h3>
+                </div>
+
+                <table
+                  className="proforma-tabla"
+                  role="table"
+                  style={{ listStyle: 'none' }}
                 >
-                  {isSavingAbono ? 'Registrando…' : 'Ingresar Abono'}
-                </button>
+                  <thead>
+                    <tr role="row">
+                      <th
+                        role="columnheader"
+                        className="th-desc"
+                        style={{ textAlign: 'left', display: 'table-cell', listStyle: 'none' }}
+                      >
+                        Descripción
+                      </th>
+                      <th
+                        role="columnheader"
+                        className="th-monto"
+                        style={{ textAlign: 'right', display: 'table-cell', listStyle: 'none' }}
+                      >
+                        Monto
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody style={{ listStyle: 'none', paddingLeft: 0 }}>
+                    {reparaciones.length > 0 ? (
+                      reparaciones.map((r, idx) => (
+                        <tr key={idx} role="row">
+                          <td
+                            className="td-desc"
+                            style={{ textAlign: 'left', display: 'table-cell', listStyle: 'none' }}
+                          >
+                            {r.concepto || '—'}
+                          </td>
+                          <td
+                            className="td-monto"
+                            style={{
+                              textAlign: 'right',
+                              display: 'table-cell',
+                              listStyle: 'none',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {fmt(r.precio)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={2} className="empty" style={{ textAlign: 'center' }}>
+                          Esta proforma no tiene reparaciones.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -553,7 +673,7 @@ const Factura = () => {
                     {abonos.map((ab, index) => (
                       <tr key={index}>
                         <td>{ab.fecha}</td>
-                        <td>{ab.monto.toLocaleString()}</td>
+                        <td>{fmt(ab.monto)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -599,7 +719,7 @@ const Factura = () => {
                               disabled={busy}
                             />
                           ) : (
-                            g.monto.toLocaleString()
+                            fmt(g.monto)
                           )}
                         </td>
                         <td>
@@ -625,7 +745,6 @@ const Factura = () => {
                               >
                                 {deletingGastoId === g.id ? 'Eliminando…' : <FaTrashAlt />}
                               </button>
-
                             </>
                           )}
                         </td>
@@ -652,12 +771,13 @@ const Factura = () => {
                 </div>
               </>
             )}
-
           </div>
         )}
       </div>
     </div>
   );
+
+
 };
 
 export default Factura;

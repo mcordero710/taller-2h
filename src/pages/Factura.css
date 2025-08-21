@@ -1,9 +1,15 @@
+/* ============================
+   Base de página
+   ============================ */
 .factura-proforma-page {
   min-height: 100svh;
   padding: 24px;
-  background: linear-gradient(180deg, #fafbff, #f3f5f9); /* suave gris/azulado */
+  background: linear-gradient(180deg, #fafbff, #f3f5f9);
   color: #0f172a;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --hdr-bg: #0f172a;
+  /* color de encabezados de tablas */
+  --hdr-text: #ffffff;
 }
 
 /* Contenedor principal */
@@ -11,23 +17,14 @@
   max-width: 1200px;
   margin: auto;
   padding: 2rem;
-  font-family: Arial, sans-serif;
   background-color: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  position: relative; /* Necesario para posicionar elementos dentro del contenedor */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .1);
+  position: relative;
 }
 
-.factura-contacto-cliente {
-  display: flex;
-  align-items: flex-start;
-  gap: 2rem; /* Espacio más natural entre empresa y cliente */
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-/* Información de contacto */
+/* Encabezado + datos de cliente */
 .factura-header {
   text-align: left;
   margin-bottom: 1.5rem;
@@ -35,80 +32,156 @@
   color: #2c3e50;
 }
 
-.factura-header p {
-  margin: 0.25rem 0;
+.factura-contacto-cliente {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
-/* Datos del cliente */
 .factura-cliente {
   font-size: 1rem;
-  padding: 0;
-  margin: 0;
-  background: none;
-  border: none;
 }
 
 .factura-cliente p {
-  margin: 0.5rem 0;
-  font-weight: normal;
+  margin: .5rem 0;
 }
 
 .factura-cliente strong {
-  font-weight: normal;
-  color: inherit;
-  text-decoration: none;
+  font-weight: 600;
 }
 
-/* Tabla resumen de proforma */
+/* Fecha centrada arriba */
+.fecha-factura-centro {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+/* ============================
+     Tabla: Resumen de Proforma
+     ============================ */
 .factura-tabla-resumen {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 2rem;
-  text-align: center;
-  font-size: 0.95rem;
   table-layout: fixed;
+  margin-bottom: 2rem;
+  font-size: .95rem;
+  text-align: center;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.factura-tabla-resumen th,
+.factura-tabla-resumen thead th {
+  background: var(--hdr-bg) !important;
+  color: var(--hdr-text) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .2px;
+  border-color: transparent;
+  padding: .8rem;
+}
+
 .factura-tabla-resumen td {
   border: 1px solid #ccc;
-  padding: 0.8rem;
+  padding: .8rem;
 }
 
 .factura-tabla-resumen td:nth-child(4) {
-  width: 120px; /* Ajuste del ancho de la columna */
-  text-align: center; /* Centrado de contenido */
+  width: 120px;
+  text-align: center;
 }
 
-/* Botones dentro de la tabla de gastos */
-.historial-gastos td button {
-  height: 32px;
-  width: 32px;
-  padding: 0;
-  font-size: 1rem;
-  background-color: transparent;
-  color: #2c3e50;
+/* Saldo negativo (opcional) */
+.saldo-negativo {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* ============================
+     Formularios de gasto / abono
+     ============================ */
+.grupo-gasto-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: .75rem;
+  max-width: 300px;
+}
+
+.grupo-gasto-inputs {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.grupo-gasto-inputs label {
+  font-weight: 600;
+  margin-bottom: .25rem;
+}
+
+.grupo-gasto-inputs input {
+  padding: .5rem;
+  border-radius: 4px;
   border: 1px solid #ccc;
+}
+
+.boton-accion {
+  height: 36px;
+  min-width: 140px;
+  padding: 0 1rem;
+  font-size: .9rem;
+  font-weight: 600;
+  background-color: #2c3e50;
+  color: #fff;
+  border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition: background-color .3s ease, transform .2s ease;
+  box-sizing: border-box;
 }
 
-.historial-gastos td button:hover {
+.boton-accion:hover {
   background-color: #1abc9c;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
-.historial-gastos td button i {
-  font-size: 1.5rem;
-  color: #2c3e50;
+.grupo-gasto-column .boton-accion {
+  align-self: flex-start;
 }
 
-.historial-gastos td button:hover i {
-  color: white;
+/* Botón PDF (arriba derecha) */
+.btn-descargar {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: .3rem .6rem;
+  font-size: .85rem;
+  font-weight: 600;
+  background-color: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color .3s ease, transform .2s ease;
+  width: auto;
+  min-width: 120px;
+  height: 32px;
+  box-sizing: border-box;
 }
 
-/* Historiales */
+.btn-descargar:hover {
+  background-color: #1abc9c;
+  transform: scale(1.05);
+}
+
+/* ============================
+     Historiales (abonos / gastos)
+     ============================ */
 .historial-abonos,
 .historial-gastos {
   margin-top: 2rem;
@@ -124,8 +197,10 @@
 .historial-gastos table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
   text-align: center;
+  font-size: .9rem;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .historial-abonos th,
@@ -133,195 +208,151 @@
 .historial-gastos th,
 .historial-gastos td {
   border: 1px solid #ddd;
-  padding: 0.6rem 0.8rem;
+  padding: .6rem .8rem;
 }
 
-/* Ajusta el padding en las celdas de la tabla */
 .historial-gastos td {
-  padding: 0.6rem;
   text-align: center;
   vertical-align: middle;
 }
 
-/* Grupo de gasto (detalle y monto) */
-/* Contenedor de ingreso de gasto en columna alineado a la izquierda */
-.grupo-gasto-column {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-  gap: 0.75rem;
-  max-width: 300px;
-}
-
-/* Cada grupo (label + input) */
-.grupo-gasto-inputs {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.grupo-gasto-inputs label {
-  font-weight: bold;
-  margin-bottom: 0.25rem;
-}
-
-.grupo-gasto-inputs input {
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-
-.grupo-gasto-column button:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
-}
-
-/* Botón de PDF en la parte superior derecha */
-.btn-descargar {
-  padding: 0.3rem 0.6rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  background-color: #2c3e50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  display: inline-block;
-  margin-top: 1rem;
-  margin-right: 1rem;
-  width: auto;
-  min-width: 120px;
-  height: 32px;
-  box-sizing: border-box;
-  max-width: calc(100% - 2rem);
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-}
-
-.btn-descargar:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
-}
-
-/* Botón de Guardar */
-.btn-guardar {
+/* Acciones en tabla de gastos */
+.historial-gastos td button {
   height: 32px;
   width: 32px;
   padding: 0;
-  font-size: 1.5rem;
+  font-size: 1rem;
   background-color: transparent;
   color: #2c3e50;
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  transition: background-color .3s ease, transform .2s ease;
 }
 
-.btn-guardar:hover {
+.historial-gastos td button:hover {
   background-color: #1abc9c;
   transform: scale(1.1);
 }
 
-.btn-guardar i {
-  font-size: 1.5rem;
-  color: #2c3e50;
-}
-
-.btn-guardar:hover i {
-  color: white;
-}
-
-.boton-accion {
-  height: 36px;
-  min-width: 140px;
-  padding: 0 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  background-color: #2c3e50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  box-sizing: border-box;
-}
-
-.boton-accion:hover {
-  background-color: #1abc9c;
-  transform: scale(1.05);
-}
-
-.grupo-gasto-column .boton-accion {
-  width: auto;
-  min-width: 140px;
- 
-  align-self: flex-start;
-}
-
-.toast-confirm-wrapper {
-  background-color: #fff;
-  color: #333;
-  border-radius: 8px;
-  padding: 1.2rem 1.5rem;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-  font-family: 'Segoe UI', sans-serif;
-  max-width: 360px;
-}
-
-.toast-confirm-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.toast-confirm-message {
-  font-size: 1rem;
-  margin: 0;
-  font-weight: 500;
-}
-
-.toast-confirm-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.btn-confirm {
-  padding: 6px 14px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-confirm.eliminar {
-  background-color: #e74c3c;
+.historial-gastos td button:hover i {
   color: #fff;
 }
 
-.btn-confirm.eliminar:hover {
-  background-color: #c0392b;
+/* ============================
+     Abono + Reparaciones (layout)
+     ============================ */
+.factura-abono-y-reparaciones {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-top: 12px;
 }
 
-.btn-confirm.cancelar {
-  background-color: #f0f0f0;
-  color: #333;
+@media (max-width:900px) {
+  .factura-abono-y-reparaciones {
+    grid-template-columns: 1fr;
+  }
 }
 
-.btn-confirm.cancelar:hover {
-  background-color: #dcdcdc;
+/* Card de la tabla de reparaciones */
+.tabla-wrap {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(2, 6, 23, .04);
 }
 
-/* Centrado total del Toast personalizado */
+.tabla-headbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.tabla-headbar h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+/* =========================================
+     FIX FINAL — Tabla: Reparaciones Proforma
+     ========================================= */
+.proforma-tabla {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  font-size: 14px;
+  font-family: inherit;
+  list-style: none;
+}
+
+.proforma-tabla * {
+  list-style: none !important;
+}
+
+.proforma-tabla *::marker {
+  content: '' !important;
+}
+
+.proforma-tabla thead th {
+  background: var(--hdr-bg) !important;
+  color: var(--hdr-text) !important;
+  padding: 12px 14px !important;
+  text-transform: uppercase;
+  letter-spacing: .2px;
+}
+
+/* Alineaciones por columna */
+.proforma-tabla thead th:nth-child(1),
+.proforma-tabla tbody td:nth-child(1) {
+  text-align: left !important;
+}
+
+.proforma-tabla thead th:nth-child(2),
+.proforma-tabla tbody td:nth-child(2) {
+  text-align: right !important;
+}
+
+/* Anchos */
+.proforma-tabla thead th:nth-child(1) {
+  width: 65% !important;
+}
+
+.proforma-tabla thead th:nth-child(2) {
+  width: 35% !important;
+}
+
+/* Celdas cuerpo */
+.proforma-tabla tbody td {
+  padding: 12px 14px !important;
+  border-top: 1px solid #f1f5f9 !important;
+  vertical-align: middle !important;
+}
+
+.proforma-tabla tbody tr:nth-child(odd) {
+  background: #fafafa;
+}
+
+.proforma-tabla tbody tr:hover {
+  background: #f1f5ff;
+}
+
+/* Números: sin cortes y alineados */
+.proforma-tabla tbody td:nth-child(2) {
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums;
+  padding-right: 16px !important;
+}
+
+/* ============================
+     Toasts de confirmación (UI)
+     ============================ */
 .center-toast-container {
   position: fixed !important;
   top: 50% !important;
@@ -330,13 +361,12 @@
   z-index: 9999;
 }
 
-/* Estilo del toast de confirmación */
 .toast-confirm-wrapper {
   background-color: #fff;
   color: #333;
   border-radius: 10px;
   padding: 1.5rem;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .2);
   max-width: 400px;
   font-family: 'Segoe UI', sans-serif;
 }
@@ -361,17 +391,17 @@
 
 .btn-confirm {
   padding: 6px 14px;
-  font-size: 0.9rem;
-  font-weight: bold;
+  font-size: .9rem;
+  font-weight: 600;
   border-radius: 5px;
   border: none;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all .2s ease;
 }
 
 .btn-confirm.eliminar {
   background-color: #e74c3c;
-  color: white;
+  color: #fff;
 }
 
 .btn-confirm.eliminar:hover {
@@ -387,9 +417,12 @@
   background-color: #d0d7de;
 }
 
+/* ============================
+     Nota y firma
+     ============================ */
 .nota-final-cliente {
   margin-top: 2rem;
-  font-size: 0.95rem;
+  font-size: .95rem;
   background-color: #f4f4f4;
   padding: 1rem;
   border-left: 4px solid #e74c3c;
@@ -401,36 +434,11 @@
   line-height: 1.5;
 }
 
-.fecha-factura {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #2c3e50;
-  background-color: #f4f4f4;
-  padding: 0.4rem 0.8rem;
-  border-radius: 5px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-
-.fecha-factura-centro {
-  text-align: center;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 1rem;
-}
-
-
-
-
-/* ============================== */
-/* === ESTILOS PARA EL PDF ===== */
-/* ============================== */
+/* ============================
+     PRINT (PDF)
+     ============================ */
 @media print {
-  /* Oculta botones, inputs, acciones */
+
   .boton-accion,
   input,
   button,
@@ -442,17 +450,11 @@
     display: none !important;
   }
 
-  /* Asegura buen formato en PDF */
   .factura-pdf {
     padding: 1.5rem;
     font-size: 12px;
     color: #000;
     font-family: Arial, sans-serif;
-  }
-
-  .factura-contacto,
-  .factura-cliente {
-    margin-bottom: 1rem;
   }
 
   .factura-tabla-resumen,
@@ -479,21 +481,6 @@
     display: none !important;
   }
 
-  .firma-cliente {
-    margin-top: 2rem;
-  }
-
-  .linea-firma {
-    width: 200px;
-    border-bottom: 1px solid #000;
-    margin-top: 30px;
-  }
-
-  /* Asegura márgenes para PDF */
-  body {
-    margin: 0;
-  }
-
   .fecha-factura-centro {
     display: block;
     text-align: center;
@@ -502,95 +489,192 @@
     color: #000;
     margin-bottom: 1rem;
   }
-  
-}
 
-/* ============================
-   Encabezados coloreados (UI)
-   ============================ */
-/* === Encabezados del resumen: un solo color azul === */
-.factura-proforma-page {
-  --hdr-bg: #0f172a;   /* el mismo azul oscuro de las otras tablas */
-  --hdr-text: #ffffff;
-}
-
-/* Fuerza el mismo color en todas las columnas del resumen */
-.factura-tabla-resumen thead th {
-  background: var(--hdr-bg) !important;
-  color: var(--hdr-text) !important;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .2px;
-  border-color: transparent;
-}
-
-  
-  /* Redondeo y clip para que se vea bien el fondo del thead */
-  .factura-tabla-resumen,
-  .historial-abonos table,
-  .historial-gastos table {
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  
-  /* ---------- Resumen (colores por columna) ---------- */
-  .factura-tabla-resumen thead th {
-    color: var(--hdr-text);
-    font-weight: 700;
-    letter-spacing: .2px;
-    text-transform: uppercase;
-    border-color: transparent;
-  }
-  
-  .factura-tabla-resumen thead th:nth-child(1) { background: var(--col-proforma); }
-  .factura-tabla-resumen thead th:nth-child(2) { background: var(--col-gastos); }
-  .factura-tabla-resumen thead th:nth-child(3) { background: var(--col-total); }
-  .factura-tabla-resumen thead th:nth-child(4) { background: var(--col-abonado); }
-  .factura-tabla-resumen thead th:nth-child(5) { background: var(--col-saldo); }
-  
-  /* ---------- Historiales (mismo color para todo el thead) ---------- */
+  /* Encabezados sin color sólido en impresión b/n */
+  .factura-tabla-resumen thead th,
   .historial-abonos table thead th,
   .historial-gastos table thead th {
-    background: var(--hdr-bg);
-    color: var(--hdr-text);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .2px;
-    border-color: #1f2937;
+    background: #fff !important;
+    color: #000 !important;
+    border-color: #333 !important;
+    text-transform: none;
+    letter-spacing: 0;
   }
-  
-  /* opcional: hace que el header quede fijo si hay scroll en tablas largas
-  .historial-abonos table thead th,
-  .historial-gastos table thead th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
+
+  /* === HOTFIX: quita bullets y fija alineaciones solo en la tabla de Reparaciones === */
+
+  /* Restablece semántica de tabla (por si algún reset aplica 'display:list-item') */
+  .proforma-tabla thead {
+    display: table-header-group !important;
   }
-  */
-  
-  /* ============================
-     Versión impresión (b/n)
-     ============================ */
-  @media print {
-    .factura-tabla-resumen thead th,
-    .historial-abonos table thead th,
-    .historial-gastos table thead th {
-      background: #fff !important;
-      color: #000 !important;
-      border-color: #333 !important;
-      text-transform: none;
-      letter-spacing: 0;
-    }
+
+  .proforma-tabla tbody {
+    display: table-row-group !important;
   }
-  
+
+  .proforma-tabla tr {
+    display: table-row !important;
+  }
+
+  .proforma-tabla th,
+  .proforma-tabla td {
+    display: table-cell !important;
+  }
+
+  /* Elimina cualquier marcador/bala que algún CSS global esté inyectando */
+  .proforma-tabla th,
+  .proforma-tabla td {
+    list-style: none !important;
+  }
+
+  .proforma-tabla th::marker,
+  .proforma-tabla td::marker,
+  .proforma-tabla th::before,
+  .proforma-tabla td::before {
+    content: "" !important;
+  }
+
+  /* Alineaciones explícitas por columna */
+  .proforma-tabla th:nth-child(1),
+  .proforma-tabla td:nth-child(1) {
+    text-align: left !important;
+  }
+
+  .proforma-tabla th:nth-child(2),
+  .proforma-tabla td:nth-child(2) {
+    text-align: right !important;
+  }
+
+  /* Detalles visuales del monto */
+  .proforma-tabla td:nth-child(2) {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    padding-right: 16px;
+  }
+
+}
+
+/* === HOTFIX: quita bullets y fija alineaciones solo en la tabla de Reparaciones === */
+
+/* Restablece semántica de tabla (por si algún reset aplica 'display:list-item') */
+.proforma-tabla thead {
+  display: table-header-group !important;
+}
+
+.proforma-tabla tbody {
+  display: table-row-group !important;
+}
+
+.proforma-tabla tr {
+  display: table-row !important;
+}
+
+.proforma-tabla th,
+.proforma-tabla td {
+  display: table-cell !important;
+}
+
+/* Elimina cualquier marcador/bala que algún CSS global esté inyectando */
+.proforma-tabla th,
+.proforma-tabla td {
+  list-style: none !important;
+}
+
+.proforma-tabla th::marker,
+.proforma-tabla td::marker,
+.proforma-tabla th::before,
+.proforma-tabla td::before {
+  content: "" !important;
+}
+
+/* Alineaciones explícitas por columna */
+.proforma-tabla th:nth-child(1),
+.proforma-tabla td:nth-child(1) {
+  text-align: left !important;
+}
+
+.proforma-tabla th:nth-child(2),
+.proforma-tabla td:nth-child(2) {
+  text-align: right !important;
+}
+
+/* Detalles visuales del monto */
+.proforma-tabla td:nth-child(2) {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  padding-right: 16px;
+}
 
 
+/* --- Forzar que Reparaciones quede DEBAJO del bloque de Abono --- */
+.factura-abono-y-reparaciones {
+  display: block;
+  /* anula el grid de 2 columnas */
+  margin-top: 16px;
+}
+
+.factura-abono-y-reparaciones> :first-child {
+  max-width: 420px;
+  /* el bloque del abono no se estira de más */
+}
+
+.factura-abono-y-reparaciones .tabla-wrap {
+  width: 100%;
+  margin-top: 16px;
+  /* separación con el bloque del abono */
+}
+
+/* Evita desbordes del input+botón del abono en pantallas angostas */
+.buscar-proforma-campos {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.buscar-proforma-campos input {
+  min-width: 0;
+}
 
 
+/* --- Tabla de reparaciones: más angosta y centrada --- */
+.tabla-wrap {
+  width: min(100%, 760px);
+  /* limita el ancho total de la tarjeta */
+  margin: 16px auto 0;
+  /* céntrala */
+}
 
+/* Columna MONTO más estrecha y con más sangría a la derecha */
+.proforma-tabla thead th:nth-child(2),
+.proforma-tabla tbody td:nth-child(2) {
+  width: 140px !important;
+  /* no ocupa tanto espacio */
+  text-align: right !important;
+  padding-right: 24px !important;
+  /* separa el número del borde */
+}
 
+/* Compactar un poquito la altura de filas */
+.proforma-tabla tbody td {
+  padding: 10px 14px !important;
+}
 
+/* En móviles deja que aproveche todo el ancho */
+@media (max-width: 600px) {
+  .tabla-wrap {
+    width: 100%;
+  }
 
+  .proforma-tabla thead th:nth-child(2),
+  .proforma-tabla tbody td:nth-child(2) {
+    width: 120px !important;
+  }
+}
 
+.factura-vehiculo {
+  font-size: 1rem;
+}
 
-
+.factura-vehiculo p {
+  margin: .5rem 0;
+}
