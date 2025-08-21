@@ -37,6 +37,15 @@ const Factura = () => {
   const [newDetalle, setNewDetalle] = useState('');
   const [newMonto, setNewMonto] = useState('');
   const [reparaciones, setReparaciones] = useState([]);
+  // info del vehículo (como en Proforma)
+  const [vehiculo, setVehiculo] = useState({
+    placa: '',
+    marca: '',
+    modelo: '',
+    anio: '',
+    color: '',
+  });
+
 
 
 
@@ -106,6 +115,16 @@ const Factura = () => {
           const docRef = snapshot.docs[0];
           const data = { id: docRef.id, ...docRef.data() };
 
+          // normaliza vehículo (soporta proformas viejas sin "modelo")
+          setVehiculo({
+            placa: data.vehiculo?.placa || '',
+            marca: data.vehiculo?.marca || '',
+            modelo: data.vehiculo?.modelo || '',
+            anio: data.vehiculo?.anio || '',
+            color: data.vehiculo?.color || '',
+          });
+
+
           // 👇 NUEVO: normaliza y guarda las reparaciones para la tabla
           const repars = Array.isArray(data.reparaciones)
             ? data.reparaciones.map((r) => ({
@@ -125,6 +144,8 @@ const Factura = () => {
           setAbonos([]);
           setGastos([]);
           setReparaciones([]); // 👈 NUEVO: limpia la tabla si no se encuentra
+          setVehiculo({ placa: '', marca: '', modelo: '', anio: '', color: '' });
+
           toast.info('Proforma no encontrada.', { autoClose: 2500 });
         }
       }, 'Buscando factura…');
@@ -444,7 +465,7 @@ const Factura = () => {
           newestOnTop={true}
           closeOnClick={false}
         />
-  
+
         <div className="fecha-factura-centro">
           Fecha: {new Date().toLocaleDateString('es-CR', {
             year: 'numeric',
@@ -452,9 +473,9 @@ const Factura = () => {
             day: '2-digit',
           })}
         </div>
-  
+
         <h2 className="factura-header">Factura</h2>
-  
+
         <div className="buscar-proforma-barra">
           <label htmlFor="proformaInput" className="buscar-proforma-label">Número de Proforma:</label>
           <div className="buscar-proforma-campos">
@@ -471,7 +492,7 @@ const Factura = () => {
             </button>
           </div>
         </div>
-  
+
         {proforma && (
           <div id="factura-pdf" className="factura-pdf">
             <div className="factura-contacto-cliente">
@@ -481,8 +502,17 @@ const Factura = () => {
                   <p>Cédula: <strong>{cliente.cedula}</strong></p>
                 </div>
               )}
+
+              {(vehiculo.marca || vehiculo.modelo || vehiculo.anio || vehiculo.color || vehiculo.placa) && (
+                <div className="factura-vehiculo">
+                  <p>Vehículo: <strong>{[vehiculo.marca, vehiculo.modelo].filter(Boolean).join(' ') || '—'}</strong></p>
+                  <p>Año: <strong>{vehiculo.anio || '—'}</strong> &nbsp;•&nbsp; Color: <strong>{vehiculo.color || '—'}</strong></p>
+                  <p>Placa: <strong>{vehiculo.placa || '—'}</strong></p>
+                </div>
+              )}
             </div>
-  
+
+
             {/* Resumen de la proforma */}
             <table className="factura-tabla-resumen">
               <thead>
@@ -504,7 +534,7 @@ const Factura = () => {
                 </tr>
               </tbody>
             </table>
-  
+
             {/* Formularios para ingresar gastos */}
             <div className="grupo-gasto-column">
               <div className="grupo-gasto-inputs">
@@ -517,7 +547,7 @@ const Factura = () => {
                   disabled={busy}
                 />
               </div>
-  
+
               <div className="grupo-gasto-inputs">
                 <label htmlFor="montoGasto">Monto del Gasto:</label>
                 <input
@@ -528,12 +558,12 @@ const Factura = () => {
                   disabled={busy}
                 />
               </div>
-  
+
               <button className="boton-accion" onClick={ingresarGasto} disabled={busy}>
                 {isSavingGasto ? 'Guardando…' : 'Ingresar Gasto'}
               </button>
             </div>
-  
+
             {/* Abono + Tabla de Reparaciones */}
             <div className="factura-abono-y-reparaciones">
               {/* Izquierda: Abono */}
@@ -558,13 +588,13 @@ const Factura = () => {
                   </div>
                 </div>
               </div>
-  
+
               {/* Derecha: Reparaciones */}
               <div className="tabla-wrap">
                 <div className="tabla-headbar">
-                  <h3>Reparaciones de la Proforma</h3>
+                  <h3>Reparaciones</h3>
                 </div>
-  
+
                 <table
                   className="proforma-tabla"
                   role="table"
@@ -588,7 +618,7 @@ const Factura = () => {
                       </th>
                     </tr>
                   </thead>
-  
+
                   <tbody style={{ listStyle: 'none', paddingLeft: 0 }}>
                     {reparaciones.length > 0 ? (
                       reparaciones.map((r, idx) => (
@@ -623,11 +653,11 @@ const Factura = () => {
                 </table>
               </div>
             </div>
-  
+
             <button className="boton-accion btn-descargar" onClick={descargarPDF} disabled={busy}>
               {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
             </button>
-  
+
             {/* Historial de abonos */}
             {abonos.length > 0 && (
               <div className="historial-abonos">
@@ -650,7 +680,7 @@ const Factura = () => {
                 </table>
               </div>
             )}
-  
+
             {/* Historial de gastos */}
             {gastos.length > 0 && (
               <div className="historial-gastos">
@@ -724,7 +754,7 @@ const Factura = () => {
                 </table>
               </div>
             )}
-  
+
             {saldoPendiente === 0 && (
               <>
                 <div className="nota-final-cliente">
@@ -734,7 +764,7 @@ const Factura = () => {
                     que no estén relacionados con los servicios prestados. Se recomienda revisar el vehículo antes de su entrega.
                   </p>
                 </div>
-  
+
                 <div className="firma-cliente">
                   <label>Firma del Cliente:</label>
                   <div className="linea-firma" />
@@ -746,7 +776,7 @@ const Factura = () => {
       </div>
     </div>
   );
-  
+
 
 };
 

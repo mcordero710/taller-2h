@@ -557,17 +557,29 @@
 /* === HOTFIX: quita bullets y fija alineaciones solo en la tabla de Reparaciones === */
 
 /* Restablece semántica de tabla (por si algún reset aplica 'display:list-item') */
-.proforma-tabla thead { display: table-header-group !important; }
-.proforma-tabla tbody { display: table-row-group !important; }
-.proforma-tabla tr    { display: table-row !important; }
+.proforma-tabla thead {
+  display: table-header-group !important;
+}
+
+.proforma-tabla tbody {
+  display: table-row-group !important;
+}
+
+.proforma-tabla tr {
+  display: table-row !important;
+}
+
 .proforma-tabla th,
-.proforma-tabla td    { display: table-cell !important; }
+.proforma-tabla td {
+  display: table-cell !important;
+}
 
 /* Elimina cualquier marcador/bala que algún CSS global esté inyectando */
 .proforma-tabla th,
 .proforma-tabla td {
   list-style: none !important;
 }
+
 .proforma-tabla th::marker,
 .proforma-tabla td::marker,
 .proforma-tabla th::before,
@@ -577,9 +589,14 @@
 
 /* Alineaciones explícitas por columna */
 .proforma-tabla th:nth-child(1),
-.proforma-tabla td:nth-child(1) { text-align: left  !important; }
+.proforma-tabla td:nth-child(1) {
+  text-align: left !important;
+}
+
 .proforma-tabla th:nth-child(2),
-.proforma-tabla td:nth-child(2) { text-align: right !important; }
+.proforma-tabla td:nth-child(2) {
+  text-align: right !important;
+}
 
 /* Detalles visuales del monto */
 .proforma-tabla td:nth-child(2) {
@@ -590,57 +607,74 @@
 
 
 /* --- Forzar que Reparaciones quede DEBAJO del bloque de Abono --- */
-.factura-abono-y-reparaciones{
-  display: block;         /* anula el grid de 2 columnas */
+.factura-abono-y-reparaciones {
+  display: block;
+  /* anula el grid de 2 columnas */
   margin-top: 16px;
 }
 
-.factura-abono-y-reparaciones > :first-child{
-  max-width: 420px;       /* el bloque del abono no se estira de más */
+.factura-abono-y-reparaciones> :first-child {
+  max-width: 420px;
+  /* el bloque del abono no se estira de más */
 }
 
-.factura-abono-y-reparaciones .tabla-wrap{
+.factura-abono-y-reparaciones .tabla-wrap {
   width: 100%;
-  margin-top: 16px;       /* separación con el bloque del abono */
+  margin-top: 16px;
+  /* separación con el bloque del abono */
 }
 
 /* Evita desbordes del input+botón del abono en pantallas angostas */
-.buscar-proforma-campos{
+.buscar-proforma-campos {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
 }
-.buscar-proforma-campos input{ min-width: 0; }
+
+.buscar-proforma-campos input {
+  min-width: 0;
+}
 
 
 /* --- Tabla de reparaciones: más angosta y centrada --- */
-.tabla-wrap{
-  width: min(100%, 760px);   /* limita el ancho total de la tarjeta */
-  margin: 16px auto 0;       /* céntrala */
+.tabla-wrap {
+  width: min(100%, 760px);
+  /* limita el ancho total de la tarjeta */
+  margin: 16px auto 0;
+  /* céntrala */
 }
 
 /* Columna MONTO más estrecha y con más sangría a la derecha */
 .proforma-tabla thead th:nth-child(2),
-.proforma-tabla tbody td:nth-child(2){
-  width: 140px !important;   /* no ocupa tanto espacio */
+.proforma-tabla tbody td:nth-child(2) {
+  width: 140px !important;
+  /* no ocupa tanto espacio */
   text-align: right !important;
-  padding-right: 24px !important; /* separa el número del borde */
+  padding-right: 24px !important;
+  /* separa el número del borde */
 }
 
 /* Compactar un poquito la altura de filas */
-.proforma-tabla tbody td{
+.proforma-tabla tbody td {
   padding: 10px 14px !important;
 }
 
 /* En móviles deja que aproveche todo el ancho */
-@media (max-width: 600px){
-  .tabla-wrap{ width: 100%; }
+@media (max-width: 600px) {
+  .tabla-wrap {
+    width: 100%;
+  }
+
   .proforma-tabla thead th:nth-child(2),
-  .proforma-tabla tbody td:nth-child(2){
+  .proforma-tabla tbody td:nth-child(2) {
     width: 120px !important;
   }
 }
 
+.factura-vehiculo {
+  font-size: 1rem;
+}
 
-
-
+.factura-vehiculo p {
+  margin: .5rem 0;
+}
