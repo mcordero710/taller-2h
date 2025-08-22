@@ -73,6 +73,10 @@ const Factura = () => {
   const [newDetalle, setNewDetalle] = useState('');
   const [newMontoStr, setNewMontoStr] = useState(''); // input mostrado en edición
 
+  // Edición de abono (mismo look&feel que gastos)
+  const [editAbono, setEditAbono] = useState(null);
+  const [newAbonoMontoStr, setNewAbonoMontoStr] = useState('');
+
   const [reparaciones, setReparaciones] = useState([]);
 
   // info del vehículo (como en Proforma)
@@ -91,10 +95,23 @@ const Factura = () => {
   const [isDeletingGasto, setIsDeletingGasto] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSavingAbono, setIsSavingAbono] = useState(false);
+
+  // flags iguales para abonos
+  const [isUpdatingAbono, setIsUpdatingAbono] = useState(false);
+  const [isDeletingAbono, setIsDeletingAbono] = useState(false);
+
   const [deletingGastoId, setDeletingGastoId] = useState(null);
+  const [deletingAbonoId, setDeletingAbonoId] = useState(null);
 
   const busy =
-    isSearching || isSavingGasto || isUpdatingGasto || isDeletingGasto || isGeneratingPdf || isSavingAbono;
+    isSearching ||
+    isSavingGasto ||
+    isUpdatingGasto ||
+    isDeletingGasto ||
+    isSavingAbono ||
+    isUpdatingAbono ||
+    isDeletingAbono ||
+    isGeneratingPdf;
 
   const { withLoading } = useLoading();
 
@@ -191,7 +208,7 @@ const Factura = () => {
   const cargarAbonos = async (proformaId) => {
     const qy = query(collection(db, 'abonos'), where('proformaId', '==', proformaId));
     const snapshot = await getDocs(qy);
-    const resultados = snapshot.docs.map((d) => d.data());
+    const resultados = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })); // 👈 incluye id
     setAbonos(resultados);
   };
 
@@ -207,7 +224,7 @@ const Factura = () => {
   const totalFinal = proforma ? (Number(proforma.total) || 0) + totalGastos : 0;
   const saldoPendiente = totalFinal - totalAbonado;
 
-  /* ====== ABONO ====== */
+  /* ====== ABONO (ingreso) ====== */
   const onAbonoFocus = () => {
     if (abonoStr === '') return;
     const n = parseMoney(abonoStr);
@@ -251,7 +268,7 @@ const Factura = () => {
     }
   };
 
-  /* ====== GASTO ====== */
+  /* ====== GASTO (ingreso) ====== */
   const onGastoFocus = () => {
     if (montoGastoStr === '') return;
     const n = parseMoney(montoGastoStr);
@@ -346,7 +363,7 @@ const Factura = () => {
     }
   };
 
-  // Confirm toast -> al dar "Eliminar" llama a esta con overlay
+  // Confirm toast -> al dar "Eliminar" llama a esta con overlay (Gastos)
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
   const confirmarEliminacion = async (gastoId) => {
@@ -399,10 +416,110 @@ const Factura = () => {
     );
   };
 
+  /* ====== EDICIÓN / ELIMINACIÓN DE ABONO (igual que gastos) ====== */
+  const editarAbono = (abono) => {
+    if (!abono || !abono.id) {
+      toast.error('ID de abono no válido', { autoClose: 2500 });
+      return;
+    }
+    setEditAbono(abono);
+    setNewAbonoMontoStr(formatNumber(Number(abono.monto) || 0));
+  };
+
+  const onEditAbonoFocus = () => {
+    const n = parseMoney(newAbonoMontoStr);
+    setNewAbonoMontoStr(n.toFixed(2).replace('.', ','));
+  };
+  const onEditAbonoChange = (v) => setNewAbonoMontoStr(v);
+  const onEditAbonoBlur = () => {
+    const n = parseMoney(newAbonoMontoStr);
+    setNewAbonoMontoStr(formatNumber(n));
+  };
+
+  const guardarEdicionAbono = async (abonoId) => {
+    if (!abonoId) {
+      toast.error('ID de abono no válido', { autoClose: 2500 });
+      return;
+    }
+    const monto = parseMoney(newAbonoMontoStr);
+    if (!monto) {
+      toast.warn('Por favor ingresa un monto válido.', { autoClose: 2500 });
+      return;
+    }
+
+    try {
+      setIsUpdatingAbono(true);
+      await withLoading(async () => {
+        const abonoRef = doc(db, 'abonos', abonoId);
+        await updateDoc(abonoRef, { monto });
+        setEditAbono(null);
+        toast.success('Abono actualizado exitosamente', { autoClose: 2500 });
+        await cargarAbonos(proforma.id);
+      }, 'Actualizando abono…');
+    } finally {
+      setIsUpdatingAbono(false);
+    }
+  };
+
+  const confirmarEliminacionAbono = async (abonoId) => {
+    try {
+      setDeletingAbonoId(abonoId);
+      setIsDeletingAbono(true);
+      await withLoading(async () => {
+        await nextFrame();
+        const abonoRef = doc(db, 'abonos', abonoId);
+        await deleteDoc(abonoRef);
+        await cargarAbonos(proforma.id);
+        toast.success('Abono eliminado exitosamente', { autoClose: 2500 });
+      }, 'Eliminando abono…');
+    } finally {
+      setIsDeletingAbono(false);
+      setDeletingAbonoId(null);
+    }
+  };
+
+  const eliminarAbono = async (abonoId) => {
+    toast.info(
+      ({ closeToast }) => (
+        <div className="toast-confirm-container">
+          <p className="toast-confirm-message">¿Estás seguro de que deseas eliminar este abono?</p>
+          <div className="toast-confirm-buttons">
+            <button
+              className="btn-confirm eliminar"
+              onClick={async () => {
+                await confirmarEliminacionAbono(abonoId);
+                closeToast();
+              }}
+              disabled={busy}
+            >
+              Eliminar
+            </button>
+            <button className="btn-confirm cancelar" onClick={closeToast} disabled={busy}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        containerId: 'center-toast',
+        className: 'toast-confirm-wrapper',
+      }
+    );
+  };
+
   const cancelarEdicion = () => {
     setEditGasto(null);
     setNewDetalle('');
     setNewMontoStr('');
+  };
+
+  const cancelarEdicionAbono = () => {
+    setEditAbono(null);
+    setNewAbonoMontoStr('');
   };
 
   // Generar PDF con overlay
@@ -474,8 +591,9 @@ const Factura = () => {
         copia
           .querySelectorAll('input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra')
           .forEach((el) => el.remove());
+        // Oculta la columna de acciones en ambos historiales
         copia
-          .querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child')
+          .querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child, .historial-abonos td:last-child, .historial-abonos th:last-child')
           .forEach((col) => (col.style.display = 'none'));
 
         const opt = {
@@ -704,7 +822,7 @@ const Factura = () => {
               {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
             </button>
 
-            {/* Historial de abonos */}
+            {/* Historial de abonos con acciones (igual a gastos) */}
             {abonos.length > 0 && (
               <div className="historial-abonos">
                 <h3>Historial de Abonos</h3>
@@ -713,13 +831,55 @@ const Factura = () => {
                     <tr>
                       <th>Fecha</th>
                       <th>Monto</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {abonos.map((ab, index) => (
-                      <tr key={index}>
+                      <tr key={ab.id || index}>
                         <td>{ab.fecha}</td>
-                        <td>{formatCRC(ab.monto)}</td>
+                        <td>
+                          {editAbono && editAbono.id === ab.id ? (
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={newAbonoMontoStr}
+                              onFocus={onEditAbonoFocus}
+                              onChange={(e) => onEditAbonoChange(e.target.value)}
+                              onBlur={onEditAbonoBlur}
+                              disabled={busy}
+                              style={{ textAlign: 'left' }}
+                            />
+                          ) : (
+                            formatCRC(ab.monto)
+                          )}
+                        </td>
+                        <td>
+                          {editAbono && editAbono.id === ab.id ? (
+                            <>
+                              <button onClick={() => guardarEdicionAbono(ab.id)} disabled={busy}>
+                                <FaSave />
+                              </button>
+                              <button onClick={cancelarEdicionAbono} disabled={busy}>
+                                <FaTimes />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => editarAbono(ab)} disabled={busy}>
+                                <FaEdit />
+                              </button>
+                              <button
+                                onClick={() => eliminarAbono(ab.id)}
+                                disabled={busy || deletingAbonoId === ab.id}
+                                className={deletingAbonoId === ab.id ? 'btn-eliminando' : ''}
+                                aria-busy={deletingAbonoId === ab.id}
+                              >
+                                {deletingAbonoId === ab.id ? 'Eliminando…' : <FaTrashAlt />}
+                              </button>
+                            </>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -742,7 +902,7 @@ const Factura = () => {
                   </thead>
                   <tbody>
                     {gastos.map((g, index) => (
-                      <tr key={index}>
+                      <tr key={g.id || index}>
                         <td>{g.fecha}</td>
                         <td>
                           {editGasto && editGasto.id === g.id ? (

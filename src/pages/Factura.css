@@ -201,6 +201,8 @@
   font-size: .9rem;
   border-radius: 8px;
   overflow: hidden;
+  table-layout: fixed;
+  /* mantiene columnas proporcionadas */
 }
 
 .historial-abonos th,
@@ -211,12 +213,24 @@
   padding: .6rem .8rem;
 }
 
+/* Alineación y altura de celdas */
+.historial-abonos td,
 .historial-gastos td {
   text-align: center;
   vertical-align: middle;
 }
 
-/* Acciones en tabla de gastos */
+/* Columna Acciones compacta en ambos historiales */
+.historial-abonos th:last-child,
+.historial-abonos td:last-child,
+.historial-gastos th:last-child,
+.historial-gastos td:last-child {
+  width: 120px;
+  white-space: nowrap;
+}
+
+/* Botones de acciones (igual para abonos y gastos) */
+.historial-abonos td button,
 .historial-gastos td button {
   height: 32px;
   width: 32px;
@@ -228,15 +242,29 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color .3s ease, transform .2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
+.historial-abonos td button+button,
+.historial-gastos td button+button {
+  margin-left: 6px;
+}
+
+.historial-abonos td button:hover,
 .historial-gastos td button:hover {
   background-color: #1abc9c;
   transform: scale(1.1);
+  color: #fff;
 }
 
-.historial-gastos td button:hover i {
-  color: #fff;
+/* Inputs de edición dentro de tablas */
+.historial-abonos td input[type="text"],
+.historial-gastos td input[type="text"] {
+  width: 140px;
+  padding: .35rem .5rem;
+  text-align: left;
 }
 
 /* ============================
@@ -476,8 +504,11 @@
     text-align: center;
   }
 
+  /* Ocultar acciones e inputs en impresión para ambos historiales */
   .historial-gastos td button,
-  .historial-gastos td input {
+  .historial-gastos td input,
+  .historial-abonos td button,
+  .historial-abonos td input {
     display: none !important;
   }
 
@@ -501,9 +532,7 @@
     letter-spacing: 0;
   }
 
-  /* === HOTFIX: quita bullets y fija alineaciones solo en la tabla de Reparaciones === */
-
-  /* Restablece semántica de tabla (por si algún reset aplica 'display:list-item') */
+  /* === HOTFIX Tabla Reparaciones === */
   .proforma-tabla thead {
     display: table-header-group !important;
   }
@@ -519,11 +548,6 @@
   .proforma-tabla th,
   .proforma-tabla td {
     display: table-cell !important;
-  }
-
-  /* Elimina cualquier marcador/bala que algún CSS global esté inyectando */
-  .proforma-tabla th,
-  .proforma-tabla td {
     list-style: none !important;
   }
 
@@ -534,7 +558,6 @@
     content: "" !important;
   }
 
-  /* Alineaciones explícitas por columna */
   .proforma-tabla th:nth-child(1),
   .proforma-tabla td:nth-child(1) {
     text-align: left !important;
@@ -545,18 +568,14 @@
     text-align: right !important;
   }
 
-  /* Detalles visuales del monto */
   .proforma-tabla td:nth-child(2) {
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
     padding-right: 16px;
   }
-
 }
 
-/* === HOTFIX: quita bullets y fija alineaciones solo en la tabla de Reparaciones === */
-
-/* Restablece semántica de tabla (por si algún reset aplica 'display:list-item') */
+/* === HOTFIX Tabla Reparaciones (pantalla) === */
 .proforma-tabla thead {
   display: table-header-group !important;
 }
@@ -572,11 +591,6 @@
 .proforma-tabla th,
 .proforma-tabla td {
   display: table-cell !important;
-}
-
-/* Elimina cualquier marcador/bala que algún CSS global esté inyectando */
-.proforma-tabla th,
-.proforma-tabla td {
   list-style: none !important;
 }
 
@@ -587,7 +601,6 @@
   content: "" !important;
 }
 
-/* Alineaciones explícitas por columna */
 .proforma-tabla th:nth-child(1),
 .proforma-tabla td:nth-child(1) {
   text-align: left !important;
@@ -598,30 +611,25 @@
   text-align: right !important;
 }
 
-/* Detalles visuales del monto */
 .proforma-tabla td:nth-child(2) {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   padding-right: 16px;
 }
 
-
 /* --- Forzar que Reparaciones quede DEBAJO del bloque de Abono --- */
 .factura-abono-y-reparaciones {
   display: block;
-  /* anula el grid de 2 columnas */
   margin-top: 16px;
 }
 
 .factura-abono-y-reparaciones> :first-child {
   max-width: 420px;
-  /* el bloque del abono no se estira de más */
 }
 
 .factura-abono-y-reparaciones .tabla-wrap {
   width: 100%;
   margin-top: 16px;
-  /* separación con el bloque del abono */
 }
 
 /* Evita desbordes del input+botón del abono en pantallas angostas */
@@ -635,23 +643,18 @@
   min-width: 0;
 }
 
-
 /* --- Tabla de reparaciones: más angosta y centrada --- */
 .tabla-wrap {
   width: min(100%, 760px);
-  /* limita el ancho total de la tarjeta */
   margin: 16px auto 0;
-  /* céntrala */
 }
 
 /* Columna MONTO más estrecha y con más sangría a la derecha */
 .proforma-tabla thead th:nth-child(2),
 .proforma-tabla tbody td:nth-child(2) {
   width: 140px !important;
-  /* no ocupa tanto espacio */
   text-align: right !important;
   padding-right: 24px !important;
-  /* separa el número del borde */
 }
 
 /* Compactar un poquito la altura de filas */
