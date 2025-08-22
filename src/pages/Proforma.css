@@ -288,8 +288,7 @@
   text-align: left;
 }
 
-.th-monto,
-.td-monto {
+.proforma-tabla tbody td.td-monto {
   text-align: right;
 }
 
@@ -563,13 +562,27 @@
 /* Print */
 @media print {
 
-  /* sigue ocultando lo mismo que ya pusiste */
+  /* Oculta controles interactivos en PDF */
   .boton-descargar,
   .boton-guardar,
   .boton-nueva,
   .iva-section,
   .buscar-proforma,
   .btn-add {
+    display: none !important;
+  }
+
+  /* 🔒 OCULTAR SIEMPRE la columna de acciones y sus botones */
+  .th-acciones,
+  .td-acciones,
+  .proforma-tabla .btn-icon,
+  .proforma-tabla .btn-icon--danger {
+    display: none !important;
+  }
+
+  /* Fallback adicional por índice (por si cambian clases) */
+  .proforma-tabla th:nth-child(3),
+  .proforma-tabla td:nth-child(3) {
     display: none !important;
   }
 
@@ -584,7 +597,7 @@
     border: none !important;
   }
 
-  /* Inputs se ven como texto en la impresión */
+  /* Inputs como texto en la impresión */
   .proforma-tabla .td-desc input,
   .proforma-tabla .td-monto input {
     border: 0 !important;
@@ -592,16 +605,9 @@
     padding: 0 !important;
   }
 
-  /* (opcional) intenta preservar colores del badge en impresión */
   .badge {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
-
-  /* Columna de acciones (3ra) */
-  .proforma-tabla th:nth-child(3),
-  .proforma-tabla td:nth-child(3) {
-    display: none !important;
   }
 
   .proforma-logo img {
@@ -611,7 +617,6 @@
   }
 }
 
-
 @media (max-width:900px) {
   .grid-two {
     grid-template-columns: 1fr;
@@ -619,8 +624,6 @@
 }
 
 /* ===== Ajustes 2025-08-16 ===== */
-
-/* Botón “+ Agregar” más compacto */
 .tabla-headbar .btn-add {
   font-size: .85rem;
   padding: .28rem .60rem;
@@ -628,11 +631,8 @@
   gap: 4px;
   line-height: 1;
   flex: 0 0 auto;
-  /* evita que se estire en el flex */
   width: auto;
-  /* asegura ancho al contenido */
   white-space: nowrap;
-  /* mantiene el tamaño al texto */
 }
 
 /* Centrar títulos del thead (Descripción / Monto) */
@@ -641,37 +641,120 @@
   text-align: center !important;
 }
 
-/* Mantener datos como estaban: Monto a la derecha en el cuerpo */
+/* Mantener datos: Monto a la derecha en el cuerpo */
 .proforma-tabla tbody td.td-monto {
   text-align: right;
 }
 
-/* ===== Botonera horizontal en el header ===== */
+/* Botonera header */
 .proforma-head .head-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  /* espacio entre botones */
   flex-wrap: wrap;
-  /* por si no cabe en pantallas pequeñas */
 }
 
-/* Anula el margen viejo y evita que se estiren */
 .proforma-head .head-right button {
   margin-left: 0;
-  /* override de la regla anterior */
   width: auto;
   white-space: nowrap;
 }
 
-/* ===== Centrar texto en los inputs de "Monto" ===== */
+/* Centrar texto en inputs de "Monto" */
 .proforma-tabla .td-monto input,
 .proforma-tabla .input-monto {
   text-align: center !important;
 }
 
-/* (Opcional) placeholder centrado también */
 .proforma-tabla .td-monto input::placeholder {
   text-align: center;
+}
+
+
+/* --- PDF (html2pdf): ocultar SIEMPRE la columna de Acciones y los botones --- */
+.html2pdf__container .th-acciones,
+.html2pdf__container .td-acciones,
+.html2pdf__container .btn-icon,
+.html2pdf__container .btn-icon--danger {
+  display: none !important;
+}
+
+/* Colapsa cualquier resto de la columna en el clon */
+.html2pdf__container .td-acciones,
+.html2pdf__container th.th-acciones {
+  width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+/* Centrar títulos del thead (pantalla) */
+.proforma-tabla thead th.th-desc,
+.proforma-tabla thead th.th-monto {
+  text-align: center !important;
+}
+
+/* Forzar el centrado también en el PDF (html2pdf) */
+.html2pdf__container .proforma-tabla thead th.th-desc,
+.html2pdf__container .proforma-tabla thead th.th-monto,
+.exporting-pdf .proforma-tabla thead th.th-desc,
+.exporting-pdf .proforma-tabla thead th.th-monto {
+  text-align: center !important;
+}
+
+/* ---- 1) Impresión del navegador: inputs como texto plano ---- */
+@media print {
+
+  .proforma-tabla .td-desc input,
+  .proforma-tabla .td-monto input {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 0 !important;
+  }
+}
+
+/* ---- 2) Exportación con html2pdf: aplica en el clon del DOM ---- */
+.html2pdf__container .proforma-tabla .td-desc input,
+.html2pdf__container .proforma-tabla .td-monto input,
+.exporting-pdf .proforma-tabla .td-desc input,
+.exporting-pdf .proforma-tabla .td-monto input {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+}
+
+/* (opcional) ajusta un poco el alto visual de las filas en el clon */
+.html2pdf__container .proforma-tabla .td-desc,
+.html2pdf__container .proforma-tabla .td-monto,
+.exporting-pdf .proforma-tabla .td-desc,
+.exporting-pdf .proforma-tabla .td-monto {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+/* Quitar cualquier fondo de filas/celdas en impresión */
+@media print {
+
+  .proforma-tabla tbody tr,
+  .proforma-tabla tbody tr:nth-child(odd),
+  .proforma-tabla tbody tr:nth-child(even),
+  .proforma-tabla td {
+    background: transparent !important;
+  }
+}
+
+/* Quitar fondos también en el clon que usa html2pdf */
+.html2pdf__container .proforma-tabla tbody tr,
+.html2pdf__container .proforma-tabla tbody tr:nth-child(odd),
+.html2pdf__container .proforma-tabla tbody tr:nth-child(even),
+.html2pdf__container .proforma-tabla td,
+.exporting-pdf .proforma-tabla tbody tr,
+.exporting-pdf .proforma-tabla tbody tr:nth-child(odd),
+.exporting-pdf .proforma-tabla tbody tr:nth-child(even),
+.exporting-pdf .proforma-tabla td {
+  background: transparent !important;
 }

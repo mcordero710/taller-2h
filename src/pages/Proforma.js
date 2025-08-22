@@ -13,6 +13,50 @@ import { FiTrash2 } from 'react-icons/fi';
 // Loader global
 import { useLoading } from '../components/ui/LoadingContext';
 
+// ===== Helpers de formato =====
+const LOCALE_NUMERIC  = 'es-ES'; // Para inputs con punto de miles y coma decimal (50.000,00)
+
+// deja LOCALE_NUMERIC = 'es-ES'
+const formatCRC = (n) =>
+  `₡${new Intl.NumberFormat(LOCALE_NUMERIC, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: true,
+  }).format(Number(n) || 0)}`;
+
+
+const formatNumber = (n) =>
+  new Intl.NumberFormat(LOCALE_NUMERIC, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: true,
+  }).format(Number(n) || 0);
+
+// Acepta "50000", "50.000,00", "50,000.00", etc. y devuelve número JS
+const parseMoney = (str) => {
+  if (str == null) return 0;
+  const s = String(str).replace(/[^\d.,-]/g, '').replace(/\s/g, '');
+  if (!s) return 0;
+  const lastComma = s.lastIndexOf(',');
+  const lastDot   = s.lastIndexOf('.');
+  let normalized = s;
+
+  if (lastComma > -1 && lastDot > -1) {
+    // Ambos presentes: el que esté más a la derecha es el decimal
+    normalized = lastComma > lastDot
+      ? s.replace(/\./g, '').replace(',', '.')
+      : s.replace(/,/g, '');
+  } else if (lastComma > -1) {
+    // Solo coma: asúmela como decimal
+    normalized = s.replace(/\./g, '').replace(',', '.');
+  } else {
+    // Solo punto o solo dígitos
+    normalized = s.replace(/,/g, '');
+  }
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : 0;
+};
+
 const Proforma = () => {
   const [cedula, setCedula] = useState('');
   const [cliente, setCliente] = useState(null);
@@ -20,6 +64,7 @@ const Proforma = () => {
   // 👇 ahora incluye "modelo"
   const [vehiculo, setVehiculo] = useState({ placa: '', marca: '', modelo: '', anio: '', color: '' });
 
+  // reparaciones: [{ concepto: string, precio: number, precioStr: string }]
   const [reparaciones, setReparaciones] = useState([]);
   const [total, setTotal] = useState(0);
   const [ivaChecked, setIvaChecked] = useState(false);
@@ -91,7 +136,14 @@ const Proforma = () => {
           anio: data.vehiculo?.anio || '',
           color: data.vehiculo?.color || '',
         });
-        setReparaciones(data.reparaciones || []);
+
+        // Mapear para incluir precioStr (string formateado)
+        const repars = (data.reparaciones || []).map((r) => {
+          const p = Number(r.precio) || 0;
+          return { concepto: r.concepto || '', precio: p, precioStr: formatNumber(p) };
+        });
+        setReparaciones(repars);
+
         setIvaChecked((data.iva || 0) > 0);
         setIvaAmount(data.iva || 0);
         setTotal(data.total || 0);
@@ -143,7 +195,13 @@ const Proforma = () => {
         anio: proformaDesdeDetalle.vehiculo?.anio || '',
         color: proformaDesdeDetalle.vehiculo?.color || '',
       });
-      setReparaciones(proformaDesdeDetalle.reparaciones || []);
+
+      const repars = (proformaDesdeDetalle.reparaciones || []).map((r) => {
+        const p = Number(r.precio) || 0;
+        return { concepto: r.concepto || '', precio: p, precioStr: formatNumber(p) };
+      });
+      setReparaciones(repars);
+
       setIvaChecked((proformaDesdeDetalle.iva || 0) > 0);
       setIvaAmount(proformaDesdeDetalle.iva || 0);
       setTotal(proformaDesdeDetalle.total || 0);
@@ -180,10 +238,40 @@ const Proforma = () => {
     }
   };
 
+  // Cambiado: solo maneja descripción; el precio se maneja con handlers dedicados
   const handleReparacionChange = (index, field, value) => {
+    if (field !== 'concepto') return;
     const nuevas = [...reparaciones];
-    nuevas[index][field] = field === 'precio' ? Number(value) : value;
+    nuevas[index].concepto = value;
     setReparaciones(nuevas);
+  };
+
+  // Handlers para el monto (input con formato)
+  const handlePrecioInput = (index, str) => {
+    setReparaciones(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], precioStr: str, precio: parseMoney(str) };
+      return next;
+    });
+  };
+
+  const handlePrecioFocus = (index) => {
+    setReparaciones(prev => {
+      const next = [...prev];
+      const n = Number(next[index].precio) || 0;
+      // Mostrar sin separadores mientras se edita (coma decimal)
+      next[index] = { ...next[index], precioStr: n.toFixed(2).replace('.', ',') };
+      return next;
+    });
+  };
+
+  const handlePrecioBlur = (index) => {
+    setReparaciones(prev => {
+      const next = [...prev];
+      const n = parseMoney(next[index].precioStr);
+      next[index] = { ...next[index], precio: n, precioStr: formatNumber(n) };
+      return next;
+    });
   };
 
   const eliminarReparacionPorIndex = (index) => {
@@ -230,7 +318,10 @@ const Proforma = () => {
   };
 
   const agregarReparacion = () => {
-    setReparaciones([...reparaciones, { concepto: '', precio: 0 }]);
+    setReparaciones(prev => [
+      ...prev,
+      { concepto: '', precio: 0, precioStr: formatNumber(0) }
+    ]);
   };
 
   const handleIvaChange = () => setIvaChecked(!ivaChecked);
@@ -260,7 +351,7 @@ const Proforma = () => {
       numero: numeroProforma,
       cliente,
       vehiculo, // puede llevar placa '' si no la tienen aún
-      reparaciones,
+      reparaciones: reparaciones.map(({ concepto, precio }) => ({ concepto, precio })), // 👈 sin precioStr
       total,
       iva: ivaChecked ? ivaAmount : 0,
       fecha: fecha || new Date().toLocaleDateString(),
@@ -607,11 +698,15 @@ const Proforma = () => {
                   </td>
                   <td className="td-monto">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       className="input-monto"
-                      value={r.precio}
+                      value={r.precioStr ?? formatNumber(r.precio || 0)}
                       disabled={busy}
-                      onChange={(e) => handleReparacionChange(index, 'precio', e.target.value)}
+                      onFocus={() => handlePrecioFocus(index)}
+                      onChange={(e) => handlePrecioInput(index, e.target.value)}
+                      onBlur={() => handlePrecioBlur(index)}
+                      style={{ textAlign: 'right' }}
                     />
                   </td>
                   <td className="td-acciones">
@@ -654,9 +749,9 @@ const Proforma = () => {
           </div>
 
           <div className="proforma-totales card-totales">
-            <p><strong>Subtotal:</strong> ₡{(total - ivaAmount).toFixed(2)}</p>
-            {ivaChecked && <p><strong>IVA (13%):</strong> ₡{ivaAmount.toFixed(2)}</p>}
-            <p className="total-line"><strong>Total:</strong> ₡{total.toFixed(2)}</p>
+            <p><strong>Subtotal:</strong> {formatCRC(total - ivaAmount)}</p>
+            {ivaChecked && <p><strong>IVA (13%):</strong> {formatCRC(ivaAmount)}</p>}
+            <p className="total-line"><strong>Total:</strong> {formatCRC(total)}</p>
           </div>
         </section>
 
