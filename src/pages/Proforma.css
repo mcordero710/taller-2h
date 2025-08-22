@@ -288,8 +288,7 @@
   text-align: left;
 }
 
-.th-monto,
-.td-monto {
+.proforma-tabla tbody td.td-monto {
   text-align: right;
 }
 
@@ -687,4 +686,75 @@
   width: 0 !important;
   padding: 0 !important;
   border: 0 !important;
+}
+
+/* Centrar títulos del thead (pantalla) */
+.proforma-tabla thead th.th-desc,
+.proforma-tabla thead th.th-monto {
+  text-align: center !important;
+}
+
+/* Forzar el centrado también en el PDF (html2pdf) */
+.html2pdf__container .proforma-tabla thead th.th-desc,
+.html2pdf__container .proforma-tabla thead th.th-monto,
+.exporting-pdf .proforma-tabla thead th.th-desc,
+.exporting-pdf .proforma-tabla thead th.th-monto {
+  text-align: center !important;
+}
+
+/* ---- 1) Impresión del navegador: inputs como texto plano ---- */
+@media print {
+
+  .proforma-tabla .td-desc input,
+  .proforma-tabla .td-monto input {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 0 !important;
+  }
+}
+
+/* ---- 2) Exportación con html2pdf: aplica en el clon del DOM ---- */
+.html2pdf__container .proforma-tabla .td-desc input,
+.html2pdf__container .proforma-tabla .td-monto input,
+.exporting-pdf .proforma-tabla .td-desc input,
+.exporting-pdf .proforma-tabla .td-monto input {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+}
+
+/* (opcional) ajusta un poco el alto visual de las filas en el clon */
+.html2pdf__container .proforma-tabla .td-desc,
+.html2pdf__container .proforma-tabla .td-monto,
+.exporting-pdf .proforma-tabla .td-desc,
+.exporting-pdf .proforma-tabla .td-monto {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+/* Quitar cualquier fondo de filas/celdas en impresión */
+@media print {
+
+  .proforma-tabla tbody tr,
+  .proforma-tabla tbody tr:nth-child(odd),
+  .proforma-tabla tbody tr:nth-child(even),
+  .proforma-tabla td {
+    background: transparent !important;
+  }
+}
+
+/* Quitar fondos también en el clon que usa html2pdf */
+.html2pdf__container .proforma-tabla tbody tr,
+.html2pdf__container .proforma-tabla tbody tr:nth-child(odd),
+.html2pdf__container .proforma-tabla tbody tr:nth-child(even),
+.html2pdf__container .proforma-tabla td,
+.exporting-pdf .proforma-tabla tbody tr,
+.exporting-pdf .proforma-tabla tbody tr:nth-child(odd),
+.exporting-pdf .proforma-tabla tbody tr:nth-child(even),
+.exporting-pdf .proforma-tabla td {
+  background: transparent !important;
 }
