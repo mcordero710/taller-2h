@@ -13,30 +13,68 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import html2pdf from 'html2pdf.js';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa';
-import { ToastContainer } from 'react-toastify';
 import logo from '../assets/logo.png';
-
 
 // Loader global
 import { useLoading } from '../components/ui/LoadingContext';
 
+/* ===== Helpers de formato (mismo estilo que Proforma) ===== */
+const LOCALE_NUMERIC = 'es-ES'; // 100.000,00
 
+const formatNumber = (n) =>
+  new Intl.NumberFormat(LOCALE_NUMERIC, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: true,
+  }).format(Number(n) || 0);
+
+const formatCRC = (n) => `₡${formatNumber(n)}`;
+
+// Acepta "50000", "50.000,00", "50,000.00", etc.
+const parseMoney = (str) => {
+  if (str == null) return 0;
+  const s = String(str).replace(/[^\d.,-]/g, '').replace(/\s/g, '');
+  if (!s) return 0;
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  let normalized = s;
+
+  if (lastComma > -1 && lastDot > -1) {
+    normalized = lastComma > lastDot
+      ? s.replace(/\./g, '').replace(',', '.')
+      : s.replace(/,/g, '');
+  } else if (lastComma > -1) {
+    normalized = s.replace(/\./g, '').replace(',', '.');
+  } else {
+    normalized = s.replace(/,/g, '');
+  }
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : 0;
+};
 
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
   const [proforma, setProforma] = useState(null);
   const [cliente, setCliente] = useState(null);
-  const [abono, setAbono] = useState('');
+
+  // Abonos
+  const [abonoStr, setAbonoStr] = useState(''); // input mostrado
   const [abonos, setAbonos] = useState([]);
+
+  // Gastos
   const [gastos, setGastos] = useState([]);
   const [detalleGasto, setDetalleGasto] = useState('');
-  const [montoGasto, setMontoGasto] = useState('');
+  const [montoGastoStr, setMontoGastoStr] = useState(''); // input mostrado
+
+  // Edición de gasto
   const [editGasto, setEditGasto] = useState(null);
   const [newDetalle, setNewDetalle] = useState('');
-  const [newMonto, setNewMonto] = useState('');
+  const [newMontoStr, setNewMontoStr] = useState(''); // input mostrado en edición
+
   const [reparaciones, setReparaciones] = useState([]);
+
   // info del vehículo (como en Proforma)
   const [vehiculo, setVehiculo] = useState({
     placa: '',
@@ -45,9 +83,6 @@ const Factura = () => {
     anio: '',
     color: '',
   });
-
-
-
 
   // flags para deshabilitar controles
   const [isSearching, setIsSearching] = useState(false);
@@ -58,7 +93,8 @@ const Factura = () => {
   const [isSavingAbono, setIsSavingAbono] = useState(false);
   const [deletingGastoId, setDeletingGastoId] = useState(null);
 
-  const busy = isSearching || isSavingGasto || isUpdatingGasto || isDeletingGasto || isGeneratingPdf || isSavingAbono;
+  const busy =
+    isSearching || isSavingGasto || isUpdatingGasto || isDeletingGasto || isGeneratingPdf || isSavingAbono;
 
   const { withLoading } = useLoading();
 
@@ -124,28 +160,23 @@ const Factura = () => {
             color: data.vehiculo?.color || '',
           });
 
-
-          // 👇 NUEVO: normaliza y guarda las reparaciones para la tabla
+          // normaliza reparaciones
           const repars = Array.isArray(data.reparaciones)
             ? data.reparaciones.map((r) => ({
-              concepto: r.concepto ?? r.descripcion ?? '',
-              precio: Number(r.precio ?? r.monto ?? 0),
-            }))
+                concepto: r.concepto ?? r.descripcion ?? '',
+                precio: Number(r.precio ?? r.monto ?? 0),
+              }))
             : [];
           setReparaciones(repars);
 
           setProforma(data);
           await Promise.all([cargarAbonos(docRef.id), cargarGastos(docRef.id)]);
-
-          // (opcional) feedback
-          // toast.success(`Proforma #${data.numero} cargada (${repars.length} reparaciones)`);
         } else {
           setProforma(null);
           setAbonos([]);
           setGastos([]);
-          setReparaciones([]); // 👈 NUEVO: limpia la tabla si no se encuentra
+          setReparaciones([]);
           setVehiculo({ placa: '', marca: '', modelo: '', anio: '', color: '' });
-
           toast.info('Proforma no encontrada.', { autoClose: 2500 });
         }
       }, 'Buscando factura…');
@@ -157,43 +188,49 @@ const Factura = () => {
     }
   };
 
-
   const cargarAbonos = async (proformaId) => {
-    const q = query(collection(db, 'abonos'), where('proformaId', '==', proformaId));
-    const snapshot = await getDocs(q);
-    const resultados = snapshot.docs.map(doc => doc.data());
+    const qy = query(collection(db, 'abonos'), where('proformaId', '==', proformaId));
+    const snapshot = await getDocs(qy);
+    const resultados = snapshot.docs.map((d) => d.data());
     setAbonos(resultados);
   };
 
   const cargarGastos = async (proformaId) => {
-    const q = query(collection(db, 'gastos'), where('proformaId', '==', proformaId));
-    const snapshot = await getDocs(q);
-    const resultados = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const qy = query(collection(db, 'gastos'), where('proformaId', '==', proformaId));
+    const snapshot = await getDocs(qy);
+    const resultados = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     setGastos(resultados);
   };
 
-  const totalAbonado = abonos.reduce((sum, a) => sum + a.monto, 0);
-  const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
-  const totalFinal = proforma ? proforma.total + totalGastos : 0;
+  const totalAbonado = abonos.reduce((sum, a) => sum + (Number(a.monto) || 0), 0);
+  const totalGastos = gastos.reduce((sum, g) => sum + (Number(g.monto) || 0), 0);
+  const totalFinal = proforma ? (Number(proforma.total) || 0) + totalGastos : 0;
   const saldoPendiente = totalFinal - totalAbonado;
 
-  // Ingresar abono (lo dejamos sin overlay porque pediste solo gastos/PDF)
+  /* ====== ABONO ====== */
+  const onAbonoFocus = () => {
+    if (abonoStr === '') return;
+    const n = parseMoney(abonoStr);
+    setAbonoStr(n.toFixed(2).replace('.', ','));
+  };
+  const onAbonoChange = (v) => setAbonoStr(v);
+  const onAbonoBlur = () => {
+    const n = parseMoney(abonoStr);
+    setAbonoStr(n ? formatNumber(n) : '');
+  };
+
   const ingresarAbono = async () => {
+    const monto = parseMoney(abonoStr);
     let valid = true;
 
-    if (!abono || abono.trim() === '' || isNaN(abono)) {
+    if (!abonoStr || !monto) {
       toast.error('Por favor, ingrese el monto del abono.');
       valid = false;
     }
-
     if (saldoPendiente <= 0) {
       toast.warn('La factura ya está saldada. No se pueden ingresar más abonos.', { autoClose: 2500 });
       valid = false;
     }
-
     if (!valid) return;
 
     try {
@@ -201,34 +238,43 @@ const Factura = () => {
       await withLoading(async () => {
         const nuevoAbono = {
           proformaId: proforma.id,
-          monto: parseInt(abono, 10),
+          monto, // número (puede tener decimales)
           fecha: new Date().toLocaleDateString(),
         };
         await addDoc(collection(db, 'abonos'), nuevoAbono);
         await cargarAbonos(proforma.id);
-        setAbono('');
+        setAbonoStr('');
         toast.success('Abono registrado exitosamente', { autoClose: 2500 });
-      }, 'Registrando abono…'); // 👈 texto del overlay
+      }, 'Registrando abono…');
     } finally {
       setIsSavingAbono(false);
     }
   };
 
+  /* ====== GASTO ====== */
+  const onGastoFocus = () => {
+    if (montoGastoStr === '') return;
+    const n = parseMoney(montoGastoStr);
+    setMontoGastoStr(n.toFixed(2).replace('.', ','));
+  };
+  const onGastoChange = (v) => setMontoGastoStr(v);
+  const onGastoBlur = () => {
+    const n = parseMoney(montoGastoStr);
+    setMontoGastoStr(n ? formatNumber(n) : '');
+  };
 
-  // Ingresar gasto con overlay
   const ingresarGasto = async () => {
+    const monto = parseMoney(montoGastoStr);
     let valid = true;
 
     if (!detalleGasto || detalleGasto.trim() === '') {
       toast.error('Por favor, ingrese la información del "Detalle del Gasto".');
       valid = false;
     }
-
-    if (!montoGasto || isNaN(montoGasto) || montoGasto.trim() === '') {
+    if (!montoGastoStr || !monto) {
       toast.error('Por favor, ingrese la información del "Monto del Gasto".');
       valid = false;
     }
-
     if (!valid) return;
 
     try {
@@ -237,13 +283,13 @@ const Factura = () => {
         const nuevoGasto = {
           proformaId: proforma.id,
           detalle: detalleGasto,
-          monto: parseInt(montoGasto),
+          monto, // número
           fecha: new Date().toLocaleDateString(),
         };
         await addDoc(collection(db, 'gastos'), nuevoGasto);
         await cargarGastos(proforma.id);
         setDetalleGasto('');
-        setMontoGasto('');
+        setMontoGastoStr('');
         toast.success('Gasto registrado exitosamente', { autoClose: 2500 });
       }, 'Registrando gasto…');
     } finally {
@@ -251,6 +297,7 @@ const Factura = () => {
     }
   };
 
+  /* ====== EDICIÓN DE GASTO ====== */
   const editarGasto = (gasto) => {
     if (!gasto || !gasto.id) {
       toast.error('ID de gasto no válido', { autoClose: 2500 });
@@ -258,16 +305,26 @@ const Factura = () => {
     }
     setEditGasto(gasto);
     setNewDetalle(gasto.detalle);
-    setNewMonto(gasto.monto);
+    setNewMontoStr(formatNumber(Number(gasto.monto) || 0));
   };
 
-  // Guardar edición con overlay
+  const onEditMontoFocus = () => {
+    const n = parseMoney(newMontoStr);
+    setNewMontoStr(n.toFixed(2).replace('.', ','));
+  };
+  const onEditMontoChange = (v) => setNewMontoStr(v);
+  const onEditMontoBlur = () => {
+    const n = parseMoney(newMontoStr);
+    setNewMontoStr(formatNumber(n));
+  };
+
   const guardarEdicion = async (gastoId) => {
     if (!gastoId) {
       toast.error('ID de gasto no válido', { autoClose: 2500 });
       return;
     }
-    if (!newDetalle || !newMonto || isNaN(newMonto)) {
+    const monto = parseMoney(newMontoStr);
+    if (!newDetalle || !monto) {
       toast.warn('Por favor ingresa un detalle y un monto válidos.', { autoClose: 2500 });
       return;
     }
@@ -278,7 +335,7 @@ const Factura = () => {
         const gastoRef = doc(db, 'gastos', gastoId);
         await updateDoc(gastoRef, {
           detalle: newDetalle,
-          monto: parseInt(newMonto),
+          monto,
         });
         setEditGasto(null);
         toast.success('Gasto actualizado exitosamente', { autoClose: 2500 });
@@ -290,16 +347,14 @@ const Factura = () => {
   };
 
   // Confirm toast -> al dar "Eliminar" llama a esta con overlay
-  const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
+  const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
   const confirmarEliminacion = async (gastoId) => {
     try {
       setDeletingGastoId(gastoId);
       setIsDeletingGasto(true);
       await withLoading(async () => {
-        // 👇 Deja que React pinte el overlay ANTES de borrar
         await nextFrame();
-
         const gastoRef = doc(db, 'gastos', gastoId);
         await deleteDoc(gastoRef);
         await cargarGastos(proforma.id);
@@ -310,7 +365,6 @@ const Factura = () => {
       setDeletingGastoId(null);
     }
   };
-
 
   const eliminarGasto = async (gastoId) => {
     toast.info(
@@ -328,11 +382,7 @@ const Factura = () => {
             >
               Eliminar
             </button>
-            <button
-              className="btn-confirm cancelar"
-              onClick={closeToast}
-              disabled={busy}
-            >
+            <button className="btn-confirm cancelar" onClick={closeToast} disabled={busy}>
               Cancelar
             </button>
           </div>
@@ -344,7 +394,7 @@ const Factura = () => {
         draggable: false,
         closeButton: false,
         containerId: 'center-toast',
-        className: 'toast-confirm-wrapper'
+        className: 'toast-confirm-wrapper',
       }
     );
   };
@@ -352,7 +402,7 @@ const Factura = () => {
   const cancelarEdicion = () => {
     setEditGasto(null);
     setNewDetalle('');
-    setNewMonto('');
+    setNewMontoStr('');
   };
 
   // Generar PDF con overlay
@@ -365,7 +415,7 @@ const Factura = () => {
       await withLoading(async () => {
         const copia = original.cloneNode(true);
 
-        // --- estilos para PDF con colores (encabezados azules) ---
+        // --- estilos para PDF con colores (encabezados) ---
         const styleEl = document.createElement('style');
         styleEl.textContent = `
           .factura-pdf, .factura-pdf * {
@@ -381,7 +431,6 @@ const Factura = () => {
         `;
         copia.insertBefore(styleEl, copia.firstChild);
 
-        // Fallback extra: pintamos inline por si algún motor ignora la hoja <style>
         copia
           .querySelectorAll(
             '.factura-tabla-resumen thead th, .historial-abonos thead th, .historial-gastos thead th'
@@ -390,7 +439,6 @@ const Factura = () => {
             th.style.background = '#0f172a';
             th.style.color = '#fff';
           });
-        // --- fin estilos para PDF con colores ---
 
         // Header con logo + datos
         const header = document.createElement('div');
@@ -405,27 +453,26 @@ const Factura = () => {
         logoImg.setAttribute('style', 'width:120px; height:auto;');
 
         const rightBox = document.createElement('div');
-        rightBox.setAttribute(
-          'style',
-          'text-align:right; font-size:12px; color:#333; line-height:1.3;'
-        );
+        rightBox.setAttribute('style', 'text-align:right; font-size:12px; color:#333; line-height:1.3;');
         rightBox.innerHTML = `
           <div><strong></strong>Taller automotriz 2H S.A</div>
           <div><strong>Tel:</strong> 62756427</div>
           <div><strong>Correo:</strong> taller2hrosario@gmail.com</div>
           <div><strong>Cédula Jurídica:</strong> 3-101930294</div>
-          <div style="margin-top:6px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+          <div style="margin-top:6px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          })}</div>
         `;
 
         header.appendChild(logoImg);
         header.appendChild(rightBox);
         copia.insertBefore(header, copia.firstChild);
 
-        // Quitamos controles/inputs del clon
+        // Quitar controles/inputs del clon
         copia
-          .querySelectorAll(
-            'input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra'
-          )
+          .querySelectorAll('input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra')
           .forEach((el) => el.remove());
         copia
           .querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child')
@@ -446,14 +493,12 @@ const Factura = () => {
     }
   };
 
-
   const onBuscarKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       buscarProforma();
     }
   };
-  const fmt = (n) => Number(n ?? 0).toLocaleString('en-US');
 
   return (
     <div className="factura-proforma-page">
@@ -467,7 +512,8 @@ const Factura = () => {
         />
 
         <div className="fecha-factura-centro">
-          Fecha: {new Date().toLocaleDateString('es-CR', {
+          Fecha:{' '}
+          {new Date().toLocaleDateString('es-CR', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -477,7 +523,9 @@ const Factura = () => {
         <h2 className="factura-header">Factura</h2>
 
         <div className="buscar-proforma-barra">
-          <label htmlFor="proformaInput" className="buscar-proforma-label">Número de Proforma:</label>
+          <label htmlFor="proformaInput" className="buscar-proforma-label">
+            Número de Proforma:
+          </label>
           <div className="buscar-proforma-campos">
             <input
               id="proformaInput"
@@ -498,20 +546,31 @@ const Factura = () => {
             <div className="factura-contacto-cliente">
               {cliente && (
                 <div className="factura-cliente">
-                  <p>Cliente: <strong>{cliente.nombre} {cliente.apellido}</strong></p>
-                  <p>Cédula: <strong>{cliente.cedula}</strong></p>
+                  <p>
+                    Cliente: <strong>{cliente.nombre} {cliente.apellido}</strong>
+                  </p>
+                  <p>
+                    Cédula: <strong>{cliente.cedula}</strong>
+                  </p>
                 </div>
               )}
 
               {(vehiculo.marca || vehiculo.modelo || vehiculo.anio || vehiculo.color || vehiculo.placa) && (
                 <div className="factura-vehiculo">
-                  <p>Vehículo: <strong>{[vehiculo.marca, vehiculo.modelo].filter(Boolean).join(' ') || '—'}</strong></p>
-                  <p>Año: <strong>{vehiculo.anio || '—'}</strong> &nbsp;•&nbsp; Color: <strong>{vehiculo.color || '—'}</strong></p>
-                  <p>Placa: <strong>{vehiculo.placa || '—'}</strong></p>
+                  <p>
+                    Vehículo:{' '}
+                    <strong>{[vehiculo.marca, vehiculo.modelo].filter(Boolean).join(' ') || '—'}</strong>
+                  </p>
+                  <p>
+                    Año: <strong>{vehiculo.anio || '—'}</strong> &nbsp;•&nbsp; Color:{' '}
+                    <strong>{vehiculo.color || '—'}</strong>
+                  </p>
+                  <p>
+                    Placa: <strong>{vehiculo.placa || '—'}</strong>
+                  </p>
                 </div>
               )}
             </div>
-
 
             {/* Resumen de la proforma */}
             <table className="factura-tabla-resumen">
@@ -526,11 +585,11 @@ const Factura = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td>{fmt(proforma.total)}</td>
-                  <td>{fmt(totalGastos)}</td>
-                  <td>{fmt(totalFinal)}</td>
-                  <td>{fmt(totalAbonado)}</td>
-                  <td>{fmt(saldoPendiente)}</td>
+                  <td>{formatCRC(proforma.total)}</td>
+                  <td>{formatCRC(totalGastos)}</td>
+                  <td>{formatCRC(totalFinal)}</td>
+                  <td>{formatCRC(totalAbonado)}</td>
+                  <td>{formatCRC(saldoPendiente)}</td>
                 </tr>
               </tbody>
             </table>
@@ -552,10 +611,14 @@ const Factura = () => {
                 <label htmlFor="montoGasto">Monto del Gasto:</label>
                 <input
                   id="montoGasto"
-                  type="number"
-                  value={montoGasto}
-                  onChange={(e) => setMontoGasto(e.target.value)}
+                  type="text"
+                  inputMode="decimal"
+                  value={montoGastoStr}
+                  onFocus={onGastoFocus}
+                  onChange={(e) => onGastoChange(e.target.value)}
+                  onBlur={onGastoBlur}
                   disabled={busy}
+                  style={{ textAlign: 'left' }}
                 />
               </div>
 
@@ -569,14 +632,20 @@ const Factura = () => {
               {/* Izquierda: Abono */}
               <div>
                 <div className="buscar-proforma-barra">
-                  <label htmlFor="montoAbono" className="buscar-proforma-label">Monto del Abono:</label>
+                  <label htmlFor="montoAbono" className="buscar-proforma-label">
+                    Monto del Abono:
+                  </label>
                   <div className="buscar-proforma-campos">
                     <input
                       id="montoAbono"
-                      type="number"
-                      value={abono}
-                      onChange={(e) => setAbono(e.target.value)}
+                      type="text"
+                      inputMode="decimal"
+                      value={abonoStr}
+                      onFocus={onAbonoFocus}
+                      onChange={(e) => onAbonoChange(e.target.value)}
+                      onBlur={onAbonoBlur}
                       disabled={saldoPendiente <= 0 || busy}
+                      style={{ textAlign: 'left' }}
                     />
                     <button
                       className="boton-accion"
@@ -595,25 +664,13 @@ const Factura = () => {
                   <h3>Reparaciones</h3>
                 </div>
 
-                <table
-                  className="proforma-tabla"
-                  role="table"
-                  style={{ listStyle: 'none' }}
-                >
+                <table className="proforma-tabla" role="table" style={{ listStyle: 'none' }}>
                   <thead>
                     <tr role="row">
-                      <th
-                        role="columnheader"
-                        className="th-desc"
-                        style={{ textAlign: 'left', display: 'table-cell', listStyle: 'none' }}
-                      >
+                      <th role="columnheader" className="th-desc" style={{ textAlign: 'left' }}>
                         Descripción
                       </th>
-                      <th
-                        role="columnheader"
-                        className="th-monto"
-                        style={{ textAlign: 'right', display: 'table-cell', listStyle: 'none' }}
-                      >
+                      <th role="columnheader" className="th-monto" style={{ textAlign: 'right' }}>
                         Monto
                       </th>
                     </tr>
@@ -623,22 +680,11 @@ const Factura = () => {
                     {reparaciones.length > 0 ? (
                       reparaciones.map((r, idx) => (
                         <tr key={idx} role="row">
-                          <td
-                            className="td-desc"
-                            style={{ textAlign: 'left', display: 'table-cell', listStyle: 'none' }}
-                          >
+                          <td className="td-desc" style={{ textAlign: 'left' }}>
                             {r.concepto || '—'}
                           </td>
-                          <td
-                            className="td-monto"
-                            style={{
-                              textAlign: 'right',
-                              display: 'table-cell',
-                              listStyle: 'none',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {fmt(r.precio)}
+                          <td className="td-monto" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            {formatCRC(r.precio)}
                           </td>
                         </tr>
                       ))
@@ -673,7 +719,7 @@ const Factura = () => {
                     {abonos.map((ab, index) => (
                       <tr key={index}>
                         <td>{ab.fecha}</td>
-                        <td>{fmt(ab.monto)}</td>
+                        <td>{formatCRC(ab.monto)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -713,13 +759,17 @@ const Factura = () => {
                         <td>
                           {editGasto && editGasto.id === g.id ? (
                             <input
-                              type="number"
-                              value={newMonto}
-                              onChange={(e) => setNewMonto(e.target.value)}
+                              type="text"
+                              inputMode="decimal"
+                              value={newMontoStr}
+                              onFocus={onEditMontoFocus}
+                              onChange={(e) => onEditMontoChange(e.target.value)}
+                              onBlur={onEditMontoBlur}
                               disabled={busy}
+                              style={{ textAlign: 'left' }}
                             />
                           ) : (
-                            fmt(g.monto)
+                            formatCRC(g.monto)
                           )}
                         </td>
                         <td>
@@ -776,8 +826,6 @@ const Factura = () => {
       </div>
     </div>
   );
-
-
 };
 
 export default Factura;
