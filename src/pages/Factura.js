@@ -526,13 +526,16 @@ const Factura = () => {
   const descargarPDF = async () => {
     const original = document.getElementById('factura-pdf');
     if (!original) return;
-
+  
     try {
       setIsGeneratingPdf(true);
       await withLoading(async () => {
         const copia = original.cloneNode(true);
-
-        // --- estilos para PDF con colores (encabezados) ---
+  
+        // Marcar todas las filas para que NO se corten entre páginas
+        copia.querySelectorAll('table tr').forEach(tr => tr.classList.add('no-split-row'));
+  
+        // --- estilos para PDF (colores + evitar cortes + repetir thead) ---
         const styleEl = document.createElement('style');
         styleEl.textContent = `
           .factura-pdf, .factura-pdf * {
@@ -545,9 +548,30 @@ const Factura = () => {
             background: #0f172a !important;
             color: #ffffff !important;
           }
+          /* Evitar cortar filas entre páginas */
+          table tr.no-split-row, table th, table td {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            -webkit-column-break-inside: avoid !important;
+            -moz-column-break-inside: avoid !important;
+          }
+          /* Repetir encabezados de todas las tablas en cada página */
+          .factura-tabla-resumen thead,
+          .historial-abonos thead,
+          .historial-gastos thead,
+          .proforma-tabla thead {
+            display: table-header-group !important;
+          }
+          .factura-tabla-resumen tbody,
+          .historial-abonos tbody,
+          .historial-gastos tbody,
+          .proforma-tabla tbody {
+            display: table-row-group !important;
+          }
         `;
         copia.insertBefore(styleEl, copia.firstChild);
-
+  
+        // Forzar colores de encabezados en el clon
         copia
           .querySelectorAll(
             '.factura-tabla-resumen thead th, .historial-abonos thead th, .historial-gastos thead th'
@@ -556,19 +580,19 @@ const Factura = () => {
             th.style.background = '#0f172a';
             th.style.color = '#fff';
           });
-
+  
         // Header con logo + datos
         const header = document.createElement('div');
         header.setAttribute(
           'style',
           'display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;'
         );
-
+  
         const logoImg = document.createElement('img');
         logoImg.src = logo;
         logoImg.alt = 'Taller 2H';
         logoImg.setAttribute('style', 'width:120px; height:auto;');
-
+  
         const rightBox = document.createElement('div');
         rightBox.setAttribute('style', 'text-align:right; font-size:12px; color:#333; line-height:1.3;');
         rightBox.innerHTML = `
@@ -582,34 +606,43 @@ const Factura = () => {
             day: '2-digit',
           })}</div>
         `;
-
+  
         header.appendChild(logoImg);
         header.appendChild(rightBox);
         copia.insertBefore(header, copia.firstChild);
-
+  
         // Quitar controles/inputs del clon
         copia
           .querySelectorAll('input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra')
           .forEach((el) => el.remove());
-        // Oculta la columna de acciones en ambos historiales
+  
+        // Ocultar la columna de acciones en ambos historiales
         copia
-          .querySelectorAll('.historial-gastos td:last-child, .historial-gastos th:last-child, .historial-abonos td:last-child, .historial-abonos th:last-child')
+          .querySelectorAll(
+            '.historial-gastos td:last-child, .historial-gastos th:last-child, .historial-abonos td:last-child, .historial-abonos th:last-child'
+          )
           .forEach((col) => (col.style.display = 'none'));
-
+  
         const opt = {
           margin: 0.5,
           filename: `Factura-Proforma-${numeroProforma}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
           jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+          // Indicar a html2pdf que use reglas CSS y evite cortar <tr>
+          pagebreak: {
+            mode: ['css', 'legacy'],
+            avoid: ['tr', '.no-split-row']
+          }
         };
-
+  
         await html2pdf().set(opt).from(copia).save();
       }, 'Generando PDF…');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
+  
 
   const onBuscarKeyDown = (e) => {
     if (e.key === 'Enter') {

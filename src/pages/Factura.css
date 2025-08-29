@@ -62,8 +62,8 @@
 }
 
 /* ============================
-     Tabla: Resumen de Proforma
-     ============================ */
+       Tabla: Resumen de Proforma
+       ============================ */
 .factura-tabla-resumen {
   width: 100%;
   border-collapse: collapse;
@@ -102,8 +102,21 @@
 }
 
 /* ============================
-     Formularios de gasto / abono
-     ============================ */
+       Evitar cortes de fila global
+       ============================ */
+table tr,
+table th,
+table td,
+.no-split-row {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  -moz-column-break-inside: avoid;
+}
+
+/* ============================
+       Formularios de gasto / abono
+       ============================ */
 .grupo-gasto-column {
   display: flex;
   flex-direction: column;
@@ -180,8 +193,8 @@
 }
 
 /* ============================
-     Historiales (abonos / gastos)
-     ============================ */
+       Historiales (abonos / gastos)
+       ============================ */
 .historial-abonos,
 .historial-gastos {
   margin-top: 2rem;
@@ -268,8 +281,8 @@
 }
 
 /* ============================
-     Abono + Reparaciones (layout)
-     ============================ */
+       Abono + Reparaciones (layout)
+       ============================ */
 .factura-abono-y-reparaciones {
   display: grid;
   grid-template-columns: minmax(280px, 360px) 1fr;
@@ -309,8 +322,8 @@
 }
 
 /* =========================================
-     FIX FINAL — Tabla: Reparaciones Proforma
-     ========================================= */
+       FIX FINAL — Tabla: Reparaciones Proforma
+       ========================================= */
 .proforma-tabla {
   width: 100% !important;
   border-collapse: collapse !important;
@@ -379,8 +392,8 @@
 }
 
 /* ============================
-     Toasts de confirmación (UI)
-     ============================ */
+       Toasts de confirmación (UI)
+       ============================ */
 .center-toast-container {
   position: fixed !important;
   top: 50% !important;
@@ -446,8 +459,8 @@
 }
 
 /* ============================
-     Nota y firma
-     ============================ */
+       Nota y firma
+       ============================ */
 .nota-final-cliente {
   margin-top: 2rem;
   font-size: .95rem;
@@ -463,8 +476,8 @@
 }
 
 /* ============================
-     PRINT (PDF)
-     ============================ */
+       PRINT (PDF)
+       ============================ */
 @media print {
 
   .boton-accion,
@@ -530,6 +543,30 @@
     border-color: #333 !important;
     text-transform: none;
     letter-spacing: 0;
+  }
+
+  /* Repetir encabezados en cada página para TODAS las tablas */
+  .factura-tabla-resumen thead,
+  .historial-abonos thead,
+  .historial-gastos thead,
+  .proforma-tabla thead {
+    display: table-header-group !important;
+  }
+
+  .factura-tabla-resumen tbody,
+  .historial-abonos tbody,
+  .historial-gastos tbody,
+  .proforma-tabla tbody {
+    display: table-row-group !important;
+  }
+
+  /* Refuerzo: no cortar filas en impresión */
+  table tr,
+  table th,
+  table td,
+  .no-split-row {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   /* === HOTFIX Tabla Reparaciones === */
