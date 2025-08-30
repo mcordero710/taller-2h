@@ -28,7 +28,11 @@ const OrdenesDeTrabajo = () => {
   const [loadingVehiculo, setLoadingVehiculo] = useState(false);
   const [vehiculo, setVehiculo] = useState(null);
 
+  // Cono asignado en la OT (campo de "Datos de la Orden")
   const [cono, setCono] = useState('');
+  // Cono para BUSCAR (no confundir con el cono asignado de la OT)
+  const [conoBuscar, setConoBuscar] = useState('');
+
   const [reparacion, setReparacion] = useState('');
   const [reparaciones, setReparaciones] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -119,7 +123,7 @@ const OrdenesDeTrabajo = () => {
   const convertirFecha = (fechaStr) => {
     if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
     const [mes, dia, anio] = fechaStr.split('/');
-    return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
+       return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
   };
 
   const setReparacionesDesdeProforma = (p) => {
@@ -133,6 +137,7 @@ const OrdenesDeTrabajo = () => {
     setReparaciones(mapped);
   };
 
+  // ===== Última OT por placa (con opción de preservar proforma en pantalla) =====
   const loadUltimaOT = async (placaUpper, opts = {}) => {
     const preserveProforma = !!opts.preserveProforma;
 
@@ -157,6 +162,17 @@ const OrdenesDeTrabajo = () => {
         setCono(toConoStr(top.numeroCono));
         setWhitelistCono(top.numeroCono || null);
 
+        // datos de vehículo desde la OT
+        const placaFromOT = (top.placa || top.vehiculo?.placa || placaUpper).toUpperCase();
+        setPlaca(placaFromOT);
+        setVehiculo({
+          placa: placaFromOT,
+          marca: top.vehiculo?.marca || '',
+          modelo: top.vehiculo?.modelo || '',
+          anio: top.vehiculo?.anio || '',
+          color: top.vehiculo?.color || '',
+        });
+
         if (top.proformaNumero !== undefined && top.proformaNumero !== null) {
           setProformaNumero(String(top.proformaNumero));
         } else if (!preserveProforma) {
@@ -176,20 +192,33 @@ const OrdenesDeTrabajo = () => {
     }
   };
 
+  // ===== Búsqueda por PROFORMA (mejorada) =====
   const buscarPorProforma = async (proformaNum, placaUpper) => {
     if (!proformaNum) return null;
 
-    const snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', proformaNum)));
+    // Limpia estado de cono para no arrastrar el anterior
+    setCono('');
+    setWhitelistCono(null);
+
+    // 1) Traer proformas: intenta como número y como string
+    let snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', proformaNum)));
+    if (snap.empty) {
+      snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(proformaNum))));
+    }
     if (snap.empty) return null;
 
+    // 2) Ordenar por fecha desc y preferir coincidencia de placa si fue digitada,
+    //    pero SIN descartar el resto
     let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (placaUpper) {
-      docs = docs.filter(p => (p.vehiculo?.placa || '').toUpperCase() === placaUpper);
-      if (docs.length === 0) return null;
-    }
     docs.sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
-    const p = docs[0];
 
+    let p = docs[0];
+    if (placaUpper) {
+      const exact = docs.find(x => (x.vehiculo?.placa || '').toUpperCase() === placaUpper);
+      if (exact) p = exact;
+    }
+
+    // 3) Setear datos base desde la proforma elegida
     const placaDoc = (p.vehiculo?.placa || placaUpper || '').toUpperCase();
     setPlaca(placaDoc);
     setVehiculo({
@@ -199,8 +228,10 @@ const OrdenesDeTrabajo = () => {
       anio: p.vehiculo?.anio || p.vehiculo?.ano || '',
       color: p.vehiculo?.color || '',
     });
-    setProformaNumero(String(p.numero || ''));
+    setProformaNumero(String(p.numero ?? proformaNum));
 
+    // 4) Intentar encontrar la OT por número de proforma (independiente de placa),
+    //    probando como número y como string
     let otEncontrada = null;
     try {
       const pfNumber = Number(p.numero ?? proformaNum);
@@ -208,6 +239,7 @@ const OrdenesDeTrabajo = () => {
       if (snapOT.empty) {
         snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', String(pfNumber))));
       }
+
       if (!snapOT.empty) {
         const list = snapOT.docs.map(d => ({ id: d.id, ...d.data() }))
           .sort((a, b) => {
@@ -240,13 +272,16 @@ const OrdenesDeTrabajo = () => {
       console.error('Error buscando OT por proforma:', err);
     }
 
+    // 5) Si NO hubo OT por proforma y sí tenemos placa, caer a la última OT por placa (preserva proforma en pantalla)
     if (!otEncontrada && placaDoc) {
       await loadUltimaOT(placaDoc, { preserveProforma: true });
       if (!otId) setWhitelistCono(null);
     }
 
+    // 6) Reparaciones desde la proforma
     setReparacionesDesdeProforma(p);
 
+    // 7) Si no hubo OT, refrescar lista de conos sin "actual"
     if (!otEncontrada) {
       setWhitelistCono(null);
       await refrescarConosDisponibles(null);
@@ -255,8 +290,13 @@ const OrdenesDeTrabajo = () => {
     return p;
   };
 
+  // ===== Búsqueda por PLACA =====
   async function buscarPorPlaca(placaUpper) {
     if (!placaUpper) return null;
+
+    // Limpia estado de cono para no arrastrar el anterior
+    setCono('');
+    setWhitelistCono(null);
 
     let snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('placa', '==', placaUpper)));
     if (snapOT.empty) {
@@ -373,15 +413,83 @@ const OrdenesDeTrabajo = () => {
     return { origen: 'otPorProforma' };
   }
 
+  // ===== Búsqueda por CONO asignado (OT abierta) =====
+  const buscarPorCono = async (valorCono) => {
+    const raw = String(valorCono ?? '').trim();
+    if (!raw) return null;
+
+    // Limpia estado de cono para no arrastrar el anterior
+    setCono('');
+    setWhitelistCono(null);
+
+    const intentos = [];
+    const n = Number(raw);
+    if (Number.isFinite(n)) intentos.push(n);
+    intentos.push(raw);
+
+    let ot = null;
+    for (const v of intentos) {
+      const snap = await getDocs(
+        query(
+          collection(db, 'ordenes_trabajo'),
+          where('estado', '==', 'abierta'),
+          where('numeroCono', '==', v)
+        )
+      );
+      if (!snap.empty) {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => {
+            const ta = a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
+            const tb = b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
+            return tb - ta;
+          });
+        ot = list[0];
+        break;
+      }
+    }
+
+    if (!ot) return null;
+
+    setOtId(ot.id);
+    setCono(toConoStr(ot.numeroCono));
+    setWhitelistCono(ot.numeroCono || null);
+
+    const placaUpper = (ot.placa || ot.vehiculo?.placa || '').toUpperCase();
+    setPlaca(placaUpper);
+    setVehiculo({
+      placa: placaUpper,
+      marca: ot.vehiculo?.marca || '',
+      modelo: ot.vehiculo?.modelo || '',
+      anio: ot.vehiculo?.anio || '',
+      color: ot.vehiculo?.color || '',
+    });
+    if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
+    setReparaciones(Array.isArray(ot.reparaciones)
+      ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) }))
+      : []);
+
+    await refrescarConosDisponibles(ot.numeroCono || null);
+    return { origen: 'otPorCono' };
+  };
+
+  // ===== Botón Cargar datos =====
   const cargarDatos = async () => {
     const placaUpper = (placa || '').replace(/\s+/g, '').toUpperCase();
     const pfStr = (proformaNumero || '').trim();
     const pfNum = /^\d+$/.test(pfStr) ? parseInt(pfStr, 10) : null;
+    const coneStr = (conoBuscar || '').trim();
 
-    if (!pfNum && !placaUpper) {
-      toast.info('Ingrese Nº de proforma y/o placa.');
+    if (!pfNum && !placaUpper && !coneStr) {
+      toast.info('Ingrese Nº de proforma, placa y/o Nº de cono.');
       return;
     }
+
+    // Limpieza previa para evitar que queden restos de la OT anterior
+    setOtId(null);
+    setCono('');
+    setVehiculo(null);
+    setReparaciones([]);
+    setWhitelistCono(null);
 
     setLoadingVehiculo(true);
     try {
@@ -389,6 +497,7 @@ const OrdenesDeTrabajo = () => {
         let found = null;
         if (!found && pfNum) found = await buscarPorProforma(pfNum, placaUpper);
         if (!found && placaUpper) found = await buscarPorPlaca(placaUpper);
+        if (!found && coneStr) found = await buscarPorCono(coneStr);
 
         if (!found) {
           setVehiculo(null); setOtId(null); setReparaciones([]);
@@ -534,7 +643,7 @@ const OrdenesDeTrabajo = () => {
   };
 
   const limpiar = () => {
-    setPlaca(''); setProformaNumero('');
+    setPlaca(''); setProformaNumero(''); setConoBuscar('');
     setVehiculo(null); setCono(''); setReparacion('');
     setReparaciones([]); setEditingId(null); setEditingText(''); setOtId(null);
     setWhitelistCono(null);
@@ -573,9 +682,8 @@ const OrdenesDeTrabajo = () => {
       toast.success('Orden finalizada. Cono liberado.');
       setShowFinishConfirm(false);
       setFinalizando(false);
-      setCono('');
-      setWhitelistCono(null);
-      await refrescarConosDisponibles(null);
+      // limpiar todo al finalizar
+      limpiar();
     } catch (e) {
       console.error('No se pudo finalizar la orden:', e);
       setFinalizando(false);
@@ -601,7 +709,7 @@ const OrdenesDeTrabajo = () => {
           <div className="ot-header-icon"><FaCar /></div>
           <div>
             <h2 className="ot-title">Órdenes de Trabajo</h2>
-            <p className="ot-subtitle">Crea la orden a partir de placa o número de proforma</p>
+            <p className="ot-subtitle">Crea la orden a partir de placa, número de proforma o cono</p>
           </div>
         </header>
 
@@ -609,7 +717,7 @@ const OrdenesDeTrabajo = () => {
           <section className="card card--span2">
             <div className="card-header">
               <h3>Búsqueda</h3>
-              <p>Puedes cargar datos por <strong>Nº de Proforma</strong> y/o <strong>Placa</strong>.</p>
+              <p>Puedes cargar datos por <strong>Nº de Proforma</strong>, <strong>Placa</strong> o <strong>Nº de Cono</strong> asignado a una OT abierta.</p>
             </div>
             <div className="card-body">
               <div className="row">
@@ -626,6 +734,24 @@ const OrdenesDeTrabajo = () => {
                       disabled={loadingVehiculo}
                     />
                     {loadingVehiculo && <div className="spinner" />}
+                  </div>
+                </div>
+
+                {/* Buscar por Nº de Cono */}
+                <div className="field" style={{ maxWidth: 160 }}>
+                  <label htmlFor="conoBuscar">Nº Cono (asignado)</label>
+                  <div className="input-icon">
+                    <FaHashtag className="icon-left" />
+                    <input
+                      id="conoBuscar"
+                      inputMode="numeric"
+                      pattern="\d*"
+                      placeholder="Ej: 27"
+                      value={conoBuscar}
+                      onChange={(e) => setConoBuscar(e.target.value.replace(/[^\d]/g, ''))}
+                      onKeyDown={onEnterBuscar}
+                      disabled={loadingVehiculo}
+                    />
                   </div>
                 </div>
 
@@ -655,6 +781,7 @@ const OrdenesDeTrabajo = () => {
                   <span className="chip">{vehiculo.color}</span>
                   <span className="chip chip--ghost">Placa: {vehiculo.placa || placa}</span>
                   {proformaNumero && <span className="chip">Proforma: {proformaNumero}</span>}
+                  {cono && <span className="chip">Cono: {cono}</span>}
                 </div>
               )}
             </div>

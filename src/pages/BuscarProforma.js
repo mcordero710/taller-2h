@@ -94,40 +94,40 @@ const BuscarProforma = () => {
     }, 'Abriendo proforma…');
   };
 
-  const onKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleBuscar();
-    }
-  };
-
-  // ✅ Solo dígitos y máximo 9
+  // ✅ Solo dígitos (sin limitar a 9 para permitir números de proforma largos)
   const handleBuscarChange = (e) => {
-    const onlyDigits = e.target.value.replace(/\D/g, '').slice(0, 9);
+    const onlyDigits = e.target.value.replace(/\D/g, '');
     setBuscar(onlyDigits);
   };
 
-  // ✅ Bloquea teclas no numéricas (salvo controles) y dispara Enter
+  // ✅ Permitir Enter para buscar y atajos (Ctrl/Cmd + V/C/X/A)
   const handleBuscarKeyDown = (e) => {
     const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
+    const isShortcut =
+      (e.ctrlKey || e.metaKey) &&
+      ['a', 'c', 'x', 'v'].includes(e.key.toLowerCase());
+
     if (e.key === 'Enter') {
       e.preventDefault();
       handleBuscar();
       return;
     }
+
+    if (isShortcut) return; // permitir pegar/copiar/cortar/seleccionar todo
+
+    // bloquear cualquier otra tecla que no sea dígito o control
     if (!/^\d$/.test(e.key) && !allowed.includes(e.key)) {
       e.preventDefault();
     }
   };
 
-  // ✅ Sanea pegado (paste)
+  // ✅ Sanea pegado (paste) desde menú contextual o atajo
   const handleBuscarPaste = (e) => {
     const text = (e.clipboardData || window.clipboardData).getData('text') || '';
-    const sanitized = text.replace(/\D/g, '').slice(0, 9);
+    const sanitized = text.replace(/\D/g, ''); // quitar espacios, guiones, etc.
     e.preventDefault();
     setBuscar(sanitized);
   };
-
 
   return (
     <div className="buscar-proforma-page">
@@ -144,12 +144,15 @@ const BuscarProforma = () => {
               type="text"
               inputMode="numeric"
               pattern="\d*"
-              maxLength={9}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
               value={buscar}
               onChange={handleBuscarChange}
               onKeyDown={handleBuscarKeyDown}
               onPaste={handleBuscarPaste}
               disabled={isSearching}
+              
             />
             <button onClick={handleBuscar} disabled={isSearching}>
               {isSearching ? 'Buscando…' : 'Buscar'}
@@ -189,7 +192,6 @@ const BuscarProforma = () => {
         )}
       </div>
     </div>
-
   );
 };
 
