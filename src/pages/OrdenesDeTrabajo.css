@@ -123,6 +123,24 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
 }
 
+/* ===== NUEVO: estilos del select de conos ===== */
+.input-icon select {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px 10px 36px;
+  /* deja espacio para el ícono */
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  transition: box-shadow .15s, border-color .15s;
+  appearance: none;
+}
+
+.input-icon select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
 .icon-left {
   position: absolute;
   left: 10px;
@@ -243,6 +261,17 @@ textarea:focus {
   background: #ef4444;
   border-color: #ef4444;
   color: #fff;
+}
+
+/* ===== NUEVO: botón de finalizar ===== */
+.btn--danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.btn--danger:hover {
+  filter: brightness(1.05);
 }
 
 /* Spinner */
@@ -594,4 +623,111 @@ textarea:focus {
   border: 6px solid transparent;
   border-top-color: #111827;
   z-index: 20;
+}
+
+/* ===== Modal bonito ===== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 10000;
+  animation: fadeIn .15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0
+  }
+
+  to {
+    opacity: 1
+  }
+}
+
+.modal-card {
+  width: min(520px, calc(100vw - 32px));
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .18);
+  padding: 18px 18px 16px;
+  animation: popIn .15s ease-out;
+}
+
+@keyframes popIn {
+  from {
+    transform: translateY(6px) scale(.98);
+    opacity: .9
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1
+  }
+}
+
+.modal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.modal-icon.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.modal-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modal-text {
+  margin: 0 0 14px;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Botón de acción peligrosa (coincide con el que usas en el footer) */
+.btn--danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.btn--danger:disabled {
+  opacity: .7;
+  cursor: not-allowed;
+}
+
+/* Estilo básico para select dentro de .input-icon */
+.input-icon select {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px 10px 36px;
+  border-radius: 10px;
+  outline: none;
+  transition: box-shadow .15s, border-color .15s;
+  background: #fff;
+}
+
+.input-icon select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
 }
