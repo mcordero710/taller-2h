@@ -758,3 +758,119 @@
 .exporting-pdf .proforma-tabla td {
   background: transparent !important;
 }
+
+/* ===== Evitar que una fila se parta entre páginas (PDF/impresión) ===== */
+
+/* Cuando se imprime desde el navegador */
+@media print {
+
+  /* Nunca partir bloques importantes */
+  .tabla-wrap,
+  .proforma-tabla,
+  .proforma-tabla tr,
+  .proforma-tabla td,
+  .card-totales,
+  .proforma-footer,
+  .card-section {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Repetir encabezado de la tabla cuando el motor lo soporte */
+  .proforma-tabla thead {
+    display: table-header-group;
+  }
+
+  .proforma-tabla tfoot {
+    display: table-footer-group;
+  }
+}
+
+/* Cuando exporta html2pdf (usa un clon con este contenedor) */
+.html2pdf__container .tabla-wrap,
+.html2pdf__container .proforma-tabla,
+.html2pdf__container .proforma-tabla tr,
+.html2pdf__container .proforma-tabla td,
+.html2pdf__container .card-totales,
+.html2pdf__container .proforma-footer,
+.html2pdf__container .card-section,
+.exporting-pdf .tabla-wrap,
+.exporting-pdf .proforma-tabla,
+.exporting-pdf .proforma-tabla tr,
+.exporting-pdf .proforma-tabla td,
+.exporting-pdf .card-totales,
+.exporting-pdf .proforma-footer,
+.exporting-pdf .card-section {
+  break-inside: avoid-page !important;
+  page-break-inside: avoid !important;
+}
+
+/* En el clon para PDF, libera el overflow del contenedor de la tabla */
+.html2pdf__container .tabla-wrap,
+.exporting-pdf .tabla-wrap {
+  overflow: visible !important;
+}
+
+/* ===== Paginación fina: evitar filas partidas pero sin dejar huecos ===== */
+
+/* Impresión del navegador */
+@media print {
+  /* El contenedor y la tabla pueden partirse entre páginas */
+  .tabla-wrap,
+  .proforma-tabla {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Cada FILA se mantiene completa (no se parte a la mitad) */
+  .proforma-tabla tr {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* El footer puede partirse (para aprovechar el espacio) */
+  .proforma-footer {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Evita que el título quede huérfano en la última línea de página */
+  .proforma-footer h4 { break-after: avoid-page !important; }
+  /* Los items son cortos; mantener cada li junto */
+  .proforma-footer ol li { break-inside: avoid-page !important; }
+}
+
+/* Clon que usa html2pdf */
+.html2pdf__container .tabla-wrap,
+.exporting-pdf .tabla-wrap,
+.html2pdf__container .proforma-tabla,
+.exporting-pdf .proforma-tabla {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.html2pdf__container .proforma-tabla tr,
+.exporting-pdf .proforma-tabla tr {
+  break-inside: avoid-page !important;
+  page-break-inside: avoid !important;
+}
+
+.html2pdf__container .proforma-footer,
+.exporting-pdf .proforma-footer {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+.html2pdf__container .proforma-footer h4,
+.exporting-pdf .proforma-footer h4 {
+  break-after: avoid-page !important;
+}
+
+.html2pdf__container .proforma-footer ol li,
+.exporting-pdf .proforma-footer ol li {
+  break-inside: avoid-page !important;
+}
+
+/* Mantén el clon sin recortes */
+.html2pdf__container .tabla-wrap,
+.exporting-pdf .tabla-wrap { overflow: visible !important; }
