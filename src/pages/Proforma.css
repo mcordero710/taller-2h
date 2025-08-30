@@ -580,24 +580,22 @@
     display: none !important;
   }
 
-  /* Fallback adicional por índice (por si cambian clases) */
+  /* Fallback por índice */
   .proforma-tabla th:nth-child(3),
   .proforma-tabla td:nth-child(3) {
     display: none !important;
   }
 
-  /* Asegura que el número y la fecha (badge) sí salgan */
   .datos-mini {
     display: inline-flex !important;
   }
 
-  /* Quita sombras/bordes en papel para un look limpio */
   .proforma-wrapper {
     box-shadow: none !important;
     border: none !important;
   }
 
-  /* Inputs como texto en la impresión */
+  /* Inputs como texto */
   .proforma-tabla .td-desc input,
   .proforma-tabla .td-monto input {
     border: 0 !important;
@@ -670,7 +668,6 @@
 .proforma-tabla .td-monto input::placeholder {
   text-align: center;
 }
-
 
 /* --- PDF (html2pdf): ocultar SIEMPRE la columna de Acciones y los botones --- */
 .html2pdf__container .th-acciones,
@@ -815,29 +812,30 @@
 
 /* Impresión del navegador */
 @media print {
-  /* El contenedor y la tabla pueden partirse entre páginas */
+
   .tabla-wrap,
   .proforma-tabla {
     break-inside: auto !important;
     page-break-inside: auto !important;
   }
 
-  /* Cada FILA se mantiene completa (no se parte a la mitad) */
   .proforma-tabla tr {
     break-inside: avoid-page !important;
     page-break-inside: avoid !important;
   }
 
-  /* El footer puede partirse (para aprovechar el espacio) */
   .proforma-footer {
     break-inside: auto !important;
     page-break-inside: auto !important;
   }
 
-  /* Evita que el título quede huérfano en la última línea de página */
-  .proforma-footer h4 { break-after: avoid-page !important; }
-  /* Los items son cortos; mantener cada li junto */
-  .proforma-footer ol li { break-inside: avoid-page !important; }
+  .proforma-footer h4 {
+    break-after: avoid-page !important;
+  }
+
+  .proforma-footer ol li {
+    break-inside: avoid-page !important;
+  }
 }
 
 /* Clon que usa html2pdf */
@@ -873,4 +871,55 @@
 
 /* Mantén el clon sin recortes */
 .html2pdf__container .tabla-wrap,
-.exporting-pdf .tabla-wrap { overflow: visible !important; }
+.exporting-pdf .tabla-wrap {
+  overflow: visible !important;
+}
+
+/* ===== FIX: desactivar sticky en PDF/Impresión para evitar franja negra ===== */
+@media print {
+  .proforma-tabla thead th {
+    position: static !important;
+    top: auto !important;
+  }
+}
+
+.html2pdf__container .proforma-tabla thead th,
+.exporting-pdf .proforma-tabla thead th {
+  position: static !important;
+  top: auto !important;
+}
+
+/* ==== No cortar el bloque de Nota / Información Adicional ==== */
+/* Navegador (impresión) */
+@media print {
+
+  .proforma-nota,
+  .proforma-info-adicional {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Evita que el H4 quede al final de página sin contenido debajo */
+  .proforma-nota h4,
+  .proforma-info-adicional h4 {
+    break-after: avoid-page !important;
+    page-break-after: avoid !important;
+  }
+}
+
+/* Clon usado por html2pdf */
+.html2pdf__container .proforma-nota,
+.exporting-pdf .proforma-nota,
+.html2pdf__container .proforma-info-adicional,
+.exporting-pdf .proforma-info-adicional {
+  break-inside: avoid-page !important;
+  page-break-inside: avoid !important;
+}
+
+.html2pdf__container .proforma-nota h4,
+.exporting-pdf .proforma-nota h4,
+.html2pdf__container .proforma-info-adicional h4,
+.exporting-pdf .proforma-info-adicional h4 {
+  break-after: avoid-page !important;
+  page-break-after: avoid !important;
+}
