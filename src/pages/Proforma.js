@@ -14,7 +14,7 @@ import { FiTrash2 } from 'react-icons/fi';
 import { useLoading } from '../components/ui/LoadingContext';
 
 // ===== Helpers de formato =====
-const LOCALE_NUMERIC  = 'es-ES'; // Para inputs con punto de miles y coma decimal (50.000,00)
+const LOCALE_NUMERIC = 'es-ES'; // Para inputs con punto de miles y coma decimal (50.000,00)
 
 // deja LOCALE_NUMERIC = 'es-ES'
 const formatCRC = (n) =>
@@ -23,7 +23,6 @@ const formatCRC = (n) =>
     maximumFractionDigits: 2,
     useGrouping: true,
   }).format(Number(n) || 0)}`;
-
 
 const formatNumber = (n) =>
   new Intl.NumberFormat(LOCALE_NUMERIC, {
@@ -38,7 +37,7 @@ const parseMoney = (str) => {
   const s = String(str).replace(/[^\d.,-]/g, '').replace(/\s/g, '');
   if (!s) return 0;
   const lastComma = s.lastIndexOf(',');
-  const lastDot   = s.lastIndexOf('.');
+  const lastDot = s.lastIndexOf('.');
   let normalized = s;
 
   if (lastComma > -1 && lastDot > -1) {
@@ -75,6 +74,9 @@ const Proforma = () => {
   const [fecha, setFecha] = useState(null);
   const [proformaId, setProformaId] = useState(null);
   const [buscarProforma, setBuscarProforma] = useState('');
+
+  // helper para reactivar el botón cuando hay cambios
+  const markDirty = () => setProformaGuardada(false);
 
   // flags UI
   const [isSearching, setIsSearching] = useState(false);
@@ -244,6 +246,7 @@ const Proforma = () => {
     const nuevas = [...reparaciones];
     nuevas[index].concepto = value;
     setReparaciones(nuevas);
+    markDirty();
   };
 
   // Handlers para el monto (input con formato)
@@ -253,6 +256,7 @@ const Proforma = () => {
       next[index] = { ...next[index], precioStr: str, precio: parseMoney(str) };
       return next;
     });
+    markDirty();
   };
 
   const handlePrecioFocus = (index) => {
@@ -272,12 +276,14 @@ const Proforma = () => {
       next[index] = { ...next[index], precio: n, precioStr: formatNumber(n) };
       return next;
     });
+    markDirty();
   };
 
   const eliminarReparacionPorIndex = (index) => {
     const nuevas = [...reparaciones];
     nuevas.splice(index, 1);
     setReparaciones(nuevas);
+    markDirty();
   };
 
   const confirmarEliminarReparacion = async (idx) => {
@@ -322,9 +328,13 @@ const Proforma = () => {
       ...prev,
       { concepto: '', precio: 0, precioStr: formatNumber(0) }
     ]);
+    markDirty();
   };
 
-  const handleIvaChange = () => setIvaChecked(!ivaChecked);
+  const handleIvaChange = () => {
+    setIvaChecked(!ivaChecked);
+    markDirty();
+  };
 
   useEffect(() => {
     let suma = reparaciones.reduce((acc, r) => acc + (Number(r.precio) || 0), 0);
@@ -369,7 +379,7 @@ const Proforma = () => {
           await actualizarNumeroProforma(numeroProforma + 1);
           toast.success('¡Proforma guardada con éxito!');
         }
-        setProformaGuardada(true);
+        setProformaGuardada(true); // se deshabilita hasta que vuelvas a editar algo
       }, proformaId ? 'Actualizando proforma…' : 'Guardando proforma…');
     } catch (error) {
       toast.error('Error al guardar la proforma');
@@ -389,6 +399,8 @@ const Proforma = () => {
         await nextFrame();
 
         const element = original.cloneNode(true);
+        // Esta clase activa las reglas .exporting-pdf en el clon
+        element.classList.add('exporting-pdf');
 
         // 1) Ocultar controles/acciones de la UI
         element
@@ -518,6 +530,8 @@ const Proforma = () => {
           filename: `proforma-${numeroProforma ?? ''}.pdf`,
           html2canvas: { scale: 3, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          // Respeta CSS (break-inside/page-break-inside) y evita cortar elementos
+          pagebreak: { mode: ['css', 'legacy'] }
         };
 
         await html2pdf().set(options).from(element).save();
@@ -542,6 +556,7 @@ const Proforma = () => {
     } else {
       setVehiculo(v => ({ ...v, [campo]: value }));
     }
+    markDirty();
   };
 
   const busy = isSearching || isSaving || isCreatingNew || isGeneratingPdf;
@@ -592,7 +607,7 @@ const Proforma = () => {
             <span className="fecha-mini">Fecha: {fecha || new Date().toLocaleDateString()}</span>
           </div>
 
-          <div className="buscar-proforma">
+        <div className="buscar-proforma">
             <label htmlFor="buscarProforma">Buscar Proforma</label>
             <input
               id="buscarProforma"
@@ -620,7 +635,7 @@ const Proforma = () => {
               className="cedula-input"
               value={cedula}
               disabled={busy}
-              onChange={(e) => setCedula(e.target.value.replace(/\D/g, '').slice(0, 9))}
+              onChange={(e) => { setCedula(e.target.value.replace(/\D/g, '').slice(0, 9)); markDirty(); }}
             />
             {cliente && (
               <div className="cliente-info">
