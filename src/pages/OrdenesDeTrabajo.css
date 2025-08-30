@@ -123,6 +123,24 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
 }
 
+/* ===== NUEVO: estilos del select de conos ===== */
+.input-icon select {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px 10px 36px;
+  /* deja espacio para el ícono */
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  transition: box-shadow .15s, border-color .15s;
+  appearance: none;
+}
+
+.input-icon select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
 .icon-left {
   position: absolute;
   left: 10px;
@@ -243,6 +261,17 @@ textarea:focus {
   background: #ef4444;
   border-color: #ef4444;
   color: #fff;
+}
+
+/* ===== NUEVO: botón de finalizar ===== */
+.btn--danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.btn--danger:hover {
+  filter: brightness(1.05);
 }
 
 /* Spinner */

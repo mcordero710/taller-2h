@@ -1,5 +1,5 @@
 // src/pages/OrdenesDeTrabajo.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './OrdenesDeTrabajo.css';
 import { toast, ToastContainer } from 'react-toastify';
 import { FaSearch, FaCar, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaHashtag } from 'react-icons/fa';
@@ -15,6 +15,7 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  onSnapshot, // 👈 NUEVO: suscripción en tiempo real
 } from 'firebase/firestore';
 
 import { useLoading } from '../components/ui/LoadingContext';
@@ -35,6 +36,87 @@ const OrdenesDeTrabajo = () => {
   const [otId, setOtId] = useState(null);
 
   const { withLoading } = useLoading();
+
+  // helpers para normalizar tipos de cono
+  const toConoStr = v => (v === 0 || v ? String(v) : '');
+  const toConoNum = v => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  // ===== NUEVO: catálogo y estado de conos disponibles =====
+  const ALL_CONOS = Array.from({ length: 60 }, (_, i) => String(i + 1));
+  const [conosDisponibles, setConosDisponibles] = useState([]);
+
+  // 👇 NUEVO: mantener en memoria los "conos usados" en tiempo real y un whitelist del cono actual
+  const [conosUsados, setConosUsados] = useState(new Set());
+  const [whitelistCono, setWhitelistCono] = useState(null);
+
+  // 👇 NUEVO: suscripción en tiempo real a OTs abiertas para recalcular conos usados
+  useEffect(() => {
+    const qAbiertas = query(collection(db, 'ordenes_trabajo'), where('estado', '==', 'abierta'));
+    const unsub = onSnapshot(
+      qAbiertas,
+      (snap) => {
+        const usados = new Set(
+          snap.docs
+            .map(d => String(d.data()?.numeroCono ?? '').trim())
+            .filter(Boolean)
+        );
+        setConosUsados(usados);
+      },
+      (err) => console.error('onSnapshot conos error:', err)
+    );
+    return () => unsub();
+  }, []);
+
+  // 👇 NUEVO: cada vez que cambie el snapshot o el whitelist, recalculamos disponibles
+  useEffect(() => {
+    const usados = new Set(Array.from(conosUsados));
+    if (whitelistCono) usados.delete(String(whitelistCono).trim());
+    const disponibles = ALL_CONOS.filter(n => !usados.has(n));
+    setConosDisponibles(disponibles);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conosUsados, whitelistCono]);
+
+  // Mantenemos tu función original (fallback manual si la necesitas en otros puntos)
+  const refrescarConosDisponibles = async (currentCono = null) => {
+    try {
+      // además de refrescar manualmente, ajustamos el whitelist para que coincida con el contexto actual
+      setWhitelistCono(currentCono || null);
+
+      const snap = await getDocs(
+        query(collection(db, 'ordenes_trabajo'), where('estado', '==', 'abierta'))
+      );
+
+      const usados = new Set(
+        snap.docs
+          .map(d => String(d.data()?.numeroCono ?? '').trim())
+          .filter(Boolean)
+      );
+
+      if (currentCono) usados.delete(String(currentCono).trim());
+
+      const disponibles = ALL_CONOS.filter(n => !usados.has(n));
+      setConosDisponibles(disponibles);
+    } catch (e) {
+      console.error('No se pudieron calcular los conos disponibles:', e);
+      setConosDisponibles(ALL_CONOS); // fallback
+    }
+  };
+
+  useEffect(() => {
+    // inicial (whitelist vacío)
+    setWhitelistCono(null);
+    refrescarConosDisponibles(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // si cambian otId o cono, mantenemos whitelist alineado
+  useEffect(() => {
+    setWhitelistCono(otId ? (cono || null) : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otId, cono]);
 
   const convertirFecha = (fechaStr) => {
     if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
@@ -77,19 +159,26 @@ const OrdenesDeTrabajo = () => {
           });
         const top = docs[0];
         setOtId(top.id);
-        setCono(top.numeroCono || '');
+        setCono(toConoStr(top.numeroCono));
+
+        // mantener whitelist con el cono actual de esta OT
+        setWhitelistCono(top.numeroCono || null);
 
         // ⬇️ Solo actualiza proforma si la OT realmente trae valor.
         if (top.proformaNumero !== undefined && top.proformaNumero !== null) {
           setProformaNumero(String(top.proformaNumero));
         } else if (!preserveProforma) {
-          // si NO queremos preservar (casos antiguos), recién entonces limpiaríamos
           setProformaNumero('');
         }
 
         setReparaciones(Array.isArray(top.reparaciones)
           ? top.reparaciones.map((r, i) => ({ id: `${top.id}-${i}`, texto: r.texto || String(r) }))
           : []);
+
+        await refrescarConosDisponibles(top.numeroCono || null);
+      } else {
+        // no había OT; lista sin whitelist
+        setWhitelistCono(null);
       }
     } catch (err) {
       console.error('Error consultando OT:', err);
@@ -124,13 +213,20 @@ const OrdenesDeTrabajo = () => {
     });
     setProformaNumero(String(p.numero || ''));
 
-    // 3) NUEVO: intentar encontrar la OT por número de proforma (independiente de placa)
+    // 3) Intentar encontrar la OT por número de proforma (independiente de placa)
     let otEncontrada = null;
     try {
       const pfNumber = Number(p.numero ?? proformaNum);
-      const snapOT = await getDocs(
+
+      let snapOT = await getDocs(
         query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', pfNumber))
       );
+
+      if (snapOT.empty) {
+        snapOT = await getDocs(
+          query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', String(pfNumber)))
+        );
+      }
 
       if (!snapOT.empty) {
         const list = snapOT.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -142,13 +238,12 @@ const OrdenesDeTrabajo = () => {
         otEncontrada = list[0];
 
         setOtId(otEncontrada.id);
-        setCono(otEncontrada.numeroCono || '');
+        setCono(toConoStr(otEncontrada.numeroCono));
+        setWhitelistCono(otEncontrada?.numeroCono || null); // 👈 permitir su cono
 
-        // Si la proforma no tenía placa, usa la de la OT
         const placaFromOT = (otEncontrada.placa || otEncontrada.vehiculo?.placa || '').toUpperCase();
         if (placaFromOT) {
           setPlaca(placaFromOT);
-          // (Opcional) sincronizar datos de vehículo con la OT:
           setVehiculo(v => ({
             ...v,
             placa: placaFromOT,
@@ -158,18 +253,25 @@ const OrdenesDeTrabajo = () => {
             color: otEncontrada.vehiculo?.color || v.color || '',
           }));
         }
+
+        await refrescarConosDisponibles(otEncontrada?.numeroCono || null);
       }
     } catch (err) {
       console.error('Error buscando OT por proforma:', err);
     }
 
-    // 4) Si NO hubo OT por proforma y sí tenemos placa, caer a la última OT por placa (preserva proforma en pantalla)
     if (!otEncontrada && placaDoc) {
       await loadUltimaOT(placaDoc, { preserveProforma: true });
+      // si tampoco hay OT por placa, whitelist vacío
+      if (!otId) setWhitelistCono(null);
     }
 
-    // 5) Mantener las reparaciones desde la proforma (como lo tenías)
     setReparacionesDesdeProforma(p);
+
+    if (!otEncontrada) {
+      setWhitelistCono(null);
+      await refrescarConosDisponibles(null);
+    }
 
     return p;
   };
@@ -194,7 +296,8 @@ const OrdenesDeTrabajo = () => {
       const ot = list[0];
 
       setOtId(ot.id);
-      setCono(ot.numeroCono || '');
+      setCono(toConoStr(ot.numeroCono));
+      setWhitelistCono(ot.numeroCono || null); // 👈 permitir su cono
       setPlaca(placaUpper);
       setVehiculo({
         placa: placaUpper,
@@ -205,12 +308,18 @@ const OrdenesDeTrabajo = () => {
       });
       if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
       setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
+
+      await refrescarConosDisponibles(ot.numeroCono || null);
       return { origen: 'ot' };
     }
 
     // 2) Fallback: proformas que tengan esa placa
     const snapPro = await getDocs(query(collection(db, 'proformas'), where('vehiculo.placa', '==', placaUpper)));
-    if (snapPro.empty) return null;
+    if (snapPro.empty) {
+      setWhitelistCono(null);
+      await refrescarConosDisponibles(null);
+      return null;
+    }
 
     const proformas = snapPro.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
@@ -218,7 +327,10 @@ const OrdenesDeTrabajo = () => {
 
     // 3) Buscar OTs por el número de proforma de esa proforma
     const pfNumber = Number(p.numero);
-    const snapOT2 = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', pfNumber)));
+    let snapOT2 = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', pfNumber)));
+    if (snapOT2.empty) {
+      snapOT2 = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', String(pfNumber))));
+    }
     if (snapOT2.empty) {
       // No hay OT aún, deja datos de vehículo desde la proforma para crear una nueva si quieres
       setPlaca(placaUpper);
@@ -231,6 +343,9 @@ const OrdenesDeTrabajo = () => {
       });
       setProformaNumero(String(p.numero || ''));
       setReparacionesDesdeProforma(p);
+
+      setWhitelistCono(null);
+      await refrescarConosDisponibles(null);
       return { origen: 'proforma' };
     }
 
@@ -271,7 +386,8 @@ const OrdenesDeTrabajo = () => {
     }
 
     setOtId(ot.id);
-    setCono(ot.numeroCono || '');
+    setCono(toConoStr(ot.numeroCono));
+    setWhitelistCono(ot.numeroCono || null);
     setPlaca(placaUpper);
     setVehiculo({
       placa: placaUpper,
@@ -282,6 +398,8 @@ const OrdenesDeTrabajo = () => {
     });
     if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
     setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
+
+    await refrescarConosDisponibles(ot.numeroCono || null);
     return { origen: 'otPorProforma' };
   }
 
@@ -297,7 +415,6 @@ const OrdenesDeTrabajo = () => {
       return;
     }
 
-
     setLoadingVehiculo(true);
     try {
       await withLoading(async () => {
@@ -307,9 +424,12 @@ const OrdenesDeTrabajo = () => {
 
         if (!found) {
           setVehiculo(null); setOtId(null); setReparaciones([]);
+          setWhitelistCono(null);
           toast.info('No se encontraron datos con los criterios ingresados.', { autoClose: 2200, hideProgressBar: true });
+          await refrescarConosDisponibles(null);
         }
       }, 'Cargando datos…');
+      // el onSnapshot + whitelist se encargan del refresco inmediato
     } catch (e) {
       console.error('Error al cargar datos:', e);
       toast.error('Ocurrió un error al cargar los datos.');
@@ -382,6 +502,27 @@ const OrdenesDeTrabajo = () => {
     }
     const user = auth?.currentUser;
     const placaNorm = (vehiculo?.placa || placa).replace(/\s+/g, '').toUpperCase();
+    const conoSel = (cono || '').trim();
+
+    // ===== Validación de conflicto de cono =====
+    try {
+      const conflictSnap = await getDocs(
+        query(
+          collection(db, 'ordenes_trabajo'),
+          where('estado', '==', 'abierta'),
+          where('numeroCono', '==', conoSel)
+        )
+      );
+      const conflicts = conflictSnap.docs.filter(d => d.id !== otId);
+      if (conflicts.length > 0) {
+        toast.error(`El cono ${conoSel} ya está ocupado. Elige otro.`);
+        setWhitelistCono(otId ? conoSel : null);
+        await refrescarConosDisponibles(otId ? conoSel : null);
+        return;
+      }
+    } catch (e) {
+      console.error('Error validando cono:', e);
+    }
 
     const payload = {
       placa: placaNorm,
@@ -393,7 +534,7 @@ const OrdenesDeTrabajo = () => {
         color: vehiculo?.color || '',
         placa: placaNorm
       },
-      numeroCono: cono.trim(),
+      numeroCono: toConoNum(conoSel) ?? conoSel, // preferencia número
       reparaciones: reparaciones.map(r => ({ texto: r.texto })),
       estado: 'abierta',
       proformaNumero: proformaNumero ? Number(proformaNumero) : null,
@@ -410,6 +551,10 @@ const OrdenesDeTrabajo = () => {
         }
       }, otId ? 'Actualizando orden…' : 'Guardando orden de trabajo…');
       toast.success(otId ? 'Orden actualizada.' : 'Orden creada.');
+
+      // importante: whitelist al cono de esta OT y el onSnapshot hace el resto
+      setWhitelistCono(conoSel);
+      await refrescarConosDisponibles(conoSel);
     } catch (e) {
       console.error('No se pudo guardar la orden:', e);
       toast.error('No se pudo guardar la orden de trabajo.');
@@ -428,6 +573,8 @@ const OrdenesDeTrabajo = () => {
     setPlaca(''); setProformaNumero('');
     setVehiculo(null); setCono(''); setReparacion('');
     setReparaciones([]); setEditingId(null); setEditingText(''); setOtId(null);
+    setWhitelistCono(null); // 👈 reset whitelist
+    refrescarConosDisponibles(null);
   };
 
   const confirmarEliminarReparacion = async (id) => {
@@ -436,6 +583,34 @@ const OrdenesDeTrabajo = () => {
       setReparaciones(prev => prev.filter(r => r.id !== id));
       toast.success('Reparación eliminada', { autoClose: 2000 });
     }, 'Eliminando reparación…');
+  };
+
+  // ===== NUEVO: Finalizar Orden (libera el cono) =====
+  const finalizarOrden = async () => {
+    if (!otId) {
+      toast.info('Primero guarda la orden para poder finalizarla.');
+      return;
+    }
+    const ok = window.confirm('¿Finalizar la orden? El cono quedará liberado.');
+    if (!ok) return;
+
+    try {
+      await withLoading(async () => {
+        await updateDoc(doc(db, 'ordenes_trabajo', otId), {
+          estado: 'finalizada',
+          numeroCono: null,
+          updatedAt: serverTimestamp()
+        });
+      }, 'Finalizando orden…');
+
+      toast.success('Orden finalizada. Cono liberado.');
+      setCono('');
+      setWhitelistCono(null);
+      await refrescarConosDisponibles(null);
+    } catch (e) {
+      console.error('No se pudo finalizar la orden:', e);
+      toast.error('No se pudo finalizar la orden.');
+    }
   };
 
   // arriba de return()
@@ -527,7 +702,18 @@ const OrdenesDeTrabajo = () => {
                 <label htmlFor="cono">Número de Cono</label>
                 <div className="input-icon">
                   <FaHashtag className="icon-left" />
-                  <input id="cono" placeholder="Ej: 27" value={cono} onChange={(e) => setCono(e.target.value)} />
+                  {/* select de conos disponibles */}
+                  <select
+                    id="cono"
+                    value={cono}
+                    onChange={(e) => { setCono(e.target.value); setWhitelistCono(e.target.value || null); }}
+                    onFocus={() => { setWhitelistCono(cono || null); refrescarConosDisponibles(cono || null); }}
+                  >
+                    <option value="">Seleccione un cono…</option>
+                    {conosDisponibles.map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -636,6 +822,15 @@ const OrdenesDeTrabajo = () => {
               Imprimir / Guardar PDF
             </button>
           </span>
+
+          {/* ===== NUEVO: Finalizar Orden ===== */}
+          <button
+            className="btn btn--danger btn--sm"
+            onClick={finalizarOrden}
+            disabled={!otId || !vehiculo || !cono.trim()}
+          >
+            Finalizar Orden
+          </button>
         </div>
 
 
