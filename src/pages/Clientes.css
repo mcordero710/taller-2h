@@ -653,3 +653,48 @@ body {
 
   /* en móvil que sea full width */
 }
+
+/* Botón "X" del modal: color fijo (no blanco) */
+.modal-head .btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: #10b981;
+  /* verde base */
+  border-color: #0f766e;
+  /* borde más oscuro */
+  color: #fff;
+  /* icono blanco */
+  box-shadow: 0 2px 6px rgba(16, 185, 129, .25);
+}
+
+/* Mantén el color al pasar el mouse / enfoque */
+.modal-head .btn-icon:hover,
+.modal-head .btn-icon:focus-visible {
+  background: #0fb37a;
+  /* leve variación */
+  border-color: #0d9e73;
+  filter: none;
+  /* anula brillo global */
+}
+
+/* Activo/disabled coherentes */
+.modal-head .btn-icon:active {
+  transform: translateY(0);
+  filter: none;
+}
+
+.modal-head .btn-icon:disabled {
+  background: #9ddfc8;
+  border-color: #86cfb9;
+  color: #f8fafc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Asegura tamaño/color del ícono */
+.modal-head .btn-icon svg {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+}
