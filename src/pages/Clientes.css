@@ -603,3 +603,53 @@ body {
   filter: none;
   box-shadow: 0 8px 18px rgba(16, 185, 129, .22), inset 0 0 0 1px rgba(255, 255, 255, .05);
 }
+
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: .8rem;
+  color: #64748b;
+}
+
+.field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: .8rem;
+  color: #dc2626;
+  /* rojo */
+}
+
+.input--error {
+  border-color: #dc2626 !important;
+  outline-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, .08);
+}
+
+/* Si una etiqueta del form contiene .field-error, que ocupe toda la fila */
+@supports selector(:has(*)) {
+  .modal-form label:has(.field-error) {
+    grid-column: 1 / -1;
+    /* span 2 columnas */
+  }
+
+  .modal-form label:has(.field-error) .field-error {
+    margin-top: 2px;
+  }
+}
+
+/* Cédula más compacta */
+.cedula-field input {
+  width: 100%;
+  max-width: 280px;
+  /* ajusta a 240–300px si quieres */
+  justify-self: start;
+  /* alinea a la izquierda dentro del grid */
+}
+
+@media (max-width:720px) {
+  .cedula-field input {
+    max-width: 100%;
+  }
+
+  /* en móvil que sea full width */
+}

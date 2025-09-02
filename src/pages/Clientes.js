@@ -24,6 +24,7 @@ const Clientes = () => {
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
+  const [touched, setTouched] = useState({ cedula: false });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -48,6 +49,18 @@ const Clientes = () => {
   const [isCheckingCedula, setIsCheckingCedula] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const busy = isCheckingCedula || isSaving;
+
+  // Helper: estado vacío del form
+  const emptyForm = { cedula: '', nombre: '', apellido: '', telefono: '', correo: '' };
+
+  // ✅ Cerrar modal y resetear estados (incluye error)
+  const closeModal = () => {
+    setShowModal(false);
+    setEditMode(false);
+    setSelectedClientId(null);
+    setTouched({ cedula: false });
+    setFormData(emptyForm);
+  };
 
   // Initial load (subscribe to collection)
   useEffect(() => {
@@ -90,12 +103,14 @@ const Clientes = () => {
     if (busy) return;
     setEditMode(false);
     setSelectedClientId(null);
-    setFormData({ cedula: '', nombre: '', apellido: '', telefono: '', correo: '' });
+    setTouched({ cedula: false });      // 👈 limpia error al abrir
+    setFormData(emptyForm);
     setShowModal(true);
   };
 
   const handleEdit = (cliente) => {
     if (busy) return;
+    setTouched({ cedula: false });      // 👈 limpia error al editar
     setFormData({
       cedula: cliente.cedula || '',
       nombre: cliente.nombre || '',
@@ -127,7 +142,13 @@ const Clientes = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.cedula || !formData.nombre || !formData.telefono) {
+    // validación de formato (9 dígitos)
+    if (formData.cedula.length !== 9) {
+      setTouched(t => ({ ...t, cedula: true }));
+      return; // no seguimos hasta que sea válido
+    }
+
+    if (!formData.nombre || !formData.telefono) {
       toast.error('Completa cédula, nombre y teléfono.');
       return;
     }
@@ -159,10 +180,8 @@ const Clientes = () => {
         }
       }, editMode ? 'Actualizando cliente…' : 'Guardando cliente…');
 
-      setShowModal(false);
-      setEditMode(false);
-      setSelectedClientId(null);
-      setFormData({ cedula: '', nombre: '', apellido: '', telefono: '', correo: '' });
+      // Puedes dejar tu lógica actual o usar closeModal(); ambas limpian estado.
+      closeModal();
     } catch (err) {
       console.error('Error al guardar:', err);
       toast.error('Error al guardar el cliente');
@@ -184,6 +203,18 @@ const Clientes = () => {
 
   const indexOfLast = currentPage * clientsPerPage;
   const currentClients = filtered.slice(indexOfLast - clientsPerPage, indexOfLast);
+
+  // 👉 Formateador visual: x-xxxx-xxxx (sin cambiar lo que guardas)
+  const formatCedula = (digits = '') => {
+    const s = String(digits).replace(/\D/g, '').slice(0, 9);
+    const p1 = s.slice(0, 1);
+    const p2 = s.slice(1, 5);
+    const p3 = s.slice(5, 9);
+    if (!p1) return '';
+    if (s.length <= 1) return p1;
+    if (s.length <= 5) return `${p1}-${p2}`;
+    return `${p1}-${p2}-${p3}`;
+  };
 
   return (
     <div className="clientes-page">
@@ -299,14 +330,14 @@ const Clientes = () => {
       {showModal && (
         <div
           className="modal-overlay"
-          onMouseDown={(e) => e.target === e.currentTarget && setShowModal(false)}
+          onMouseDown={(e) => e.target === e.currentTarget && closeModal()}  // 👈 cerrar y resetear
         >
           <div className="modal" role="dialog" aria-modal="true">
             <div className="modal-head">
               <h3>{editMode ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
               <button
                 className="btn-icon"
-                onClick={() => setShowModal(false)}
+                onClick={closeModal}             // 👈 cerrar y resetear
                 aria-label="Cerrar"
                 disabled={busy}
               >
@@ -315,16 +346,27 @@ const Clientes = () => {
             </div>
 
             <form className="modal-form" onSubmit={handleSubmit}>
-              <label>
+              <label className="span-2 cedula-field">
                 <span>Cédula</span>
                 <input
                   name="cedula"
-                  value={formData.cedula}
-                  onChange={handleNumberOnlyChange}
+                  value={formatCedula(formData.cedula)}     // muestra con guiones
+                  onChange={handleNumberOnlyChange}         // guarda solo dígitos (máx 9)
+                  onBlur={() => setTouched(t => ({ ...t, cedula: true }))}  // marca como “tocado”
                   inputMode="numeric"
+                  //placeholder="x-xxxx-xxxx"
+                  aria-describedby={`help-cedula${touched.cedula && formData.cedula.length !== 9 ? ' error-cedula' : ''}`}
+                  aria-invalid={touched.cedula && formData.cedula.length !== 9 ? 'true' : 'false'}
                   required
-                  disabled={busy || editMode} /* si editas, no permitir cambiar cédula */
+                  disabled={busy || editMode}               // si editas, no permitir cambiar cédula
+                  className={touched.cedula && formData.cedula.length !== 9 ? 'input--error' : ''}
                 />
+                <small id="help-cedula" className="field-hint">Formato: x-xxxx-xxxx</small>
+                {touched.cedula && formData.cedula.length !== 9 && !editMode && (
+                  <small id="error-cedula" className="field-error">
+                    La cédula no tiene el formato correcto (debe tener 9 dígitos).
+                  </small>
+                )}
               </label>
 
               <label>
@@ -376,7 +418,7 @@ const Clientes = () => {
                 <button
                   type="button"
                   className="btn-light cancelar"
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}           // 👈 cerrar y resetear
                   disabled={busy}
                 >
                   Cancelar
@@ -385,8 +427,8 @@ const Clientes = () => {
                   {isSaving
                     ? 'Guardando…'
                     : editMode
-                    ? 'Guardar cambios'
-                    : 'Guardar'}
+                      ? 'Guardar cambios'
+                      : 'Guardar'}
                 </button>
               </div>
             </form>
