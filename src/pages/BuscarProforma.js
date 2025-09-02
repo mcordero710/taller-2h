@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // 👈 NUEVO
 import { toast } from 'react-toastify';
 import './BuscarProforma.css';
 import { useLoading } from '../components/ui/LoadingContext';
@@ -11,7 +11,17 @@ const BuscarProforma = () => {
   const [proformas, setProformas] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { withLoading } = useLoading();
+
+  // 👇 NUEVO: si venimos de DetalleProforma, restaurar estado
+  useEffect(() => {
+    const restored = location.state?.restored;
+    if (restored) {
+      setBuscar(restored.buscar || '');
+      setProformas(Array.isArray(restored.proformas) ? restored.proformas : []);
+    }
+  }, [location.state]);
 
   // Garantiza que el overlay aparezca en pantalla antes de ejecutar la query
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
@@ -86,11 +96,19 @@ const BuscarProforma = () => {
   };
 
   const handleVerProforma = async (proforma) => {
-    // Opcional: breve overlay al cambiar de pantalla
     await withLoading(async () => {
-      // pequeño frame por si el render tarda
       await nextFrame();
-      navigate('/detalle-proforma', { state: { proforma } });
+      navigate('/detalle-proforma', {
+        state: {
+          proforma,
+          backTo: {
+            // 👇 Si tu ruta real del buscador es distinta, cámbiala aquí
+            route: '/buscar-proforma',
+            buscar,
+            proformas,
+          },
+        },
+      });
     }, 'Abriendo proforma…');
   };
 
@@ -152,7 +170,7 @@ const BuscarProforma = () => {
               onKeyDown={handleBuscarKeyDown}
               onPaste={handleBuscarPaste}
               disabled={isSearching}
-              
+
             />
             <button onClick={handleBuscar} disabled={isSearching}>
               {isSearching ? 'Buscando…' : 'Buscar'}

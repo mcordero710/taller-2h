@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './DetalleProforma.css';
+import { FiChevronLeft } from 'react-icons/fi'; // 👈 usa react-icons
 
 const DetalleProforma = () => {
   const location = useLocation();
@@ -18,9 +19,37 @@ const DetalleProforma = () => {
     navigate('/proforma', { state: { proforma } });
   };
 
+  // 👇 NUEVO: volver preservando resultados del buscador
+  const volverAResultados = () => {
+    const back = location.state?.backTo;
+    if (back?.route) {
+      navigate(back.route, {
+        state: {
+          restored: {
+            buscar: back.buscar,
+            proformas: back.proformas,
+          },
+        },
+      });
+    } else {
+      navigate(-1);
+    }
+  };
+
   return (
     <div className="detalle-proforma-page">
       <div className="detalle-proforma-wrapper">
+        <div className="detalle-proforma-topbar">
+          <button
+            className="back-icon-btn"
+            onClick={volverAResultados}
+            aria-label="Volver a resultados"
+            title="Volver a resultados"
+          >
+            <FiChevronLeft />
+          </button>
+        </div>
+
         <h2>Detalle del Vehículo</h2>
         <ul>
           <li><strong>Placa:</strong> {vehiculo.placa ?? '—'}</li>

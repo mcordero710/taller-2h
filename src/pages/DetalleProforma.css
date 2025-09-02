@@ -1,55 +1,97 @@
 .detalle-proforma-page {
   min-height: 100svh;
   padding: 24px;
-  background: linear-gradient(180deg, #fafbff, #f3f5f9); /* suave gris/azulado */
+  background: linear-gradient(180deg, #fafbff, #f3f5f9);
   color: #0f172a;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 
 .detalle-proforma-wrapper {
-    max-width: 500px;
-    margin: 2rem auto;
-    background-color: #ffffff;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    font-family: Arial, sans-serif;
-  }
-  
-  .detalle-proforma-wrapper h2 {
-    margin-bottom: 1.5rem;
-    color: #2c3e50;
-    text-align: center;
-  }
-  
-  .detalle-proforma-wrapper ul {
-    list-style: none;
-    padding: 0;
-    font-size: 1rem;
-  }
-  
-  .detalle-proforma-wrapper li {
-    margin-bottom: 1rem;
-  }
+  max-width: 500px;
+  margin: 2rem auto;
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+}
 
-  .boton-principal {
-    margin-top: 1.5rem;
-    padding: 0.5rem 1.2rem;
-    background-color: #2c3e50; /* 🔹 oscuro por defecto */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+.detalle-proforma-wrapper h2 {
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+  text-align: center;
+}
+
+.detalle-proforma-wrapper ul {
+  list-style: none;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.detalle-proforma-wrapper li {
+  margin-bottom: 1rem;
+}
+
+.boton-principal {
+  margin-top: 1.5rem;
+  padding: 0.5rem 1.2rem;
+  background-color: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.boton-principal:hover {
+  background-color: #1abc9c;
+  transform: scale(1.05);
+}
+
+/* Top bar + botón back pequeño */
+.detalle-proforma-topbar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: .5rem;
+}
+
+.back-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 9999px;
+  background: #eef0f3;
+  border: 1px solid #d4d8de;
+  color: #111827;
+  font-size: 18px;
+  /* tamaño del ícono */
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color .2s ease, transform .15s ease, box-shadow .2s ease;
+}
+
+.back-icon-btn:hover {
+  background: #e3e7ec;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+.back-icon-btn:focus-visible {
+  outline: 2px solid #1abc9c;
+  outline-offset: 2px;
+}
+
+/* Ocultar en impresión */
+@media print {
+
+  .back-icon-btn,
+  .detalle-proforma-topbar {
+    display: none !important;
   }
-  
-  .boton-principal:hover {
-    background-color: #1abc9c; /* 🔹 verde al hacer hover */
-    transform: scale(1.05);
-  }
-  
-  
-  
-  
+}
