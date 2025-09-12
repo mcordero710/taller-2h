@@ -350,19 +350,20 @@ const Clientes = () => {
                 <span>Cédula</span>
                 <input
                   name="cedula"
-                  value={formatCedula(formData.cedula)}     // muestra con guiones
-                  onChange={handleNumberOnlyChange}         // guarda solo dígitos (máx 9)
-                  onBlur={() => setTouched(t => ({ ...t, cedula: true }))}  // marca como “tocado”
+                  value={formatCedula(formData.cedula)}      // muestra con guiones
+                  onChange={handleNumberOnlyChange}          // guarda solo dígitos (máx 9)
+                  onBlur={() => setTouched(t => ({ ...t, cedula: true }))}
                   inputMode="numeric"
-                  //placeholder="x-xxxx-xxxx"
                   aria-describedby={`help-cedula${touched.cedula && formData.cedula.length !== 9 ? ' error-cedula' : ''}`}
                   aria-invalid={touched.cedula && formData.cedula.length !== 9 ? 'true' : 'false'}
                   required
-                  disabled={busy || editMode}               // si editas, no permitir cambiar cédula
+                  disabled={busy}
                   className={touched.cedula && formData.cedula.length !== 9 ? 'input--error' : ''}
                 />
                 <small id="help-cedula" className="field-hint">Formato: x-xxxx-xxxx</small>
-                {touched.cedula && formData.cedula.length !== 9 && !editMode && (
+
+                {/* ✅ quitar el “!editMode” para validar también en edición */}
+                {touched.cedula && formData.cedula.length !== 9 && (
                   <small id="error-cedula" className="field-error">
                     La cédula no tiene el formato correcto (debe tener 9 dígitos).
                   </small>
