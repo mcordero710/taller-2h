@@ -2,23 +2,26 @@
 import React, { useState, useEffect } from 'react';
 import './OrdenesDeTrabajo.css';
 import { toast, ToastContainer } from 'react-toastify';
-import { FaSearch, FaCar, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaHashtag, FaExclamationTriangle } from 'react-icons/fa';
+import {
+  FaSearch, FaCar, FaPlus, FaTrash, FaEdit, FaSave, FaTimes,
+  FaHashtag, FaExclamationTriangle, FaBoxOpen
+} from 'react-icons/fa';
 import logo from '../assets/logo.png';
 
 import { db, auth } from '../firebase/firebase';
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  serverTimestamp,
-  onSnapshot,
+  collection, query, where, getDocs, addDoc, doc, updateDoc,
+  serverTimestamp, onSnapshot, orderBy, increment
 } from 'firebase/firestore';
 
 import { useLoading } from '../components/ui/LoadingContext';
+import Pagination from '../components/Pagination/Pagination'; // 👈 usar tu paginador
+
+const LOCALE_NUMERIC = 'es-ES';
+const formatMoney = (n) =>
+  new Intl.NumberFormat(LOCALE_NUMERIC, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n) || 0);
+const formatInt = (n) =>
+  new Intl.NumberFormat(LOCALE_NUMERIC, { maximumFractionDigits: 0 }).format(Math.floor(Number(n) || 0));
 
 const OrdenesDeTrabajo = () => {
   const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
@@ -28,31 +31,44 @@ const OrdenesDeTrabajo = () => {
   const [loadingVehiculo, setLoadingVehiculo] = useState(false);
   const [vehiculo, setVehiculo] = useState(null);
 
-  // Cono asignado en la OT (campo de "Datos de la Orden")
+  // Conos
   const [cono, setCono] = useState('');
-  // Cono para BUSCAR (no confundir con el cono asignado de la OT)
   const [conoBuscar, setConoBuscar] = useState('');
 
+  // Reparaciones
   const [reparacion, setReparacion] = useState('');
   const [reparaciones, setReparaciones] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [otId, setOtId] = useState(null);
 
+  // ===== Materiales utilizados =====
+  const [materiales, setMateriales] = useState([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [inventarioList, setInventarioList] = useState([]);
+  const [pickerBusy, setPickerBusy] = useState(false);
+  const [qtyInput, setQtyInput] = useState('1');
+  const [selectedInv, setSelectedInv] = useState(null);
+
+  // 👉 paginación del picker
+  const [pickerPage, setPickerPage] = useState(1);
+  const pickerPerPage = 10;
+
   const { withLoading } = useLoading();
 
-  // ===== Modal confirmación Finalizar =====
+  // ===== Modal finalizar =====
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
 
-  // helpers para normalizar tipos de cono
+  // helpers cono
   const toConoStr = v => (v === 0 || v ? String(v) : '');
   const toConoNum = v => {
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
   };
 
-  // ===== Conos disponibles (con realtime) =====
+  // ===== Conos disponibles (realtime) =====
   const ALL_CONOS = Array.from({ length: 60 }, (_, i) => String(i + 1));
   const [conosDisponibles, setConosDisponibles] = useState([]);
   const [conosUsados, setConosUsados] = useState(new Set());
@@ -63,11 +79,7 @@ const OrdenesDeTrabajo = () => {
     const unsub = onSnapshot(
       qAbiertas,
       (snap) => {
-        const usados = new Set(
-          snap.docs
-            .map(d => String(d.data()?.numeroCono ?? '').trim())
-            .filter(Boolean)
-        );
+        const usados = new Set(snap.docs.map(d => String(d.data()?.numeroCono ?? '').trim()).filter(Boolean));
         setConosUsados(usados);
       },
       (err) => console.error('onSnapshot conos error:', err)
@@ -78,52 +90,43 @@ const OrdenesDeTrabajo = () => {
   useEffect(() => {
     const usados = new Set(Array.from(conosUsados));
     if (whitelistCono) usados.delete(String(whitelistCono).trim());
-    const disponibles = ALL_CONOS.filter(n => !usados.has(n));
-    setConosDisponibles(disponibles);
+    setConosDisponibles(ALL_CONOS.filter(n => !usados.has(n)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conosUsados, whitelistCono]);
 
   const refrescarConosDisponibles = async (currentCono = null) => {
     try {
       setWhitelistCono(currentCono || null);
-      const snap = await getDocs(
-        query(collection(db, 'ordenes_trabajo'), where('estado', '==', 'abierta'))
-      );
-      const usados = new Set(
-        snap.docs.map(d => String(d.data()?.numeroCono ?? '').trim()).filter(Boolean)
-      );
+      const snap = await getDocs(query(collection(db, 'ordenes_trabajo'), where('estado', '==', 'abierta')));
+      const usados = new Set(snap.docs.map(d => String(d.data()?.numeroCono ?? '').trim()).filter(Boolean));
       if (currentCono) usados.delete(String(currentCono).trim());
-      const disponibles = ALL_CONOS.filter(n => !usados.has(n));
-      setConosDisponibles(disponibles);
+      setConosDisponibles(ALL_CONOS.filter(n => !usados.has(n)));
     } catch (e) {
       console.error('No se pudieron calcular los conos disponibles:', e);
       setConosDisponibles(ALL_CONOS);
     }
   };
 
-  useEffect(() => {
-    setWhitelistCono(null);
-    refrescarConosDisponibles(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { setWhitelistCono(null); refrescarConosDisponibles(null); }, []);
+  useEffect(() => { setWhitelistCono(otId ? (cono || null) : null); }, [otId, cono]);
 
+  // cerrar con ESC (finish o picker)
   useEffect(() => {
-    setWhitelistCono(otId ? (cono || null) : null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otId, cono]);
-
-  // Cerrar modal con ESC
-  useEffect(() => {
-    if (!showFinishConfirm) return;
-    const onKey = (e) => { if (e.key === 'Escape') setShowFinishConfirm(false); };
+    if (!showFinishConfirm && !showPicker) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        if (showPicker) setShowPicker(false);
+        else setShowFinishConfirm(false);
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [showFinishConfirm]);
+  }, [showFinishConfirm, showPicker]);
 
   const convertirFecha = (fechaStr) => {
     if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
     const [mes, dia, anio] = fechaStr.split('/');
-       return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
+    return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
   };
 
   const setReparacionesDesdeProforma = (p) => {
@@ -137,32 +140,33 @@ const OrdenesDeTrabajo = () => {
     setReparaciones(mapped);
   };
 
-  // ===== Última OT por placa (con opción de preservar proforma en pantalla) =====
+  const setMaterialesDesdeOT = (ot) => {
+    const arr = Array.isArray(ot.materiales)
+      ? ot.materiales.map(m => ({
+          invId: m.invId,
+          codigo: m.codigo || '',
+          descripcion: m.descripcion || '',
+          cantidad: Number(m.cantidad) || 0,
+        }))
+      : [];
+    setMateriales(arr);
+  };
+
+  // ===== Última OT por placa =====
   const loadUltimaOT = async (placaUpper, opts = {}) => {
     const preserveProforma = !!opts.preserveProforma;
-
-    setOtId(null);
-    setCono('');
-    setReparaciones([]);
-
+    setOtId(null); setCono(''); setReparaciones([]); setMateriales([]);
     try {
       let snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('placa', '==', placaUpper)));
-      if (snapOT.empty) {
-        snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('vehiculo.placa', '==', placaUpper)));
-      }
+      if (snapOT.empty) snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('vehiculo.placa', '==', placaUpper)));
       if (!snapOT.empty) {
         const docs = snapOT.docs.map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => {
-            const ta = a.createdAt?.toMillis?.() ?? a.updatedAt?.toMillis?.() ?? 0;
-            const tb = b.createdAt?.toMillis?.() ?? b.updatedAt?.toMillis?.() ?? 0;
-            return tb - ta;
-          });
+          .sort((a, b) => (b.createdAt?.toMillis?.() ?? b.updatedAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? a.updatedAt?.toMillis?.() ?? 0));
         const top = docs[0];
         setOtId(top.id);
         setCono(toConoStr(top.numeroCono));
         setWhitelistCono(top.numeroCono || null);
 
-        // datos de vehículo desde la OT
         const placaFromOT = (top.placa || top.vehiculo?.placa || placaUpper).toUpperCase();
         setPlaca(placaFromOT);
         setVehiculo({
@@ -173,15 +177,11 @@ const OrdenesDeTrabajo = () => {
           color: top.vehiculo?.color || '',
         });
 
-        if (top.proformaNumero !== undefined && top.proformaNumero !== null) {
-          setProformaNumero(String(top.proformaNumero));
-        } else if (!preserveProforma) {
-          setProformaNumero('');
-        }
+        if (top.proformaNumero !== undefined && top.proformaNumero !== null) setProformaNumero(String(top.proformaNumero));
+        else if (!preserveProforma) setProformaNumero('');
 
-        setReparaciones(Array.isArray(top.reparaciones)
-          ? top.reparaciones.map((r, i) => ({ id: `${top.id}-${i}`, texto: r.texto || String(r) }))
-          : []);
+        setReparaciones(Array.isArray(top.reparaciones) ? top.reparaciones.map((r, i) => ({ id: `${top.id}-${i}`, texto: r.texto || String(r) })) : []);
+        setMaterialesDesdeOT(top);
 
         await refrescarConosDisponibles(top.numeroCono || null);
       } else {
@@ -192,25 +192,17 @@ const OrdenesDeTrabajo = () => {
     }
   };
 
-  // ===== Búsqueda por PROFORMA (mejorada) =====
+  // ===== Buscar por proforma =====
   const buscarPorProforma = async (proformaNum, placaUpper) => {
     if (!proformaNum) return null;
+    setCono(''); setWhitelistCono(null);
 
-    // Limpia estado de cono para no arrastrar el anterior
-    setCono('');
-    setWhitelistCono(null);
-
-    // 1) Traer proformas: intenta como número y como string
     let snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', proformaNum)));
-    if (snap.empty) {
-      snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(proformaNum))));
-    }
+    if (snap.empty) snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(proformaNum))));
     if (snap.empty) return null;
 
-    // 2) Ordenar por fecha desc y preferir coincidencia de placa si fue digitada,
-    //    pero SIN descartar el resto
-    let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    docs.sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
+    let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
 
     let p = docs[0];
     if (placaUpper) {
@@ -218,7 +210,6 @@ const OrdenesDeTrabajo = () => {
       if (exact) p = exact;
     }
 
-    // 3) Setear datos base desde la proforma elegida
     const placaDoc = (p.vehiculo?.placa || placaUpper || '').toUpperCase();
     setPlaca(placaDoc);
     setVehiculo({
@@ -230,23 +221,14 @@ const OrdenesDeTrabajo = () => {
     });
     setProformaNumero(String(p.numero ?? proformaNum));
 
-    // 4) Intentar encontrar la OT por número de proforma (independiente de placa),
-    //    probando como número y como string
     let otEncontrada = null;
     try {
       const pfNumber = Number(p.numero ?? proformaNum);
       let snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', pfNumber)));
-      if (snapOT.empty) {
-        snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', String(pfNumber))));
-      }
-
+      if (snapOT.empty) snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', String(pfNumber))));
       if (!snapOT.empty) {
         const list = snapOT.docs.map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => {
-            const ta = a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
-            const tb = b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
-            return tb - ta;
-          });
+          .sort((a, b) => (b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0));
         otEncontrada = list[0];
 
         setOtId(otEncontrada.id);
@@ -266,22 +248,20 @@ const OrdenesDeTrabajo = () => {
           }));
         }
 
+        setMaterialesDesdeOT(otEncontrada);
         await refrescarConosDisponibles(otEncontrada?.numeroCono || null);
       }
     } catch (err) {
       console.error('Error buscando OT por proforma:', err);
     }
 
-    // 5) Si NO hubo OT por proforma y sí tenemos placa, caer a la última OT por placa (preserva proforma en pantalla)
     if (!otEncontrada && placaDoc) {
       await loadUltimaOT(placaDoc, { preserveProforma: true });
       if (!otId) setWhitelistCono(null);
     }
 
-    // 6) Reparaciones desde la proforma
     setReparacionesDesdeProforma(p);
 
-    // 7) Si no hubo OT, refrescar lista de conos sin "actual"
     if (!otEncontrada) {
       setWhitelistCono(null);
       await refrescarConosDisponibles(null);
@@ -290,25 +270,16 @@ const OrdenesDeTrabajo = () => {
     return p;
   };
 
-  // ===== Búsqueda por PLACA =====
+  // ===== Buscar por placa =====
   async function buscarPorPlaca(placaUpper) {
     if (!placaUpper) return null;
-
-    // Limpia estado de cono para no arrastrar el anterior
-    setCono('');
-    setWhitelistCono(null);
+    setCono(''); setWhitelistCono(null);
 
     let snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('placa', '==', placaUpper)));
-    if (snapOT.empty) {
-      snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('vehiculo.placa', '==', placaUpper)));
-    }
+    if (snapOT.empty) snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('vehiculo.placa', '==', placaUpper)));
     if (!snapOT.empty) {
       const list = snapOT.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => {
-          const ta = a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
-          const tb = b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
-          return tb - ta;
-        });
+        .sort((a, b) => (b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0));
       const ot = list[0];
 
       setOtId(ot.id);
@@ -324,17 +295,14 @@ const OrdenesDeTrabajo = () => {
       });
       if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
       setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
+      setMaterialesDesdeOT(ot);
 
       await refrescarConosDisponibles(ot.numeroCono || null);
       return { origen: 'ot' };
     }
 
     const snapPro = await getDocs(query(collection(db, 'proformas'), where('vehiculo.placa', '==', placaUpper)));
-    if (snapPro.empty) {
-      setWhitelistCono(null);
-      await refrescarConosDisponibles(null);
-      return null;
-    }
+    if (snapPro.empty) { setWhitelistCono(null); await refrescarConosDisponibles(null); return null; }
 
     const proformas = snapPro.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
@@ -342,9 +310,7 @@ const OrdenesDeTrabajo = () => {
 
     const pfNumber = Number(p.numero);
     let snapOT2 = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', pfNumber)));
-    if (snapOT2.empty) {
-      snapOT2 = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', String(pfNumber))));
-    }
+    if (snapOT2.empty) snapOT2 = await getDocs(query(collection(db, 'ordenes_trabajo'), where('proformaNumero', '==', String(pfNumber))));
     if (snapOT2.empty) {
       setPlaca(placaUpper);
       setVehiculo({
@@ -356,43 +322,30 @@ const OrdenesDeTrabajo = () => {
       });
       setProformaNumero(String(p.numero || ''));
       setReparacionesDesdeProforma(p);
-
+      setMateriales([]);
       setWhitelistCono(null);
       await refrescarConosDisponibles(null);
       return { origen: 'proforma' };
     }
 
     const list2 = snapOT2.docs.map(d => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => {
-        const ta = a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
-        const tb = b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
-        return tb - ta;
-      });
+      .sort((a, b) => (b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0));
     const ot = list2[0];
 
     const needsBackfill = !ot.placa && !ot.vehiculo?.placa;
     if (needsBackfill) {
       const otRef = doc(db, 'ordenes_trabajo', ot.id);
-      const updatePayload = {
+      const payload = {
         placa: placaUpper,
         'vehiculo.placa': placaUpper,
         updatedAt: serverTimestamp(),
       };
-      if (!ot.vehiculo?.marca && p.vehiculo?.marca) updatePayload['vehiculo.marca'] = p.vehiculo.marca;
-      if (!ot.vehiculo?.modelo && p.vehiculo?.modelo) updatePayload['vehiculo.modelo'] = p.vehiculo.modelo;
-      if (!ot.vehiculo?.anio && (p.vehiculo?.anio || p.vehiculo?.ano)) updatePayload['vehiculo.anio'] = p.vehiculo.anio || p.vehiculo.ano;
-      if (!ot.vehiculo?.color && p.vehiculo?.color) updatePayload['vehiculo.color'] = p.vehiculo.color;
-
-      await updateDoc(otRef, updatePayload);
+      if (!ot.vehiculo?.marca && p.vehiculo?.marca) payload['vehiculo.marca'] = p.vehiculo.marca;
+      if (!ot.vehiculo?.modelo && p.vehiculo?.modelo) payload['vehiculo.modelo'] = p.vehiculo.modelo;
+      if (!ot.vehiculo?.anio && (p.vehiculo?.anio || p.vehiculo?.ano)) payload['vehiculo.anio'] = p.vehiculo.anio || p.vehiculo.ano;
+      if (!ot.vehiculo?.color && p.vehiculo?.color) payload['vehiculo.color'] = p.vehiculo.color;
+      await updateDoc(otRef, payload);
       ot.placa = placaUpper;
-      ot.vehiculo = {
-        ...(ot.vehiculo || {}),
-        placa: placaUpper,
-        marca: ot.vehiculo?.marca || p.vehiculo?.marca || '',
-        modelo: ot.vehiculo?.modelo || p.vehiculo?.modelo || '',
-        anio: ot.vehiculo?.anio || p.vehiculo?.anio || p.vehiculo?.ano || '',
-        color: ot.vehiculo?.color || p.vehiculo?.color || '',
-      };
     }
 
     setOtId(ot.id);
@@ -408,19 +361,17 @@ const OrdenesDeTrabajo = () => {
     });
     if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
     setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
+    setMaterialesDesdeOT(ot);
 
     await refrescarConosDisponibles(ot.numeroCono || null);
     return { origen: 'otPorProforma' };
   }
 
-  // ===== Búsqueda por CONO asignado (OT abierta) =====
+  // ===== Buscar por cono =====
   const buscarPorCono = async (valorCono) => {
     const raw = String(valorCono ?? '').trim();
     if (!raw) return null;
-
-    // Limpia estado de cono para no arrastrar el anterior
-    setCono('');
-    setWhitelistCono(null);
+    setCono(''); setWhitelistCono(null);
 
     const intentos = [];
     const n = Number(raw);
@@ -430,24 +381,15 @@ const OrdenesDeTrabajo = () => {
     let ot = null;
     for (const v of intentos) {
       const snap = await getDocs(
-        query(
-          collection(db, 'ordenes_trabajo'),
-          where('estado', '==', 'abierta'),
-          where('numeroCono', '==', v)
-        )
+        query(collection(db, 'ordenes_trabajo'), where('estado', '==', 'abierta'), where('numeroCono', '==', v))
       );
       if (!snap.empty) {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => {
-            const ta = a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
-            const tb = b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
-            return tb - ta;
-          });
+          .sort((a, b) => (b.updatedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0));
         ot = list[0];
         break;
       }
     }
-
     if (!ot) return null;
 
     setOtId(ot.id);
@@ -464,15 +406,14 @@ const OrdenesDeTrabajo = () => {
       color: ot.vehiculo?.color || '',
     });
     if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
-    setReparaciones(Array.isArray(ot.reparaciones)
-      ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) }))
-      : []);
+    setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
+    setMaterialesDesdeOT(ot);
 
     await refrescarConosDisponibles(ot.numeroCono || null);
     return { origen: 'otPorCono' };
   };
 
-  // ===== Botón Cargar datos =====
+  // ===== Cargar datos =====
   const cargarDatos = async () => {
     const placaUpper = (placa || '').replace(/\s+/g, '').toUpperCase();
     const pfStr = (proformaNumero || '').trim();
@@ -484,12 +425,7 @@ const OrdenesDeTrabajo = () => {
       return;
     }
 
-    // Limpieza previa para evitar que queden restos de la OT anterior
-    setOtId(null);
-    setCono('');
-    setVehiculo(null);
-    setReparaciones([]);
-    setWhitelistCono(null);
+    setOtId(null); setCono(''); setVehiculo(null); setReparaciones([]); setMateriales([]); setWhitelistCono(null);
 
     setLoadingVehiculo(true);
     try {
@@ -500,8 +436,7 @@ const OrdenesDeTrabajo = () => {
         if (!found && coneStr) found = await buscarPorCono(coneStr);
 
         if (!found) {
-          setVehiculo(null); setOtId(null); setReparaciones([]);
-          setWhitelistCono(null);
+          setVehiculo(null); setOtId(null); setReparaciones([]); setMateriales([]); setWhitelistCono(null);
           toast.info('No se encontraron datos con los criterios ingresados.', { autoClose: 2200, hideProgressBar: true });
           await refrescarConosDisponibles(null);
         }
@@ -514,9 +449,7 @@ const OrdenesDeTrabajo = () => {
     }
   };
 
-  const onEnterBuscar = (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); cargarDatos(); }
-  };
+  const onEnterBuscar = (e) => { if (e.key === 'Enter') { e.preventDefault(); cargarDatos(); } };
 
   // ===== Reparaciones =====
   const agregarReparacion = () => {
@@ -525,7 +458,6 @@ const OrdenesDeTrabajo = () => {
     setReparaciones(prev => [{ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, texto }, ...prev]);
     setReparacion('');
   };
-
   const iniciarEdicion = (item) => { setEditingId(item.id); setEditingText(item.texto); };
   const guardarEdicion = () => {
     const texto = (editingText || '').trim(); if (!texto) return;
@@ -539,32 +471,14 @@ const OrdenesDeTrabajo = () => {
         <div className="toast-confirm-container">
           <p className="toast-confirm-message">¿Estás seguro de eliminar esta reparación?</p>
           <div className="toast-confirm-buttons">
-            <button
-              className="btn-confirm eliminar"
-              onClick={async () => {
-                await confirmarEliminarReparacion(id);
-                closeToast();
-              }}
-            >
+            <button className="btn-confirm eliminar" onClick={async () => { await confirmarEliminarReparacion(id); closeToast(); }}>
               Eliminar
             </button>
-            <button
-              className="btn-confirm cancelar"
-              onClick={closeToast}
-            >
-              Cancelar
-            </button>
+            <button className="btn-confirm cancelar" onClick={closeToast}>Cancelar</button>
           </div>
         </div>
       ),
-      {
-        autoClose: false,
-        closeOnClick: false,
-        draggable: false,
-        closeButton: false,
-        containerId: 'center-toast',
-        className: 'toast-confirm-wrapper'
-      }
+      { autoClose: false, closeOnClick: false, draggable: false, closeButton: false, containerId: 'center-toast', className: 'toast-confirm-wrapper' }
     );
   };
 
@@ -572,21 +486,14 @@ const OrdenesDeTrabajo = () => {
   const puedeGuardarOT = !!vehiculo && cono.trim() && reparaciones.length > 0;
 
   const guardarOT = async () => {
-    if (!puedeGuardarOT) {
-      toast.info('Completa los datos: vehículo, número de cono y al menos una reparación.');
-      return;
-    }
+    if (!puedeGuardarOT) { toast.info('Completa los datos: vehículo, número de cono y al menos una reparación.'); return; }
     const user = auth?.currentUser;
     const placaNorm = (vehiculo?.placa || placa).replace(/\s+/g, '').toUpperCase();
     const conoSel = (cono || '').trim();
 
     try {
       const conflictSnap = await getDocs(
-        query(
-          collection(db, 'ordenes_trabajo'),
-          where('estado', '==', 'abierta'),
-          where('numeroCono', '==', conoSel)
-        )
+        query(collection(db, 'ordenes_trabajo'), where('estado', '==', 'abierta'), where('numeroCono', '==', conoSel))
       );
       const conflicts = conflictSnap.docs.filter(d => d.id !== otId);
       if (conflicts.length > 0) {
@@ -595,9 +502,7 @@ const OrdenesDeTrabajo = () => {
         await refrescarConosDisponibles(otId ? conoSel : null);
         return;
       }
-    } catch (e) {
-      console.error('Error validando cono:', e);
-    }
+    } catch (e) { console.error('Error validando cono:', e); }
 
     const payload = {
       placa: placaNorm,
@@ -611,6 +516,7 @@ const OrdenesDeTrabajo = () => {
       },
       numeroCono: toConoNum(conoSel) ?? conoSel,
       reparaciones: reparaciones.map(r => ({ texto: r.texto })),
+      materiales: materiales.map(m => ({ invId: m.invId, codigo: m.codigo, descripcion: m.descripcion, cantidad: Number(m.cantidad) || 0 })),
       estado: 'abierta',
       proformaNumero: proformaNumero ? Number(proformaNumero) : null,
       updatedAt: serverTimestamp(),
@@ -646,7 +552,7 @@ const OrdenesDeTrabajo = () => {
     setPlaca(''); setProformaNumero(''); setConoBuscar('');
     setVehiculo(null); setCono(''); setReparacion('');
     setReparaciones([]); setEditingId(null); setEditingText(''); setOtId(null);
-    setWhitelistCono(null);
+    setMateriales([]); setWhitelistCono(null);
     refrescarConosDisponibles(null);
   };
 
@@ -658,31 +564,21 @@ const OrdenesDeTrabajo = () => {
     }, 'Eliminando reparación…');
   };
 
-  // ===== Finalizar Orden con modal bonito =====
+  // ===== Finalizar =====
   const finalizarOrden = () => {
-    if (!otId) {
-      toast.info('Primero guarda la orden para poder finalizarla.');
-      return;
-    }
+    if (!otId) { toast.info('Primero guarda la orden para poder finalizarla.'); return; }
     setShowFinishConfirm(true);
   };
-
   const finalizarOrdenConfirmada = async () => {
     if (!otId) return;
     setFinalizando(true);
     try {
       await withLoading(async () => {
-        await updateDoc(doc(db, 'ordenes_trabajo', otId), {
-          estado: 'finalizada',
-          numeroCono: null,
-          updatedAt: serverTimestamp()
-        });
+        await updateDoc(doc(db, 'ordenes_trabajo', otId), { estado: 'finalizada', numeroCono: null, updatedAt: serverTimestamp() });
       }, 'Finalizando orden…');
-
       toast.success('Orden finalizada. Cono liberado.');
       setShowFinishConfirm(false);
       setFinalizando(false);
-      // limpiar todo al finalizar
       limpiar();
     } catch (e) {
       console.error('No se pudo finalizar la orden:', e);
@@ -695,16 +591,78 @@ const OrdenesDeTrabajo = () => {
   const saveDisabled = !vehiculo || faltaCono || reparaciones.length === 0;
   const printDisabled = !vehiculo || faltaCono || reparaciones.length === 0;
 
+  // ===== Picker de Inventario =====
+  const openPicker = async () => {
+    if (!vehiculo || !otId) { toast.info('Guarda la orden primero para poder agregar materiales.'); return; }
+    try {
+      setPickerBusy(true);
+      const snap = await getDocs(query(collection(db, 'inventario'), orderBy('codigo')));
+      setInventarioList(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setPickerSearch(''); setSelectedInv(null); setQtyInput('1'); setPickerPage(1);
+      setShowPicker(true);
+    } catch (e) {
+      console.error(e);
+      toast.error('No se pudo cargar el inventario.');
+    } finally {
+      setPickerBusy(false);
+    }
+  };
+
+  const filteredInv = inventarioList.filter(it => {
+    const s = pickerSearch.trim().toLowerCase();
+    if (!s) return true;
+    return String(it.codigo || '').toLowerCase().includes(s) || String(it.descripcion || '').toLowerCase().includes(s);
+  });
+  const invLast = pickerPage * pickerPerPage;
+  const pickerRows = filteredInv.slice(invLast - pickerPerPage, invLast);
+
+  const selectInv = (row) => { setSelectedInv(row); setQtyInput('1'); };
+
+  const confirmarMaterial = async () => {
+    if (!selectedInv) return;
+    const cantDisp = Number(selectedInv.cantidad) || 0;
+    const qty = Math.floor(Number(qtyInput) || 0);
+
+    if (qty <= 0) { toast.warn('Ingrese una cantidad válida (entera y mayor a 0).'); return; }
+    if (qty > cantDisp) { toast.warn('No hay suficiente inventario para esa cantidad.'); return; }
+
+    try {
+      setPickerBusy(true);
+      await updateDoc(doc(db, 'inventario', selectedInv.id), {
+        cantidad: increment(-qty),
+        updatedAt: serverTimestamp(),
+      });
+
+      const nuevo = {
+        invId: selectedInv.id,
+        codigo: selectedInv.codigo || '',
+        descripcion: selectedInv.descripcion || '',
+        cantidad: qty,
+      };
+      const nuevosMateriales = [...materiales, nuevo];
+
+      await updateDoc(doc(db, 'ordenes_trabajo', otId), {
+        materiales: nuevosMateriales,
+        updatedAt: serverTimestamp(),
+      });
+
+      setMateriales(nuevosMateriales);
+      setInventarioList(prev => prev.map(it => it.id === selectedInv.id ? { ...it, cantidad: cantDisp - qty } : it));
+      toast.success('Material agregado y stock actualizado.');
+      setShowPicker(false);
+    } catch (e) {
+      console.error('No se pudo agregar el material:', e);
+      toast.error('Error al agregar material.');
+    } finally {
+      setPickerBusy(false);
+    }
+  };
+
   return (
     <div className="ordenesTrabajo-proforma-page">
       <div className="ot-wrapper">
-        <ToastContainer
-          enableMultiContainer
-          containerId="center-toast"
-          className="center-toast-container"
-          newestOnTop
-          closeOnClick={false}
-        />
+        <ToastContainer enableMultiContainer containerId="center-toast" className="center-toast-container" newestOnTop closeOnClick={false} />
+
         <header className="ot-header">
           <div className="ot-header-icon"><FaCar /></div>
           <div>
@@ -713,6 +671,7 @@ const OrdenesDeTrabajo = () => {
           </div>
         </header>
 
+        {/* ===== Grid búsqueda / datos ===== */}
         <div className="ot-grid">
           <section className="card card--span2">
             <div className="card-header">
@@ -726,31 +685,22 @@ const OrdenesDeTrabajo = () => {
                   <div className="input-icon">
                     <FaSearch className="icon-left" />
                     <input
-                      id="placa"
-                      placeholder="Ej: ABC123"
-                      value={placa}
+                      id="placa" placeholder="Ej: ABC123" value={placa}
                       onChange={(e) => setPlaca(e.target.value.toUpperCase())}
-                      onKeyDown={onEnterBuscar}
-                      disabled={loadingVehiculo}
+                      onKeyDown={onEnterBuscar} disabled={loadingVehiculo}
                     />
                     {loadingVehiculo && <div className="spinner" />}
                   </div>
                 </div>
 
-                {/* Buscar por Nº de Cono */}
                 <div className="field" style={{ maxWidth: 160 }}>
                   <label htmlFor="conoBuscar">Nº Cono (asignado)</label>
                   <div className="input-icon">
                     <FaHashtag className="icon-left" />
                     <input
-                      id="conoBuscar"
-                      inputMode="numeric"
-                      pattern="\d*"
-                      placeholder="Ej: 27"
-                      value={conoBuscar}
-                      onChange={(e) => setConoBuscar(e.target.value.replace(/[^\d]/g, ''))}
-                      onKeyDown={onEnterBuscar}
-                      disabled={loadingVehiculo}
+                      id="conoBuscar" inputMode="numeric" pattern="\d*" placeholder="Ej: 27"
+                      value={conoBuscar} onChange={(e) => setConoBuscar(e.target.value.replace(/[^\d]/g, ''))}
+                      onKeyDown={onEnterBuscar} disabled={loadingVehiculo}
                     />
                   </div>
                 </div>
@@ -758,14 +708,9 @@ const OrdenesDeTrabajo = () => {
                 <div className="field" style={{ maxWidth: 200 }}>
                   <label htmlFor="proforma">Nº Proforma</label>
                   <input
-                    id="proforma"
-                    inputMode="numeric"
-                    pattern="\d*"
-                    placeholder="Ej: 1024"
-                    value={proformaNumero}
-                    onChange={(e) => setProformaNumero(e.target.value.replace(/[^\d]/g, ''))}
-                    onKeyDown={onEnterBuscar}
-                    disabled={loadingVehiculo}
+                    id="proforma" inputMode="numeric" pattern="\d*" placeholder="Ej: 1024"
+                    value={proformaNumero} onChange={(e) => setProformaNumero(e.target.value.replace(/[^\d]/g, ''))}
+                    onKeyDown={onEnterBuscar} disabled={loadingVehiculo}
                   />
                 </div>
 
@@ -798,15 +743,12 @@ const OrdenesDeTrabajo = () => {
                 <div className="input-icon">
                   <FaHashtag className="icon-left" />
                   <select
-                    id="cono"
-                    value={cono}
+                    id="cono" value={cono}
                     onChange={(e) => { setCono(e.target.value); setWhitelistCono(e.target.value || null); }}
                     onFocus={() => { setWhitelistCono(cono || null); refrescarConosDisponibles(cono || null); }}
                   >
                     <option value="">Seleccione un cono…</option>
-                    {conosDisponibles.map(n => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
+                    {conosDisponibles.map(n => (<option key={n} value={n}>{n}</option>))}
                   </select>
                 </div>
               </div>
@@ -821,12 +763,9 @@ const OrdenesDeTrabajo = () => {
               <div className="field">
                 <label htmlFor="reparacion">Reparación</label>
                 <textarea
-                  id="reparacion"
-                  placeholder="Describe la reparación a realizar"
-                  value={reparacion}
-                  onChange={(e) => setReparacion(e.target.value)}
-                  disabled={!vehiculo}
-                  rows={4}
+                  id="reparacion" placeholder="Describe la reparación a realizar"
+                  value={reparacion} onChange={(e) => setReparacion(e.target.value)}
+                  disabled={!vehiculo} rows={4}
                 />
                 <div className="actions-right">
                   <button type="button" className="btn btn--sm" onClick={agregarReparacion} disabled={!vehiculo || !reparacion.trim()}>
@@ -838,6 +777,7 @@ const OrdenesDeTrabajo = () => {
           </section>
         </div>
 
+        {/* ===== Reparaciones ===== */}
         <section className="card">
           <div className="card-header">
             <h3>Reparaciones</h3>
@@ -846,11 +786,13 @@ const OrdenesDeTrabajo = () => {
           <div className="card-body">
             <table className="tabla">
               <thead>
-                <th style={{ width: 80 }}>#</th>
-                <th>Descripción</th>
-                <th className="th-actions">
-                  <span className="th-actions-text">Acciones</span>
-                </th>
+                <tr>
+                  <th style={{ width: 80 }}>#</th>
+                  <th>Descripción</th>
+                  <th className="th-actions">
+                    <span className="th-actions-text">Acciones</span>
+                  </th>
+                </tr>
               </thead>
               <tbody>
                 {reparaciones.length === 0 && (
@@ -884,6 +826,44 @@ const OrdenesDeTrabajo = () => {
           </div>
         </section>
 
+        {/* ===== Materiales utilizados ===== */}
+        <section className="card">
+          <div className="card-header">
+            <h3>Materiales utilizados</h3>
+            <p>Selecciona productos del inventario y descuéntalos del stock.</p>
+          </div>
+          <div className="card-body">
+            <div className="actions-right" style={{ marginBottom: 10 }}>
+              <button type="button" className="btn btn--sm" onClick={openPicker} disabled={!vehiculo || !otId}>
+                <FaBoxOpen /> Agregar material
+              </button>
+            </div>
+
+            <table className="tabla">
+              <thead>
+                <tr>
+                  <th style={{ width: 140 }}>Código</th>
+                  <th>Descripción</th>
+                  <th style={{ width: 140 }} className="is-right">Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materiales.length === 0 && (
+                  <tr><td colSpan={3} className="table-empty">No hay materiales registrados.</td></tr>
+                )}
+                {materiales.map((m, idx) => (
+                  <tr key={`${m.invId}-${idx}`}>
+                    <td className="mono">{m.codigo}</td>
+                    <td>{m.descripcion}</td>
+                    <td className="is-right">{formatInt(m.cantidad)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ===== Footer ===== */}
         <div className="footer-actions no-print">
           <button className="btn btn--ghost btn--sm" onClick={limpiar}>Limpiar</button>
 
@@ -899,33 +879,20 @@ const OrdenesDeTrabajo = () => {
             </button>
           </span>
 
-          <button
-            className="btn btn--danger btn--sm"
-            onClick={finalizarOrden}
-            disabled={!otId || !vehiculo || !cono.trim()}
-          >
+          <button className="btn btn--danger btn--sm" onClick={finalizarOrden} disabled={!otId || !vehiculo || !cono.trim()}>
             Finalizar Orden
           </button>
         </div>
 
-        {/* ===== Modal de confirmación "Finalizar orden" ===== */}
+        {/* ===== Modal Finalizar ===== */}
         {showFinishConfirm && (
-          <div
-            className="modal-backdrop"
-            onClick={(e) => { if (e.target === e.currentTarget && !finalizando) setShowFinishConfirm(false); }}
-          >
+          <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget && !finalizando) setShowFinishConfirm(false); }}>
             <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="finish-title">
-              <div className="modal-icon danger">
-                <FaExclamationTriangle />
-              </div>
+              <div className="modal-icon danger"><FaExclamationTriangle /></div>
               <h4 id="finish-title" className="modal-title">Finalizar orden</h4>
-              <p className="modal-text">
-                ¿Deseas finalizar esta orden? El <strong>cono {cono || '—'}</strong> quedará liberado.
-              </p>
+              <p className="modal-text">¿Deseas finalizar esta orden? El <strong>cono {cono || '—'}</strong> quedará liberado.</p>
               <div className="modal-actions">
-                <button className="btn btn--ghost" onClick={() => setShowFinishConfirm(false)} disabled={finalizando}>
-                  Cancelar
-                </button>
+                <button className="btn btn--ghost" onClick={() => setShowFinishConfirm(false)} disabled={finalizando}>Cancelar</button>
                 <button className="btn btn--danger" onClick={finalizarOrdenConfirmada} disabled={finalizando}>
                   {finalizando ? 'Finalizando…' : 'Finalizar orden'}
                 </button>
@@ -934,7 +901,99 @@ const OrdenesDeTrabajo = () => {
           </div>
         )}
 
-        {/* ======= Vista para imprimir ======= */}
+        {/* ===== Modal Picker Inventario ===== */}
+        {showPicker && (
+          <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget && !pickerBusy) setShowPicker(false); }}>
+            <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+              <div className="modal-icon"><FaBoxOpen /></div>
+              <h4 id="picker-title" className="modal-title">Agregar material del inventario</h4>
+
+              {/* buscador */}
+              <div className="picker-search">
+                <FaSearch />
+                <input
+                  placeholder="Buscar por código o descripción…"
+                  value={pickerSearch}
+                  onChange={(e) => { setPickerSearch(e.target.value); setPickerPage(1); }}
+                  disabled={pickerBusy}
+                />
+              </div>
+
+              <div className="picker-meta">
+                {filteredInv.length} resultado{filteredInv.length !== 1 ? 's' : ''}
+              </div>
+
+              <div className="picker-table-wrap">
+                <table className="picker-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 140 }}>Código</th>
+                      <th>Descripción</th>
+                      <th className="is-center" style={{ width: 120 }}>Disponible</th>
+                      <th className="is-center" style={{ width: 110 }}>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pickerRows.length === 0 && (
+                      <tr><td colSpan={4} className="table-empty">Sin resultados</td></tr>
+                    )}
+                    {pickerRows.map((it) => {
+                      const zero = (Number(it.cantidad) || 0) <= 0;
+                      const selected = selectedInv?.id === it.id;
+                      return (
+                        <tr key={it.id} className={`${selected ? 'is-selected' : ''} ${zero ? 'is-zero' : ''}`}>
+                          <td className="mono">{it.codigo}</td>
+                          <td>{it.descripcion}</td>
+                          <td className="is-center">{formatInt(it.cantidad)}</td>
+                          <td className="is-center">
+                            <button
+                              className="btn-pill"
+                              onClick={() => !zero && selectInv(it)}
+                              disabled={pickerBusy || zero}
+                            >
+                              Usar
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Paginación del picker */}
+              <div className="picker-pagination">
+                <Pagination
+                  currentPage={pickerPage}
+                  totalItems={filteredInv.length}
+                  itemsPerPage={pickerPerPage}
+                  onPageChange={(p) => !pickerBusy && setPickerPage(p)}
+                />
+              </div>
+
+              {/* Cantidad y confirmación */}
+              <div className="picker-qty-row">
+                <label>
+                  Cantidad a usar
+                  <input
+                    type="number" min="1" step="1"
+                    value={qtyInput}
+                    onChange={(e) => setQtyInput(e.target.value.replace(/[^\d]/g, ''))}
+                    disabled={pickerBusy || !selectedInv}
+                  />
+                </label>
+                <div className="modal-actions">
+                  <button className="btn btn--ghost" onClick={() => setShowPicker(false)} disabled={pickerBusy}>Cancelar</button>
+                  <button className="btn" onClick={confirmarMaterial} disabled={pickerBusy || !selectedInv}>
+                    {pickerBusy ? 'Agregando…' : 'Agregar material'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== Plantilla impresión ===== */}
         <div id="ot-print" className="ot-print">
           <div className="otp-header">
             <div className="otp-left">
