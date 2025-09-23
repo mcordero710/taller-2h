@@ -13,6 +13,7 @@ import EditarProforma from './pages/EditarProforma';
 import DetalleProforma from './pages/DetalleProforma';
 import Factura from './pages/Factura';
 import OrdenesDeTrabajo from './pages/OrdenesDeTrabajo';
+import Inventario from './pages/Inventario';
 
 import { LoadingProvider } from './components/ui/LoadingContext';
 import './components/ui/Loader.css';
@@ -52,6 +53,7 @@ root.render(
           <Route path="detalle-proforma" element={<DetalleProforma />} />
           <Route path="factura" element={<Factura />} />
           <Route path="ordenes" element={<OrdenesDeTrabajo />} />
+          <Route path="inventario" element={<Inventario />} />
         </Route>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
