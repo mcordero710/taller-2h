@@ -100,7 +100,7 @@ const Inventario = () => {
         );
 
         return () => unsub();
-    }, [show, hide, db]);
+    }, [show, hide]);
 
     // ===== Filtro + orden + paginación =====
     const filtered = useMemo(() => {
