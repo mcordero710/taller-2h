@@ -123,12 +123,12 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
 }
 
-/* ===== NUEVO: estilos del select de conos ===== */
+/* ===== select de conos ===== */
 .input-icon select {
   width: 100%;
   border: 1px solid #e5e7eb;
   padding: 10px 12px 10px 36px;
-  /* deja espacio para el ícono */
+  /* espacio para el ícono */
   border-radius: 10px;
   outline: none;
   background: #fff;
@@ -236,7 +236,8 @@ textarea:focus {
   border-radius: 12px;
 }
 
-.btn-icon {
+/* --- Scoped icon buttons (evita choque con otras páginas) --- */
+.ordenesTrabajo-proforma-page .btn-icon {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -244,26 +245,29 @@ textarea:focus {
   display: inline-grid;
   place-items: center;
   line-height: 0;
-}
-
-.btn-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.btn-icon--ghost {
   background: #fff;
   color: #111827;
   border: 1px solid #e5e7eb;
 }
 
-.btn-icon--danger {
+.ordenesTrabajo-proforma-page .btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ordenesTrabajo-proforma-page .btn-icon--ghost {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.ordenesTrabajo-proforma-page .btn-icon--danger {
   background: #ef4444;
   border-color: #ef4444;
   color: #fff;
 }
 
-/* ===== NUEVO: botón de finalizar ===== */
+/* ===== botón de finalizar ===== */
 .btn--danger {
   background: #ef4444;
   border-color: #ef4444;
@@ -311,6 +315,11 @@ textarea:focus {
   color: #374151;
   padding: 10px 12px;
   border-bottom: 1px solid #eef2f7;
+}
+
+/* asegura centrado de encabezados con class is-center */
+.tabla thead th.is-center {
+  text-align: center;
 }
 
 .tabla thead th.th-actions {
@@ -564,7 +573,6 @@ textarea:focus {
     position: fixed !important;
     inset: 0 !important;
     padding: 0.30in 0.5in 0.45in !important;
-    /* top reducido */
     width: auto !important;
     height: auto !important;
     z-index: 999999 !important;
@@ -704,7 +712,7 @@ textarea:focus {
   gap: 8px;
 }
 
-/* Botón de acción peligrosa (coincide con el que usas en el footer) */
+/* Botón de acción peligrosa */
 .btn--danger {
   background: #ef4444;
   border-color: #ef4444;
@@ -716,7 +724,7 @@ textarea:focus {
   cursor: not-allowed;
 }
 
-/* Estilo básico para select dentro de .input-icon */
+/* Estilo select en .input-icon (duplicado a propósito por claridad de scope) */
 .input-icon select {
   width: 100%;
   border: 1px solid #e5e7eb;
@@ -732,7 +740,7 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
 }
 
-/* ============ NUEVO: estilos picker inventario ============ */
+/* ============ picker inventario ============ */
 .picker-search {
   position: relative;
   display: flex;
@@ -788,6 +796,7 @@ textarea:focus {
   background: #f1f5ff;
 }
 
+/* helpers */
 .is-right {
   text-align: right;
 }
@@ -800,6 +809,7 @@ textarea:focus {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
+/* Cantidad + acciones del picker */
 .picker-qty-row {
   display: flex;
   align-items: center;
@@ -828,9 +838,7 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
 }
 
-/* ...todo tu CSS existente se mantiene tal cual... */
-
-/* ===== picker inventario (estilo figma) ===== */
+/* ===== estilo figma compacto ===== */
 .picker-search {
   position: relative;
   display: flex;
@@ -901,26 +909,15 @@ textarea:focus {
   margin: 8px 0 10px;
 }
 
-/* helpers */
-.is-right {
-  text-align: right;
-}
-
-.is-center {
-  text-align: center;
-}
-
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-}
-
-/* Botón “pill” para acciones pequeñas del modal */
+/* Botón pill pequeño */
 .btn-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 14px;
-  min-height: 32px;
+  padding: 6px 12px;
+  /* compacto */
+  min-height: 28px;
+  font-size: 13px;
   border-radius: 999px;
   background: #0f172a;
   color: #fff;
@@ -938,96 +935,39 @@ textarea:focus {
   cursor: not-allowed;
 }
 
-/* ===== cantidad + acciones del picker ===== */
-.picker-qty-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 12px;
-  justify-content: space-between;
-}
-
-.picker-qty-row label {
-  font-size: 13px;
-  color: #374151;
-  display: grid;
-  gap: 6px;
-}
-
-.picker-qty-row input {
-  width: 160px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 10px 12px;
-  outline: none;
-  background: #fff;
-}
-
-.picker-qty-row input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
-}
-
-
-/* ===== Compactar botones del modal de inventario ===== */
-
-/* Botón "Usar" (píldora) más pequeño */
-.btn-pill {
-  padding: 6px 12px;
-  /* antes 8px 14px */
-  min-height: 28px;
-  /* antes 32px */
-  font-size: 13px;
-  /* antes 14px */
-  border-radius: 999px;
-}
-
-/* Botones del footer del modal (Cancelar / Agregar material) más chicos */
-.modal-card .btn {
-  min-height: 34px;
-  /* antes 40px por .btn global */
-  padding: 8px 12px;
-  /* antes 10px 14px */
-  font-size: 13px;
-  /* antes 14px aprox por herencia */
-  border-radius: 10px;
-}
-
-.modal-card .btn--ghost {
-  padding: 8px 12px;
-}
-
-/* (Opcional) un poco menos de alto en filas para que todo respire mejor */
-.picker-table thead th {
-  padding: 8px 10px;
-}
-
-.picker-table tbody td {
-  padding: 8px 10px;
-}
-
-
-/* Centrado seguro en la tabla del picker */
+/* Centrado seguro + números tabulares */
 .picker-table th.is-center,
 .picker-table td.is-center {
   text-align: center;
 }
 
-/* Números con ancho uniforme y centrados en la columna */
 .picker-table td.is-center,
 .picker-table td.numeric {
   font-variant-numeric: tabular-nums;
 }
 
-/* Input "Cantidad a usar" centrado */
 .picker-qty-row input {
   text-align: center;
-  /* 👈 centrado */
   font-variant-numeric: tabular-nums;
-  /* números parejos */
 }
 
-/* Asegura que el encabezado se centre aun con la regla .tabla thead th { text-align: left } */
+/* Asegura que el encabezado se centre aun con .tabla thead th { text-align:left } */
 .tabla thead th.is-center {
   text-align: center;
+}
+
+/* --- Forzar rojo del botón eliminar en Órdenes (anti-colisión) --- */
+.ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+}
+
+.ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger:hover,
+.ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger:focus-visible {
+  filter: brightness(1.05);
+}
+
+.ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger svg {
+  color: #fff !important;
 }

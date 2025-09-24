@@ -143,11 +143,11 @@ const OrdenesDeTrabajo = () => {
   const setMaterialesDesdeOT = (ot) => {
     const arr = Array.isArray(ot.materiales)
       ? ot.materiales.map(m => ({
-          invId: m.invId,
-          codigo: m.codigo || '',
-          descripcion: m.descripcion || '',
-          cantidad: Number(m.cantidad) || 0,
-        }))
+        invId: m.invId,
+        codigo: m.codigo || '',
+        descripcion: m.descripcion || '',
+        cantidad: Number(m.cantidad) || 0,
+      }))
       : [];
     setMateriales(arr);
   };
@@ -193,6 +193,7 @@ const OrdenesDeTrabajo = () => {
   };
 
   // ===== Buscar por proforma =====
+  // ===== Buscar por proforma =====
   const buscarPorProforma = async (proformaNum, placaUpper) => {
     if (!proformaNum) return null;
     setCono(''); setWhitelistCono(null);
@@ -200,6 +201,12 @@ const OrdenesDeTrabajo = () => {
     let snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', proformaNum)));
     if (snap.empty) snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(proformaNum))));
     if (snap.empty) return null;
+
+    const convertirFecha = (fechaStr) => {
+      if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
+      const [mes, dia, anio] = fechaStr.split('/');
+      return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
+    };
 
     let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
@@ -221,6 +228,7 @@ const OrdenesDeTrabajo = () => {
     });
     setProformaNumero(String(p.numero ?? proformaNum));
 
+    // ¿Existe una OT para esta proforma?
     let otEncontrada = null;
     try {
       const pfNumber = Number(p.numero ?? proformaNum);
@@ -248,6 +256,15 @@ const OrdenesDeTrabajo = () => {
           }));
         }
 
+        setReparaciones(
+          Array.isArray(otEncontrada.reparaciones)
+            ? otEncontrada.reparaciones.map((r, i) => ({
+              id: `${otEncontrada.id}-${i}`,
+              texto: (r?.texto ?? String(r)).trim()
+            }))
+            : []
+        );
+
         setMaterialesDesdeOT(otEncontrada);
         await refrescarConosDisponibles(otEncontrada?.numeroCono || null);
       }
@@ -255,16 +272,17 @@ const OrdenesDeTrabajo = () => {
       console.error('Error buscando OT por proforma:', err);
     }
 
-    if (!otEncontrada && placaDoc) {
-      await loadUltimaOT(placaDoc, { preserveProforma: true });
-      if (!otId) setWhitelistCono(null);
-    }
-
-    setReparacionesDesdeProforma(p);
-
+    // Si NO hubo OT, recién ahí cargamos reparaciones desde la proforma
     if (!otEncontrada) {
+      setReparacionesDesdeProforma(p);
       setWhitelistCono(null);
       await refrescarConosDisponibles(null);
+
+      // Si además existe una OT previa por placa, puedes precargar sus datos,
+      // pero conservando reparaciones de la proforma como plantilla:
+      if (placaDoc) {
+        await loadUltimaOT(placaDoc, { preserveProforma: true });
+      }
     }
 
     return p;
