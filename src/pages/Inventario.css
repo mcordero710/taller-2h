@@ -501,3 +501,9 @@
         grid-column: span 1;
     }
 }
+
+/* Campo % más angosto */
+.modal-form .input-percent {
+    max-width: 120px;
+  }
+  
