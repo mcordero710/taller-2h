@@ -870,8 +870,12 @@ textarea:focus {
 
 .picker-table-wrap {
   border: 1px solid #0f172a;
+  /* mismo borde que ya estabas usando */
   border-radius: 12px;
   overflow: hidden;
+  overflow-y: auto;
+  /* más alto para que quepan ~10 filas sin scroll en laptops normales */
+  max-height: clamp(420px, 60vh, 520px);
 }
 
 .picker-table {
