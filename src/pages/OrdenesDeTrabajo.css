@@ -634,15 +634,22 @@ textarea:focus {
 }
 
 /* ===== Modal bonito ===== */
+/* ===== Modal: fondo borroso ===== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.35);
+  /* un poco más claro para que el blur se note */
   display: grid;
   place-items: center;
   z-index: 10000;
   animation: fadeIn .15s ease-out;
+
+  /* Blur (con fallback para Safari) */
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(8px) saturate(120%);
 }
+
 
 @keyframes fadeIn {
   from {
