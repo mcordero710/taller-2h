@@ -971,3 +971,100 @@ textarea:focus {
 .ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger svg {
   color: #fff !important;
 }
+
+/* Encabezado azul para la tabla de Reparaciones */
+.ordenesTrabajo-proforma-page .tabla--bluehead thead th {
+  background: #0f172a;
+  /* mismo azul que el picker */
+  color: #fff;
+  border-bottom-color: #0f172a;
+  /* sin línea gris debajo */
+}
+
+/* (opcional) mejora de contraste en el texto pequeño del header */
+.ordenesTrabajo-proforma-page .tabla--bluehead thead th .th-actions-text {
+  color: #fff;
+}
+
+/* Botón compacto y sin ocupar todo el ancho */
+.btn--auto {
+  width: auto !important;
+  max-width: max-content;
+}
+
+.btn--xs {
+  padding: 6px 10px;
+  /* más pequeño que .btn--sm */
+  min-height: 30px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+/* Asegura que el contenedor no fuerce el botón a estirarse */
+.actions-right--compact {
+  width: 100%;
+  justify-content: flex-end;
+  /* lo mantiene a la derecha */
+}
+
+/* ====== BOTONES COMPACTOS EN EL MODAL DEL PICKER ====== */
+/* Hace chicos los botones del footer (Cancelar / Agregar material) */
+.modal-card .modal-actions .btn {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 32px;
+  /* antes 40px */
+  padding: 6px 10px;
+  /* antes 10px 14px */
+  font-size: 12px;
+  /* antes ~14px */
+  border-radius: 10px;
+  /* un poco más compacto */
+}
+
+.modal-card .modal-actions .btn--ghost {
+  padding: 6px 10px;
+}
+
+/* Botón "Usar" dentro de la tabla del picker, aún más pequeño */
+.picker-table .btn-pill {
+  padding: 4px 10px;
+  /* antes 6px 12px */
+  min-height: 26px;
+  /* antes 28px */
+  font-size: 12px;
+  /* antes 13px */
+}
+
+/* Un poco menos de alto en las filas del picker para acompañar el tamaño de botones */
+.picker-table thead th {
+  padding: 8px 10px;
+}
+
+/* antes 10px 12px */
+.picker-table tbody td {
+  padding: 8px 10px;
+}
+
+/* antes 10px 12px */
+
+/* Contenedor del botón "Agregar material" (en la sección de materiales) */
+.actions-left {
+  display: flex;
+}
+
+.actions-left--compact {
+  justify-content: flex-start;
+}
+
+.btn--auto {
+  width: auto !important;
+  max-width: max-content;
+}
+
+.btn--xs {
+  padding: 6px 10px;
+  min-height: 30px;
+  font-size: 12px;
+  border-radius: 10px;
+}

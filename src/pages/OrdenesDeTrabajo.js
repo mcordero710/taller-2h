@@ -802,7 +802,7 @@ const OrdenesDeTrabajo = () => {
             <p>Se cargan si existe una OT previa para la placa o la OT por cono.</p>
           </div>
           <div className="card-body">
-            <table className="tabla">
+            <table className="tabla tabla--bluehead">
               <thead>
                 <tr>
                   <th style={{ width: 80 }}>#</th>
@@ -851,8 +851,13 @@ const OrdenesDeTrabajo = () => {
             <p>Selecciona productos del inventario y descuéntalos del stock.</p>
           </div>
           <div className="card-body">
-            <div className="actions-right" style={{ marginBottom: 10 }}>
-              <button type="button" className="btn btn--sm" onClick={openPicker} disabled={!vehiculo || !otId}>
+            <div className="actions-left actions-left--compact" style={{ marginBottom: 10 }}>
+              <button
+                type="button"
+                className="btn btn--xs btn--auto"
+                onClick={openPicker}
+                disabled={!vehiculo || !otId}
+              >
                 <FaBoxOpen /> Agregar material
               </button>
             </div>
