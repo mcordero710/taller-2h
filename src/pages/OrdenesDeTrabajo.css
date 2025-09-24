@@ -1026,3 +1026,8 @@ textarea:focus {
   font-variant-numeric: tabular-nums;
   /* números parejos */
 }
+
+/* Asegura que el encabezado se centre aun con la regla .tabla thead th { text-align: left } */
+.tabla thead th.is-center {
+  text-align: center;
+}

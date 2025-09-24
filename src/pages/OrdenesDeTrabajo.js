@@ -844,7 +844,7 @@ const OrdenesDeTrabajo = () => {
                 <tr>
                   <th style={{ width: 140 }}>Código</th>
                   <th>Descripción</th>
-                  <th style={{ width: 140 }} className="is-right">Cantidad</th>
+                  <th style={{ width: 140 }} className="is-center">Cantidad</th>
                 </tr>
               </thead>
               <tbody>
@@ -855,7 +855,7 @@ const OrdenesDeTrabajo = () => {
                   <tr key={`${m.invId}-${idx}`}>
                     <td className="mono">{m.codigo}</td>
                     <td>{m.descripcion}</td>
-                    <td className="is-right">{formatInt(m.cantidad)}</td>
+                    <td className="is-center">{formatInt(m.cantidad)}</td>
                   </tr>
                 ))}
               </tbody>
