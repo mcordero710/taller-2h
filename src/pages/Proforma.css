@@ -263,7 +263,7 @@
 
 .btn-add:focus {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, .3);
 }
 
 /* Tabla estilos */
@@ -291,6 +291,8 @@
 .proforma-tabla tbody td.td-monto {
   text-align: right;
 }
+
+/* pantalla */
 
 .th-acciones {
   width: 64px;
@@ -322,6 +324,8 @@
   text-align: right;
 }
 
+/* pantalla */
+
 .proforma-tabla tbody tr:nth-child(odd) {
   background: #fafafa;
 }
@@ -336,41 +340,101 @@
   box-shadow: 0 0 0 4px rgba(14, 165, 233, .15);
 }
 
-/* Botón icono (eliminar) */
-.btn-icon {
+/* Cabeceras centradas */
+.proforma-tabla thead th.th-desc,
+.proforma-tabla thead th.th-monto {
+  text-align: center !important;
+}
+
+/* === MONTO: derecha en pantalla, CENTRADO en PDF/impresión === */
+@media print {
+
+  .proforma-page .proforma-tabla .td-monto,
+  .proforma-page .proforma-tabla .td-monto input {
+    text-align: center !important;
+  }
+}
+
+.html2pdf__container .proforma-tabla .td-monto,
+.html2pdf__container .proforma-tabla .td-monto input,
+.exporting-pdf .proforma-tabla .td-monto,
+.exporting-pdf .proforma-tabla .td-monto input {
+  text-align: center !important;
+}
+
+/* ===== BOTONES ICONO (scopeado a Proforma) ===== */
+.proforma-page .btn-icon {
   width: 28px;
   height: 28px;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  padding: 0;
   border: 1px solid #e5e7eb;
   background: #fff;
   border-radius: 10px;
   cursor: pointer;
   transition: transform .06s, filter .15s, background .15s, color .15s, border-color .15s;
   font-weight: 700;
+  box-sizing: border-box;
 }
 
-.btn-icon:hover {
+.proforma-page .btn-icon:hover {
   filter: brightness(1.03);
 }
 
-.btn-icon:active {
+.proforma-page .btn-icon:active {
   transform: translateY(1px);
 }
 
-.btn-icon svg {
+.proforma-page .btn-icon svg {
   width: 16px;
   height: 16px;
+  color: currentColor;
+  display: block;
 }
 
-.btn-icon--danger {
-  border-color: #ffe4e6;
-  color: #b91c1c;
+/* Eliminar rojo sólido, redondo */
+.proforma-page .btn-icon.btn-icon--danger {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  border-radius: 50%;
 }
 
-.btn-icon--danger:hover {
-  background: #ffe4e6;
-  border-color: #fecdd3;
+.proforma-page .btn-icon.btn-icon--danger svg {
+  color: #fff;
+}
+
+.proforma-page .btn-icon.btn-icon--danger:hover {
+  filter: brightness(1.05);
+  background: #f05252;
+  border-color: #f05252;
+}
+
+.proforma-page .btn-icon.btn-icon--danger:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, .25);
+}
+
+.proforma-page .btn-icon.btn-icon--danger:disabled {
+  background: #fecaca;
+  border-color: #fecaca;
+  color: #fff;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* Celda de acciones centrada */
+.proforma-page .proforma-tabla td.td-acciones {
+  width: 64px;
+  min-width: 64px;
+  padding-left: 4px;
+  padding-right: 4px;
+  display: grid;
+  place-items: center;
+  text-align: center;
 }
 
 /* Totales */
@@ -399,7 +463,7 @@
   font-size: 18px;
 }
 
-/* ===== Switch IVA (toggle) ===== */
+/* Switch IVA */
 .iva-section {
   display: flex;
   align-items: center;
@@ -426,7 +490,7 @@
   background: #e5e7eb;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px #d1d5db;
-  transition: background .2s ease, box-shadow .2s ease;
+  transition: background .2s, box-shadow .2s;
 }
 
 .switch .slider::before {
@@ -439,7 +503,7 @@
   background: #fff;
   border-radius: 50%;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
-  transition: transform .2s ease;
+  transition: transform .2s;
 }
 
 .switch input:checked+.slider {
@@ -482,14 +546,14 @@
   color: #0f172a;
 }
 
-/* Estados vacíos */
-.empty {
+/* Vacíos */
+.proforma-page .empty {
   text-align: center;
   color: #64748b;
   padding: 18px;
 }
 
-/* ===== Confirmación estándar ===== */
+/* Confirmación */
 .toast-confirm-wrapper {
   width: 420px;
   max-width: 92vw;
@@ -559,10 +623,9 @@
   filter: brightness(1.03);
 }
 
-/* Print */
+/* Print (oculta controles y arreglos de tabla) */
 @media print {
 
-  /* Oculta controles interactivos en PDF */
   .boton-descargar,
   .boton-guardar,
   .boton-nueva,
@@ -572,7 +635,6 @@
     display: none !important;
   }
 
-  /* 🔒 OCULTAR SIEMPRE la columna de acciones y sus botones */
   .th-acciones,
   .td-acciones,
   .proforma-tabla .btn-icon,
@@ -580,7 +642,6 @@
     display: none !important;
   }
 
-  /* Fallback por índice */
   .proforma-tabla th:nth-child(3),
   .proforma-tabla td:nth-child(3) {
     display: none !important;
@@ -595,7 +656,6 @@
     border: none !important;
   }
 
-  /* Inputs como texto */
   .proforma-tabla .td-desc input,
   .proforma-tabla .td-monto input {
     border: 0 !important;
@@ -613,155 +673,8 @@
     height: auto !important;
     object-fit: contain !important;
   }
-}
 
-@media (max-width:900px) {
-  .grid-two {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ===== Ajustes 2025-08-16 ===== */
-.tabla-headbar .btn-add {
-  font-size: .85rem;
-  padding: .28rem .60rem;
-  border-radius: 8px;
-  gap: 4px;
-  line-height: 1;
-  flex: 0 0 auto;
-  width: auto;
-  white-space: nowrap;
-}
-
-/* Centrar títulos del thead (Descripción / Monto) */
-.proforma-tabla thead th.th-desc,
-.proforma-tabla thead th.th-monto {
-  text-align: center !important;
-}
-
-/* Mantener datos: Monto a la derecha en el cuerpo */
-.proforma-tabla tbody td.td-monto {
-  text-align: right;
-}
-
-/* Botonera header */
-.proforma-head .head-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.proforma-head .head-right button {
-  margin-left: 0;
-  width: auto;
-  white-space: nowrap;
-}
-
-/* Centrar texto en inputs de "Monto" */
-.proforma-tabla .td-monto input,
-.proforma-tabla .input-monto {
-  text-align: center !important;
-}
-
-.proforma-tabla .td-monto input::placeholder {
-  text-align: center;
-}
-
-/* --- PDF (html2pdf): ocultar SIEMPRE la columna de Acciones y los botones --- */
-.html2pdf__container .th-acciones,
-.html2pdf__container .td-acciones,
-.html2pdf__container .btn-icon,
-.html2pdf__container .btn-icon--danger {
-  display: none !important;
-}
-
-/* Colapsa cualquier resto de la columna en el clon */
-.html2pdf__container .td-acciones,
-.html2pdf__container th.th-acciones {
-  width: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-}
-
-/* Centrar títulos del thead (pantalla) */
-.proforma-tabla thead th.th-desc,
-.proforma-tabla thead th.th-monto {
-  text-align: center !important;
-}
-
-/* Forzar el centrado también en el PDF (html2pdf) */
-.html2pdf__container .proforma-tabla thead th.th-desc,
-.html2pdf__container .proforma-tabla thead th.th-monto,
-.exporting-pdf .proforma-tabla thead th.th-desc,
-.exporting-pdf .proforma-tabla thead th.th-monto {
-  text-align: center !important;
-}
-
-/* ---- 1) Impresión del navegador: inputs como texto plano ---- */
-@media print {
-
-  .proforma-tabla .td-desc input,
-  .proforma-tabla .td-monto input {
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
-    padding: 0 !important;
-  }
-}
-
-/* ---- 2) Exportación con html2pdf: aplica en el clon del DOM ---- */
-.html2pdf__container .proforma-tabla .td-desc input,
-.html2pdf__container .proforma-tabla .td-monto input,
-.exporting-pdf .proforma-tabla .td-desc input,
-.exporting-pdf .proforma-tabla .td-monto input {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  outline: none !important;
-  padding: 0 !important;
-}
-
-/* (opcional) ajusta un poco el alto visual de las filas en el clon */
-.html2pdf__container .proforma-tabla .td-desc,
-.html2pdf__container .proforma-tabla .td-monto,
-.exporting-pdf .proforma-tabla .td-desc,
-.exporting-pdf .proforma-tabla .td-monto {
-  padding-top: 8px !important;
-  padding-bottom: 8px !important;
-}
-
-/* Quitar cualquier fondo de filas/celdas en impresión */
-@media print {
-
-  .proforma-tabla tbody tr,
-  .proforma-tabla tbody tr:nth-child(odd),
-  .proforma-tabla tbody tr:nth-child(even),
-  .proforma-tabla td {
-    background: transparent !important;
-  }
-}
-
-/* Quitar fondos también en el clon que usa html2pdf */
-.html2pdf__container .proforma-tabla tbody tr,
-.html2pdf__container .proforma-tabla tbody tr:nth-child(odd),
-.html2pdf__container .proforma-tabla tbody tr:nth-child(even),
-.html2pdf__container .proforma-tabla td,
-.exporting-pdf .proforma-tabla tbody tr,
-.exporting-pdf .proforma-tabla tbody tr:nth-child(odd),
-.exporting-pdf .proforma-tabla tbody tr:nth-child(even),
-.exporting-pdf .proforma-tabla td {
-  background: transparent !important;
-}
-
-/* ===== Evitar que una fila se parta entre páginas (PDF/impresión) ===== */
-
-/* Cuando se imprime desde el navegador */
-@media print {
-
-  /* Nunca partir bloques importantes */
+  /* No cortar bloques */
   .tabla-wrap,
   .proforma-tabla,
   .proforma-tabla tr,
@@ -773,7 +686,6 @@
     page-break-inside: avoid !important;
   }
 
-  /* Repetir encabezado de la tabla cuando el motor lo soporte */
   .proforma-tabla thead {
     display: table-header-group;
   }
@@ -781,9 +693,85 @@
   .proforma-tabla tfoot {
     display: table-footer-group;
   }
+
+  /* Sticky off */
+  .proforma-tabla thead th {
+    position: static !important;
+    top: auto !important;
+  }
 }
 
-/* Cuando exporta html2pdf (usa un clon con este contenedor) */
+/* Responsive */
+@media (max-width:900px) {
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Ajustes botón agregar */
+.tabla-headbar .btn-add {
+  font-size: .85rem;
+  padding: .28rem .60rem;
+  border-radius: 8px;
+  gap: 4px;
+  line-height: 1;
+  flex: 0 0 auto;
+  width: auto;
+  white-space: nowrap;
+}
+
+/* html2pdf/export clones */
+.html2pdf__container .th-acciones,
+.html2pdf__container .td-acciones,
+.html2pdf__container .btn-icon,
+.html2pdf__container .btn-icon--danger {
+  display: none !important;
+}
+
+.html2pdf__container .td-acciones,
+.html2pdf__container th.th-acciones {
+  width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.html2pdf__container .proforma-tabla thead th.th-desc,
+.html2pdf__container .proforma-tabla thead th.th-monto,
+.exporting-pdf .proforma-tabla thead th.th-desc,
+.exporting-pdf .proforma-tabla thead th.th-monto {
+  text-align: center !important;
+}
+
+.html2pdf__container .proforma-tabla .td-desc input,
+.html2pdf__container .proforma-tabla .td-monto input,
+.exporting-pdf .proforma-tabla .td-desc input,
+.exporting-pdf .proforma-tabla .td-monto input {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+}
+
+.html2pdf__container .proforma-tabla .td-desc,
+.html2pdf__container .proforma-tabla .td-monto,
+.exporting-pdf .proforma-tabla .td-desc,
+.exporting-pdf .proforma-tabla .td-monto {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+.html2pdf__container .proforma-tabla tbody tr,
+.html2pdf__container .proforma-tabla tbody tr:nth-child(odd),
+.html2pdf__container .proforma-tabla tbody tr:nth-child(even),
+.html2pdf__container .proforma-tabla td,
+.exporting-pdf .proforma-tabla tbody tr,
+.exporting-pdf .proforma-tabla tbody tr:nth-child(odd),
+.exporting-pdf .proforma-tabla tbody tr:nth-child(even),
+.exporting-pdf .proforma-tabla td {
+  background: transparent !important;
+}
+
 .html2pdf__container .tabla-wrap,
 .html2pdf__container .proforma-tabla,
 .html2pdf__container .proforma-tabla tr,
@@ -802,95 +790,12 @@
   page-break-inside: avoid !important;
 }
 
-/* En el clon para PDF, libera el overflow del contenedor de la tabla */
 .html2pdf__container .tabla-wrap,
 .exporting-pdf .tabla-wrap {
   overflow: visible !important;
 }
 
-/* ===== Paginación fina: evitar filas partidas pero sin dejar huecos ===== */
-
-/* Impresión del navegador */
-@media print {
-
-  .tabla-wrap,
-  .proforma-tabla {
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
-  .proforma-tabla tr {
-    break-inside: avoid-page !important;
-    page-break-inside: avoid !important;
-  }
-
-  .proforma-footer {
-    break-inside: auto !important;
-    page-break-inside: auto !important;
-  }
-
-  .proforma-footer h4 {
-    break-after: avoid-page !important;
-  }
-
-  .proforma-footer ol li {
-    break-inside: avoid-page !important;
-  }
-}
-
-/* Clon que usa html2pdf */
-.html2pdf__container .tabla-wrap,
-.exporting-pdf .tabla-wrap,
-.html2pdf__container .proforma-tabla,
-.exporting-pdf .proforma-tabla {
-  break-inside: auto !important;
-  page-break-inside: auto !important;
-}
-
-.html2pdf__container .proforma-tabla tr,
-.exporting-pdf .proforma-tabla tr {
-  break-inside: avoid-page !important;
-  page-break-inside: avoid !important;
-}
-
-.html2pdf__container .proforma-footer,
-.exporting-pdf .proforma-footer {
-  break-inside: auto !important;
-  page-break-inside: auto !important;
-}
-
-.html2pdf__container .proforma-footer h4,
-.exporting-pdf .proforma-footer h4 {
-  break-after: avoid-page !important;
-}
-
-.html2pdf__container .proforma-footer ol li,
-.exporting-pdf .proforma-footer ol li {
-  break-inside: avoid-page !important;
-}
-
-/* Mantén el clon sin recortes */
-.html2pdf__container .tabla-wrap,
-.exporting-pdf .tabla-wrap {
-  overflow: visible !important;
-}
-
-/* ===== FIX: desactivar sticky en PDF/Impresión para evitar franja negra ===== */
-@media print {
-  .proforma-tabla thead th {
-    position: static !important;
-    top: auto !important;
-  }
-}
-
-.html2pdf__container .proforma-tabla thead th,
-.exporting-pdf .proforma-tabla thead th {
-  position: static !important;
-  top: auto !important;
-}
-
-/* ==== No cortar el bloque de Nota / Información Adicional ==== */
-/* Navegador (impresión) */
+/* No cortar Nota / Info */
 @media print {
 
   .proforma-nota,
@@ -899,7 +804,6 @@
     page-break-inside: avoid !important;
   }
 
-  /* Evita que el H4 quede al final de página sin contenido debajo */
   .proforma-nota h4,
   .proforma-info-adicional h4 {
     break-after: avoid-page !important;
@@ -907,7 +811,6 @@
   }
 }
 
-/* Clon usado por html2pdf */
 .html2pdf__container .proforma-nota,
 .exporting-pdf .proforma-nota,
 .html2pdf__container .proforma-info-adicional,
@@ -922,4 +825,56 @@
 .exporting-pdf .proforma-info-adicional h4 {
   break-after: avoid-page !important;
   page-break-after: avoid !important;
+}
+
+/* ==== FIX tamaño/forma botones del header (solo Proforma) ==== */
+.proforma-page .proforma-head .head-right {
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.proforma-page .proforma-head .head-right .boton-guardar,
+.proforma-page .proforma-head .head-right .boton-nueva,
+.proforma-page .proforma-head .head-right .boton-descargar {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  /* alto compacto */
+  padding: 6px 12px;
+  /* padding compacto */
+  font-size: .92rem;
+  border-radius: 12px;
+  width: auto !important;
+  /* evita que se estiren */
+  min-width: 0;
+  flex: 0 0 auto !important;
+  /* no crecer en el flex container */
+  white-space: nowrap;
+  box-sizing: border-box;
+  margin-left: 0;
+  /* por si algún reset lo cambia */
+}
+
+.proforma-page .proforma-head .head-right .boton-guardar svg,
+.proforma-page .proforma-head .head-right .boton-nueva svg,
+.proforma-page .proforma-head .head-right .boton-descargar svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ===== Espaciado entre botones del header (solo Proforma) ===== */
+.proforma-page .proforma-head .head-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* 👈 espacio entre botones */
+}
+
+.proforma-page .proforma-head .head-right button {
+  margin-left: 0 !important;
+  /* anula reglas viejas tipo `margin-left: 6px` */
 }
