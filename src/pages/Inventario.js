@@ -42,13 +42,25 @@ const intOrZero = (v) => {
     return Number.isFinite(n) ? n : 0;
 };
 
-const numberOrZero = (n) => Number(n || 0);
+const numberOrZero = (n) => {
+    const s = String(n ?? '').replace(',', '.').trim();
+    const v = Number(s);
+    return Number.isFinite(v) ? v : 0;
+};
+
+const parseDec = (v) => numberOrZero(v);
+const calcVenta = (costo, pct) => {
+    const c = parseDec(costo);
+    const p = parseDec(pct);
+    return c * (1 + p / 100);
+};
 
 // Estado vacío del form
 const EMPTY = {
     codigo: '',
     descripcion: '',
     precioCosto: '',
+    porcentaje: '',
     precio: '',
     cantidad: '',
 };
@@ -138,10 +150,16 @@ const Inventario = () => {
         if (busy) return;
         setEditMode(true);
         setSelectedId(row.id);
+
+        const costo = numberOrZero(row.precioCosto);
+        const venta = numberOrZero(row.precio);
+        const pct = costo > 0 ? ((venta - costo) / costo) * 100 : 0;
+
         setForm({
             codigo: row.codigo || '',
             descripcion: row.descripcion || '',
             precioCosto: String(row.precioCosto ?? ''),
+            porcentaje: costo > 0 ? String(pct.toFixed(2)) : '',
             precio: String(row.precio ?? ''),
             cantidad: String(row.cantidad ?? ''),
         });
@@ -155,7 +173,24 @@ const Inventario = () => {
         setForm(EMPTY);
     };
 
-    // ===== Form handlers =====
+    // ===== Handlers costo/% con cálculo automático =====
+    const onChangeCosto = (e) => {
+        const v = e.target.value;
+        setForm((f) => {
+            const nuevoPrecio = calcVenta(v, f.porcentaje);
+            return { ...f, precioCosto: v, precio: String(nuevoPrecio.toFixed(2)) };
+        });
+    };
+
+    const onChangePorcentaje = (e) => {
+        const v = e.target.value;
+        setForm((f) => {
+            const nuevoPrecio = calcVenta(f.precioCosto, v);
+            return { ...f, porcentaje: v, precio: String(nuevoPrecio.toFixed(2)) };
+        });
+    };
+
+    // ===== Form handlers genéricos =====
     const onChange = (e) => {
         const { name, value } = e.target;
         setForm((f) => ({ ...f, [name]: value }));
@@ -184,7 +219,7 @@ const Inventario = () => {
 
         // 1) Chequeo local inmediato
         const existeLocal = items.some(
-            (it) => (String(it.codigo || '').trim() === cod) && it.id !== omitId
+            (it) => String(it.codigo || '').trim() === cod && it.id !== omitId
         );
         if (existeLocal) return true;
 
@@ -407,9 +442,22 @@ const Inventario = () => {
                                 <input
                                     name="precioCosto"
                                     value={form.precioCosto}
-                                    onChange={onChange}
+                                    onChange={onChangeCosto}     
                                     inputMode="decimal"
                                     placeholder="0.00"
+                                    disabled={busy}
+                                />
+                            </label>
+
+                            <label>
+                                <span>%</span>
+                                <input
+                                    name="porcentaje"
+                                    value={form.porcentaje}
+                                    onChange={onChangePorcentaje}
+                                    inputMode="decimal"
+                                    placeholder="0"
+                                    className="input-percent"
                                     disabled={busy}
                                 />
                             </label>
@@ -420,6 +468,8 @@ const Inventario = () => {
                                     name="precio"
                                     value={form.precio}
                                     onChange={onChange}
+                                    // Si NO quieres permitir edición manual del precio, descomenta:
+                                    // readOnly
                                     inputMode="decimal"
                                     placeholder="0.00"
                                     disabled={busy}

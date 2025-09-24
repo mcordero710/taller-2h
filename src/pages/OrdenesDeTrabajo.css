@@ -123,12 +123,12 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
 }
 
-/* ===== NUEVO: estilos del select de conos ===== */
+/* ===== select de conos ===== */
 .input-icon select {
   width: 100%;
   border: 1px solid #e5e7eb;
   padding: 10px 12px 10px 36px;
-  /* deja espacio para el ícono */
+  /* espacio para el ícono */
   border-radius: 10px;
   outline: none;
   background: #fff;
@@ -236,7 +236,8 @@ textarea:focus {
   border-radius: 12px;
 }
 
-.btn-icon {
+/* --- Scoped icon buttons (evita choque con otras páginas) --- */
+.ordenesTrabajo-proforma-page .btn-icon {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -244,26 +245,29 @@ textarea:focus {
   display: inline-grid;
   place-items: center;
   line-height: 0;
-}
-
-.btn-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.btn-icon--ghost {
   background: #fff;
   color: #111827;
   border: 1px solid #e5e7eb;
 }
 
-.btn-icon--danger {
+.ordenesTrabajo-proforma-page .btn-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ordenesTrabajo-proforma-page .btn-icon--ghost {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.ordenesTrabajo-proforma-page .btn-icon--danger {
   background: #ef4444;
   border-color: #ef4444;
   color: #fff;
 }
 
-/* ===== NUEVO: botón de finalizar ===== */
+/* ===== botón de finalizar ===== */
 .btn--danger {
   background: #ef4444;
   border-color: #ef4444;
@@ -311,6 +315,11 @@ textarea:focus {
   color: #374151;
   padding: 10px 12px;
   border-bottom: 1px solid #eef2f7;
+}
+
+/* asegura centrado de encabezados con class is-center */
+.tabla thead th.is-center {
+  text-align: center;
 }
 
 .tabla thead th.th-actions {
@@ -564,7 +573,6 @@ textarea:focus {
     position: fixed !important;
     inset: 0 !important;
     padding: 0.30in 0.5in 0.45in !important;
-    /* top reducido */
     width: auto !important;
     height: auto !important;
     z-index: 999999 !important;
@@ -626,15 +634,22 @@ textarea:focus {
 }
 
 /* ===== Modal bonito ===== */
+/* ===== Modal: fondo borroso ===== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.35);
+  /* un poco más claro para que el blur se note */
   display: grid;
   place-items: center;
   z-index: 10000;
   animation: fadeIn .15s ease-out;
+
+  /* Blur (con fallback para Safari) */
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(8px) saturate(120%);
 }
+
 
 @keyframes fadeIn {
   from {
@@ -704,7 +719,7 @@ textarea:focus {
   gap: 8px;
 }
 
-/* Botón de acción peligrosa (coincide con el que usas en el footer) */
+/* Botón de acción peligrosa */
 .btn--danger {
   background: #ef4444;
   border-color: #ef4444;
@@ -716,7 +731,7 @@ textarea:focus {
   cursor: not-allowed;
 }
 
-/* Estilo básico para select dentro de .input-icon */
+/* Estilo select en .input-icon (duplicado a propósito por claridad de scope) */
 .input-icon select {
   width: 100%;
   border: 1px solid #e5e7eb;
@@ -730,4 +745,337 @@ textarea:focus {
 .input-icon select:focus {
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+/* ============ picker inventario ============ */
+.picker-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.picker-search svg {
+  color: #94a3b8;
+}
+
+.picker-search input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 14px;
+}
+
+.picker-table-wrap {
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.picker-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.picker-table thead th {
+  background: #0f172a;
+  color: #fff;
+  text-align: left;
+  padding: 10px 12px;
+  position: sticky;
+  top: 0;
+}
+
+.picker-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fff;
+}
+
+.picker-table tbody tr.is-selected td {
+  background: #f1f5ff;
+}
+
+/* helpers */
+.is-right {
+  text-align: right;
+}
+
+.is-center {
+  text-align: center;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+/* Cantidad + acciones del picker */
+.picker-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  justify-content: space-between;
+}
+
+.picker-qty-row label {
+  font-size: 13px;
+  color: #374151;
+  display: grid;
+  gap: 6px;
+}
+
+.picker-qty-row input {
+  width: 160px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.picker-qty-row input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+
+/* ===== estilo figma compacto ===== */
+.picker-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.picker-search svg {
+  color: #94a3b8;
+}
+
+.picker-search input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 14px;
+}
+
+.picker-meta {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 8px;
+}
+
+.picker-table-wrap {
+  border: 1px solid #0f172a;
+  /* mismo borde que ya estabas usando */
+  border-radius: 12px;
+  overflow: hidden;
+  overflow-y: auto;
+  /* más alto para que quepan ~10 filas sin scroll en laptops normales */
+  max-height: clamp(420px, 60vh, 520px);
+}
+
+.picker-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.picker-table thead th {
+  background: #0f172a;
+  color: #fff;
+  text-align: left;
+  padding: 10px 12px;
+}
+
+.picker-table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+}
+
+.picker-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.picker-table tbody tr.is-selected td {
+  background: #eef2ff;
+}
+
+.picker-table tbody tr.is-zero td {
+  color: #9ca3af;
+}
+
+.picker-pagination {
+  margin: 8px 0 10px;
+}
+
+/* Botón pill pequeño */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  /* compacto */
+  min-height: 28px;
+  font-size: 13px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  border: 1px solid #0f172a;
+  font-weight: 700;
+  transition: filter .15s, transform .05s;
+}
+
+.btn-pill:hover {
+  filter: brightness(1.05);
+}
+
+.btn-pill:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+/* Centrado seguro + números tabulares */
+.picker-table th.is-center,
+.picker-table td.is-center {
+  text-align: center;
+}
+
+.picker-table td.is-center,
+.picker-table td.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.picker-qty-row input {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Asegura que el encabezado se centre aun con .tabla thead th { text-align:left } */
+.tabla thead th.is-center {
+  text-align: center;
+}
+
+/* --- Forzar rojo del botón eliminar en Órdenes (anti-colisión) --- */
+.ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+}
+
+.ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger:hover,
+.ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger:focus-visible {
+  filter: brightness(1.05);
+}
+
+.ordenesTrabajo-proforma-page .btn-icon.btn-icon--danger svg {
+  color: #fff !important;
+}
+
+/* Encabezado azul para la tabla de Reparaciones */
+.ordenesTrabajo-proforma-page .tabla--bluehead thead th {
+  background: #0f172a;
+  /* mismo azul que el picker */
+  color: #fff;
+  border-bottom-color: #0f172a;
+  /* sin línea gris debajo */
+}
+
+/* (opcional) mejora de contraste en el texto pequeño del header */
+.ordenesTrabajo-proforma-page .tabla--bluehead thead th .th-actions-text {
+  color: #fff;
+}
+
+/* Botón compacto y sin ocupar todo el ancho */
+.btn--auto {
+  width: auto !important;
+  max-width: max-content;
+}
+
+.btn--xs {
+  padding: 6px 10px;
+  /* más pequeño que .btn--sm */
+  min-height: 30px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+/* Asegura que el contenedor no fuerce el botón a estirarse */
+.actions-right--compact {
+  width: 100%;
+  justify-content: flex-end;
+  /* lo mantiene a la derecha */
+}
+
+/* ====== BOTONES COMPACTOS EN EL MODAL DEL PICKER ====== */
+/* Hace chicos los botones del footer (Cancelar / Agregar material) */
+.modal-card .modal-actions .btn {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 32px;
+  /* antes 40px */
+  padding: 6px 10px;
+  /* antes 10px 14px */
+  font-size: 12px;
+  /* antes ~14px */
+  border-radius: 10px;
+  /* un poco más compacto */
+}
+
+.modal-card .modal-actions .btn--ghost {
+  padding: 6px 10px;
+}
+
+/* Botón "Usar" dentro de la tabla del picker, aún más pequeño */
+.picker-table .btn-pill {
+  padding: 4px 10px;
+  /* antes 6px 12px */
+  min-height: 26px;
+  /* antes 28px */
+  font-size: 12px;
+  /* antes 13px */
+}
+
+/* Un poco menos de alto en las filas del picker para acompañar el tamaño de botones */
+.picker-table thead th {
+  padding: 8px 10px;
+}
+
+/* antes 10px 12px */
+.picker-table tbody td {
+  padding: 8px 10px;
+}
+
+/* antes 10px 12px */
+
+/* Contenedor del botón "Agregar material" (en la sección de materiales) */
+.actions-left {
+  display: flex;
+}
+
+.actions-left--compact {
+  justify-content: flex-start;
+}
+
+.btn--auto {
+  width: auto !important;
+  max-width: max-content;
+}
+
+.btn--xs {
+  padding: 6px 10px;
+  min-height: 30px;
+  font-size: 12px;
+  border-radius: 10px;
 }
