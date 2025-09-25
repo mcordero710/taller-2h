@@ -71,7 +71,7 @@
     color: var(--muted);
 }
 
-/* Buscador (mismo estilo clientes) */
+/* Buscador */
 .search {
     position: relative;
     width: min(420px, 100%);
@@ -120,7 +120,7 @@
     cursor: pointer;
 }
 
-/* Botón Agregar (compacto, mismo de clientes) */
+/* Botón Agregar (compacto) */
 .boton-agregar {
     --bg1: #0b1220;
     --bg2: #0f172a;
@@ -180,7 +180,7 @@
     font-size: 13px;
 }
 
-/* Hover verde (igual que clientes) */
+/* Hover verde */
 .inventario-page .boton-agregar:hover,
 .inventario-page .boton-agregar:focus-visible {
     background-image: none;
@@ -256,13 +256,17 @@
     padding-right: 4px;
 }
 
+/* Celda acciones centrada, sin wraps raros */
 .tabla-inventario tbody td.td-actions {
     width: 96px;
     min-width: 96px;
     padding-left: 4px;
     padding-right: 4px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
     text-align: center;
 }
 
@@ -273,7 +277,7 @@
     white-space: nowrap;
 }
 
-/* Botones genéricos (mismos de clientes) */
+/* Botones genéricos */
 .btn-primary {
     display: inline-flex;
     align-items: center;
@@ -304,34 +308,45 @@
     font-weight: 600;
 }
 
-.btn-icon {
-    width: 28px;
-    height: 28px;
+/* --- Icon button (scopeado como en Clientes) --- */
+.inventario-page .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
     display: inline-grid;
     place-items: center;
-    border: 1px solid #e5e7eb;
+    line-height: 0;
+    border-radius: 12px;
     background: #fff;
-    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    color: #111827;
+    /* <- color base; el SVG heredará este color */
     cursor: pointer;
     transition: transform .06s, filter .15s;
 }
 
-.btn-icon:hover {
+.inventario-page .btn-icon:hover {
     filter: brightness(1.05);
 }
 
-.btn-icon:active {
+.inventario-page .btn-icon:active {
     transform: translateY(1px);
 }
 
-.btn-icon--edit {
+.inventario-page .btn-icon--edit {
     border-color: #dbe3ee;
 }
 
-.btn-icon--edit svg {
-    width: 14px;
-    height: 14px;
-    color: #111827;
+/* Feather usa STROKE: forzar trazo y tamaño del ícono */
+.inventario-page .btn-icon svg,
+.inventario-page .btn-icon svg * {
+    width: 16px !important;
+    height: 16px !important;
+    display: block;
+    color: currentColor !important;
+    stroke: currentColor !important;
+    fill: none !important;
+    stroke-width: 2.2 !important;
 }
 
 /* Vacío */
@@ -341,7 +356,7 @@
     padding: 20px;
 }
 
-/* Modal (idéntico a clientes) */
+/* Modal */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -448,7 +463,7 @@
     box-shadow: 0 8px 18px rgba(16, 185, 129, .22), inset 0 0 0 1px rgba(255, 255, 255, .05);
 }
 
-/* Botón X del modal en verde (igual a clientes) */
+/* Botón X del modal en verde */
 .modal-head .btn-icon {
     width: 32px;
     height: 32px;
@@ -480,7 +495,6 @@
     text-align: center;
 }
 
-
 /* Responsive */
 @media (max-width:720px) {
     .inventario-header {
@@ -505,5 +519,11 @@
 /* Campo % más angosto */
 .modal-form .input-percent {
     max-width: 120px;
-  }
-  
+}
+
+/* Asegurar trazo visible en los iconos de la barra y modal */
+.search-clear svg,
+.modal-head .btn-icon svg {
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+}

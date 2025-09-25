@@ -1079,3 +1079,39 @@ textarea:focus {
   font-size: 12px;
   border-radius: 10px;
 }
+
+/* ====== Inline disponibilidad al editar cantidad ====== */
+.qty-edit-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.input-inline--qty {
+  max-width: 90px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e5e7eb;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.stock-badge.is-low {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.stock-badge.is-zero {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
+}

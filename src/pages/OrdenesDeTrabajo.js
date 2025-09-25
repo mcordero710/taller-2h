@@ -11,7 +11,7 @@ import logo from '../assets/logo.png';
 import { db, auth } from '../firebase/firebase';
 import {
   collection, query, where, getDocs, addDoc, doc, updateDoc,
-  serverTimestamp, onSnapshot, orderBy, increment
+  serverTimestamp, onSnapshot, orderBy, increment, getDoc
 } from 'firebase/firestore';
 
 import { useLoading } from '../components/ui/LoadingContext';
@@ -50,6 +50,10 @@ const OrdenesDeTrabajo = () => {
   const [pickerBusy, setPickerBusy] = useState(false);
   const [qtyInput, setQtyInput] = useState('1');
   const [selectedInv, setSelectedInv] = useState(null);
+  const [matEditingIdx, setMatEditingIdx] = useState(null);
+  const [matEditingQty, setMatEditingQty] = useState('');
+  const [matAvail, setMatAvail] = useState({});          // invId -> disponible
+  const [matAvailLoadingIdx, setMatAvailLoadingIdx] = useState(null);
 
   // 👉 paginación del picker
   const [pickerPage, setPickerPage] = useState(1);
@@ -66,6 +70,17 @@ const OrdenesDeTrabajo = () => {
   const toConoNum = v => {
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
+  };
+
+  // ===== disponibilidad por item =====
+  const getDisponibilidad = async (invId) => {
+    try {
+      const snap = await getDoc(doc(db, 'inventario', invId));
+      return Number(snap.data()?.cantidad) || 0;
+    } catch (e) {
+      console.error('No se pudo consultar disponibilidad:', e);
+      return null;
+    }
   };
 
   // ===== Conos disponibles (realtime) =====
@@ -192,7 +207,6 @@ const OrdenesDeTrabajo = () => {
     }
   };
 
-  // ===== Buscar por proforma =====
   // ===== Buscar por proforma =====
   const buscarPorProforma = async (proformaNum, placaUpper) => {
     if (!proformaNum) return null;
@@ -676,6 +690,76 @@ const OrdenesDeTrabajo = () => {
     }
   };
 
+  // ===== Helpers edición cantidad de materiales =====
+  const startEditMat = async (idx) => {
+    setMatEditingIdx(idx);
+    setMatEditingQty(String(materiales[idx]?.cantidad ?? ''));
+    const invId = materiales[idx]?.invId;
+    if (!invId) return;
+    setMatAvailLoadingIdx(idx);
+    const disp = await getDisponibilidad(invId);
+    if (disp != null) setMatAvail(prev => ({ ...prev, [invId]: disp }));
+    setMatAvailLoadingIdx(null);
+  };
+
+  const cancelEditMat = () => {
+    setMatEditingIdx(null);
+    setMatEditingQty('');
+  };
+
+  const saveEditMat = async (idx) => {
+    if (idx == null || !otId) return;
+    const row = materiales[idx];
+    const prevQty = Number(row.cantidad) || 0;
+    const newQty = Math.max(1, Math.floor(Number((matEditingQty || '').replace(/[^\d]/g, '')) || 0));
+    const delta = newQty - prevQty; // +: usar más; -: devolver al inventario
+
+    if (delta === 0) { cancelEditMat(); return; }
+
+    try {
+      await withLoading(async () => {
+        // Leer stock actual
+        const invRef = doc(db, 'inventario', row.invId);
+        const invSnap = await getDoc(invRef);
+        const disponible = Number(invSnap.data()?.cantidad) || 0;
+
+        // Si vamos a consumir más, validar disponibilidad
+        if (delta > 0 && disponible < delta) {
+          toast.warn(`Stock insuficiente. Disponible: ${formatInt(disponible)}.`);
+          return;
+        }
+
+        // Actualizar inventario (increment funciona con delta positivo/negativo)
+        await updateDoc(invRef, {
+          cantidad: increment(-delta),
+          updatedAt: serverTimestamp(),
+        });
+
+        // Actualizar la OT (array de materiales con la nueva cantidad)
+        const nuevosMateriales = materiales.map((m, i) =>
+          i === idx ? { ...m, cantidad: newQty } : m
+        );
+
+        await updateDoc(doc(db, 'ordenes_trabajo', otId), {
+          materiales: nuevosMateriales,
+          updatedAt: serverTimestamp(),
+        });
+
+        setMateriales(nuevosMateriales);
+        // Si el picker está cargado en memoria, reflejar el stock allí también
+        setInventarioList((prev) =>
+          prev.length === 0 ? prev : prev.map(it => it.id === row.invId ? { ...it, cantidad: (Number(it.cantidad) || 0) - delta } : it)
+        );
+
+        toast.success('Cantidad actualizada.');
+        cancelEditMat();
+      }, 'Actualizando cantidad…');
+    } catch (e) {
+      console.error('No se pudo actualizar la cantidad:', e);
+      toast.error('No se pudo actualizar la cantidad.');
+    }
+  };
+
   return (
     <div className="ordenesTrabajo-proforma-page">
       <div className="ot-wrapper">
@@ -868,19 +952,87 @@ const OrdenesDeTrabajo = () => {
                   <th style={{ width: 140 }}>Código</th>
                   <th>Descripción</th>
                   <th style={{ width: 140 }} className="is-center">Cantidad</th>
+                  <th className="th-actions is-center" style={{ width: 120 }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {materiales.length === 0 && (
-                  <tr><td colSpan={3} className="table-empty">No hay materiales registrados.</td></tr>
+                  <tr><td colSpan={4} className="table-empty">No hay materiales registrados.</td></tr>
                 )}
-                {materiales.map((m, idx) => (
-                  <tr key={`${m.invId}-${idx}`}>
-                    <td className="mono">{m.codigo}</td>
-                    <td>{m.descripcion}</td>
-                    <td className="is-center">{formatInt(m.cantidad)}</td>
-                  </tr>
-                ))}
+                {materiales.map((m, idx) => {
+                  const disp = matAvail[m.invId];
+                  const loadingAvail = matAvailLoadingIdx === idx;
+                  return (
+                    <tr key={`${m.invId}-${idx}`}>
+                      <td className="mono">{m.codigo}</td>
+                      <td>{m.descripcion}</td>
+                      <td className="is-center">
+                        {matEditingIdx === idx ? (
+                          <div className="qty-edit-wrap">
+                            <input
+                              className="input-inline input-inline--qty"
+                              inputMode="numeric"
+                              pattern="\d*"
+                              value={matEditingQty}
+                              onChange={(e) => setMatEditingQty(e.target.value.replace(/[^\d]/g, ''))}
+                              autoFocus
+                            />
+                            <span
+                              className={`stock-badge ${(disp ?? 0) === 0 ? 'is-zero' : (disp ?? 0) < 5 ? 'is-low' : ''
+                                }`}
+                              title="Cantidad disponible en inventario"
+                            >
+                              {loadingAvail ? 'Consultando…' : `Disp.: ${formatInt(disp ?? 0)}`}
+                            </span>
+                          </div>
+                        ) : (
+                          formatInt(m.cantidad)
+                        )}
+                      </td>
+                      <td className="td-actions td-actions--mat">
+                        {matEditingIdx === idx ? (
+                          <>
+                            <button
+                              className="btn-icon btn-icon--ghost"
+                              onClick={() => saveEditMat(idx)}
+                              title="Guardar"
+                              aria-label="Guardar"
+                            >
+                              <FaSave />
+                            </button>
+                            <button
+                              className="btn-icon btn-icon--ghost"
+                              onClick={cancelEditMat}
+                              title="Cancelar"
+                              aria-label="Cancelar"
+                            >
+                              <FaTimes />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            className="btn-icon btn-icon--ghost"
+                            onClick={() => startEditMat(idx)}
+                            title={matAvail[m.invId] != null
+                              ? `Editar cantidad (disp.: ${formatInt(matAvail[m.invId])})`
+                              : 'Editar cantidad'}
+                            onMouseEnter={() => {
+                              if (matAvail[m.invId] == null && m.invId) {
+                                getDisponibilidad(m.invId).then(d =>
+                                  d != null && setMatAvail(prev => ({ ...prev, [m.invId]: d }))
+                                );
+                              }
+                            }}
+                            aria-label="Editar cantidad"
+                            disabled={!otId}
+                          >
+                            <FaEdit />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
