@@ -1,3 +1,4 @@
+// src/pages/Factura.js
 import React, { useState, useEffect } from 'react';
 import './Factura.css';
 import { db } from '../firebase/firebase';
@@ -10,17 +11,26 @@ import {
   addDoc,
   doc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  orderBy,
+  serverTimestamp,
+  increment,
 } from 'firebase/firestore';
 import html2pdf from 'html2pdf.js';
 import { toast, ToastContainer } from 'react-toastify';
-import { FaEdit, FaTrashAlt, FaSave, FaTimes } from 'react-icons/fa';
+import {
+  FaEdit,
+  FaTrashAlt,
+  FaSave,
+  FaTimes,
+  FaBoxOpen,
+  FaSearch,
+} from 'react-icons/fa';
 import logo from '../assets/logo.png';
-
-// Loader global
 import { useLoading } from '../components/ui/LoadingContext';
+import Pagination from '../components/Pagination/Pagination';
 
-/* ===== Helpers de formato (mismo estilo que Proforma) ===== */
+/* ===== Helpers de formato ===== */
 const LOCALE_NUMERIC = 'es-ES'; // 100.000,00
 
 const formatNumber = (n) =>
@@ -42,9 +52,10 @@ const parseMoney = (str) => {
   let normalized = s;
 
   if (lastComma > -1 && lastDot > -1) {
-    normalized = lastComma > lastDot
-      ? s.replace(/\./g, '').replace(',', '.')
-      : s.replace(/,/g, '');
+    normalized =
+      lastComma > lastDot
+        ? s.replace(/\./g, '').replace(',', '.')
+        : s.replace(/,/g, '');
   } else if (lastComma > -1) {
     normalized = s.replace(/\./g, '').replace(',', '.');
   } else {
@@ -73,7 +84,7 @@ const Factura = () => {
   const [newDetalle, setNewDetalle] = useState('');
   const [newMontoStr, setNewMontoStr] = useState(''); // input mostrado en edición
 
-  // Edición de abono (mismo look&feel que gastos)
+  // Edición de abono
   const [editAbono, setEditAbono] = useState(null);
   const [newAbonoMontoStr, setNewAbonoMontoStr] = useState('');
 
@@ -96,12 +107,25 @@ const Factura = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSavingAbono, setIsSavingAbono] = useState(false);
 
-  // flags iguales para abonos
   const [isUpdatingAbono, setIsUpdatingAbono] = useState(false);
   const [isDeletingAbono, setIsDeletingAbono] = useState(false);
 
   const [deletingGastoId, setDeletingGastoId] = useState(null);
   const [deletingAbonoId, setDeletingAbonoId] = useState(null);
+
+  // ===== Productos de inventario en factura =====
+  // Cada item: { id, proformaId, invId, codigo, descripcion, precioVenta, cantidad, fecha }
+  const [productos, setProductos] = useState([]);
+
+  // Picker de inventario
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerBusy, setPickerBusy] = useState(false);
+  const [inventarioList, setInventarioList] = useState([]);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerPage, setPickerPage] = useState(1);
+  const pickerPerPage = 10;
+  const [selectedInv, setSelectedInv] = useState(null);
+  const [qtyInput, setQtyInput] = useState('1');
 
   const busy =
     isSearching ||
@@ -144,6 +168,168 @@ const Factura = () => {
     }
   };
 
+  /* ===== Productos de factura: CRUD ===== */
+  const cargarProductos = async (proformaId) => {
+    try {
+      // intento con orderBy (requiere índice compuesto)
+      const qy = query(
+        collection(db, 'factura_items'),
+        where('proformaId', '==', proformaId),
+        orderBy('fecha', 'asc')
+      );
+      const snap = await getDocs(qy);
+      setProductos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      const msg = String(e?.message || '');
+      if (e?.code === 'failed-precondition' || msg.includes('index')) {
+        // Reintenta SIN orderBy y ordena en cliente
+        const qy2 = query(
+          collection(db, 'factura_items'),
+          where('proformaId', '==', proformaId)
+        );
+        const snap2 = await getDocs(qy2);
+        const arr = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+        arr.sort((a, b) => {
+          const as = a?.fecha?.seconds ?? 0;
+          const bs = b?.fecha?.seconds ?? 0;
+          return as - bs;
+        });
+        setProductos(arr);
+        console.warn('Falta índice compuesto (proformaId asc, fecha asc) para factura_items. Usando orden en cliente.');
+      } else {
+        console.error('Error cargarProductos:', e);
+        throw e;
+      }
+    }
+  };
+
+  const openPicker = async () => {
+    if (!proforma?.id) {
+      toast.info('Busca una proforma primero.');
+      return;
+    }
+    try {
+      setPickerBusy(true);
+      const snap = await getDocs(query(collection(db, 'inventario'), orderBy('codigo')));
+      setInventarioList(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setPickerSearch('');
+      setSelectedInv(null);
+      setQtyInput('1');
+      setPickerPage(1);
+      setShowPicker(true);
+    } catch (e) {
+      console.error(e);
+      toast.error('No se pudo cargar el inventario.');
+    } finally {
+      setPickerBusy(false);
+    }
+  };
+
+  const filteredInv = inventarioList.filter((it) => {
+    const s = pickerSearch.trim().toLowerCase();
+    if (!s) return true;
+    return (
+      String(it.codigo || '').toLowerCase().includes(s) ||
+      String(it.descripcion || '').toLowerCase().includes(s)
+    );
+  });
+  const invLast = pickerPage * pickerPerPage;
+  const pickerRows = filteredInv.slice(invLast - pickerPerPage, invLast);
+
+  const selectInv = (row) => {
+    setSelectedInv(row);
+    setQtyInput('1');
+  };
+
+  const confirmarProducto = async () => {
+    if (!selectedInv) return;
+    const cantDisp = Number(selectedInv.cantidad) || 0;
+    const qty = Math.max(1, Math.floor(Number(qtyInput) || 0));
+    if (qty > cantDisp) {
+      toast.warn('No hay suficiente inventario para esa cantidad.');
+      return;
+    }
+
+    const precioVenta = Number(selectedInv.precioVenta ?? selectedInv.precio ?? 0);
+
+    try {
+      setPickerBusy(true);
+      // 1) Descontar stock
+      await updateDoc(doc(db, 'inventario', selectedInv.id), {
+        cantidad: increment(-qty),
+        updatedAt: serverTimestamp(),
+      });
+
+      // 2) Crear renglón de factura
+      await addDoc(collection(db, 'factura_items'), {
+        proformaId: proforma.id,
+        invId: selectedInv.id,
+        codigo: selectedInv.codigo || '',
+        descripcion: selectedInv.descripcion || '',
+        precioVenta,
+        cantidad: qty,
+        fecha: serverTimestamp(),
+      });
+
+      // 3) Refrescar listado
+      await cargarProductos(proforma.id);
+      toast.success('Producto agregado y stock actualizado.');
+      setShowPicker(false);
+    } catch (e) {
+      console.error('No se pudo agregar el producto:', e);
+      toast.error('Error al agregar producto.');
+    } finally {
+      setPickerBusy(false);
+    }
+  };
+
+  const eliminarProducto = async (item) => {
+    toast.info(
+      ({ closeToast }) => (
+        <div className="toast-confirm-container">
+          <p className="toast-confirm-message">¿Eliminar producto de la factura?</p>
+          <div className="toast-confirm-buttons">
+            <button
+              className="btn-confirm eliminar"
+              onClick={async () => {
+                try {
+                  // devolver stock
+                  await updateDoc(doc(db, 'inventario', item.invId), {
+                    cantidad: increment(Number(item.cantidad) || 0),
+                    updatedAt: serverTimestamp(),
+                  });
+                } catch (e) {
+                  console.error('No se pudo devolver stock:', e);
+                }
+                try {
+                  await deleteDoc(doc(db, 'factura_items', item.id));
+                  await cargarProductos(proforma.id);
+                  toast.success('Producto eliminado.');
+                } finally {
+                  closeToast();
+                }
+              }}
+              disabled={busy}
+            >
+              Eliminar
+            </button>
+            <button className="btn-confirm cancelar" onClick={closeToast} disabled={busy}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        containerId: 'center-toast',
+        className: 'toast-confirm-wrapper',
+      }
+    );
+  };
+
   // Buscar proforma con loader
   const buscarProforma = async () => {
     const term = (numeroProforma || '').trim();
@@ -180,18 +366,23 @@ const Factura = () => {
           // normaliza reparaciones
           const repars = Array.isArray(data.reparaciones)
             ? data.reparaciones.map((r) => ({
-                concepto: r.concepto ?? r.descripcion ?? '',
-                precio: Number(r.precio ?? r.monto ?? 0),
-              }))
+              concepto: r.concepto ?? r.descripcion ?? '',
+              precio: Number(r.precio ?? r.monto ?? 0),
+            }))
             : [];
           setReparaciones(repars);
 
           setProforma(data);
-          await Promise.all([cargarAbonos(docRef.id), cargarGastos(docRef.id)]);
+          await Promise.all([
+            cargarAbonos(docRef.id),
+            cargarGastos(docRef.id),
+            cargarProductos(docRef.id),
+          ]);
         } else {
           setProforma(null);
           setAbonos([]);
           setGastos([]);
+          setProductos([]);
           setReparaciones([]);
           setVehiculo({ placa: '', marca: '', modelo: '', anio: '', color: '' });
           toast.info('Proforma no encontrada.', { autoClose: 2500 });
@@ -208,7 +399,7 @@ const Factura = () => {
   const cargarAbonos = async (proformaId) => {
     const qy = query(collection(db, 'abonos'), where('proformaId', '==', proformaId));
     const snapshot = await getDocs(qy);
-    const resultados = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })); // 👈 incluye id
+    const resultados = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })); // incluye id
     setAbonos(resultados);
   };
 
@@ -219,9 +410,14 @@ const Factura = () => {
     setGastos(resultados);
   };
 
+  // Totales (incluye productos)
   const totalAbonado = abonos.reduce((sum, a) => sum + (Number(a.monto) || 0), 0);
   const totalGastos = gastos.reduce((sum, g) => sum + (Number(g.monto) || 0), 0);
-  const totalFinal = proforma ? (Number(proforma.total) || 0) + totalGastos : 0;
+  const totalProductos = productos.reduce(
+    (sum, p) => sum + (Number(p.precioVenta) || 0) * (Number(p.cantidad) || 0),
+    0
+  );
+  const totalFinal = proforma ? (Number(proforma.total) || 0) + totalGastos + totalProductos : 0;
   const saldoPendiente = totalFinal - totalAbonado;
 
   /* ====== ABONO (ingreso) ====== */
@@ -363,7 +559,6 @@ const Factura = () => {
     }
   };
 
-  // Confirm toast -> al dar "Eliminar" llama a esta con overlay (Gastos)
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
   const confirmarEliminacion = async (gastoId) => {
@@ -416,7 +611,7 @@ const Factura = () => {
     );
   };
 
-  /* ====== EDICIÓN / ELIMINACIÓN DE ABONO (igual que gastos) ====== */
+  /* ====== EDICIÓN / ELIMINACIÓN DE ABONO ====== */
   const editarAbono = (abono) => {
     if (!abono || !abono.id) {
       toast.error('ID de abono no válido', { autoClose: 2500 });
@@ -526,16 +721,16 @@ const Factura = () => {
   const descargarPDF = async () => {
     const original = document.getElementById('factura-pdf');
     if (!original) return;
-  
+
     try {
       setIsGeneratingPdf(true);
       await withLoading(async () => {
         const copia = original.cloneNode(true);
-  
-        // Marcar todas las filas para que NO se corten entre páginas
-        copia.querySelectorAll('table tr').forEach(tr => tr.classList.add('no-split-row'));
-  
-        // --- estilos para PDF (colores + evitar cortes + repetir thead) ---
+
+        // Marcar filas para evitar cortes
+        copia.querySelectorAll('table tr').forEach((tr) => tr.classList.add('no-split-row'));
+
+        // Estilos forzados para PDF
         const styleEl = document.createElement('style');
         styleEl.textContent = `
           .factura-pdf, .factura-pdf * {
@@ -544,18 +739,15 @@ const Factura = () => {
           }
           .factura-tabla-resumen thead th,
           .historial-abonos thead th,
-          .historial-gastos thead th {
+          .historial-gastos thead th,
+          .proforma-tabla thead th {
             background: #0f172a !important;
             color: #ffffff !important;
           }
-          /* Evitar cortar filas entre páginas */
           table tr.no-split-row, table th, table td {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
-            -webkit-column-break-inside: avoid !important;
-            -moz-column-break-inside: avoid !important;
           }
-          /* Repetir encabezados de todas las tablas en cada página */
           .factura-tabla-resumen thead,
           .historial-abonos thead,
           .historial-gastos thead,
@@ -570,79 +762,72 @@ const Factura = () => {
           }
         `;
         copia.insertBefore(styleEl, copia.firstChild);
-  
-        // Forzar colores de encabezados en el clon
-        copia
-          .querySelectorAll(
-            '.factura-tabla-resumen thead th, .historial-abonos thead th, .historial-gastos thead th'
-          )
-          .forEach((th) => {
-            th.style.background = '#0f172a';
-            th.style.color = '#fff';
-          });
-  
+
         // Header con logo + datos
         const header = document.createElement('div');
         header.setAttribute(
           'style',
           'display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;'
         );
-  
+
         const logoImg = document.createElement('img');
         logoImg.src = logo;
         logoImg.alt = 'Taller 2H';
         logoImg.setAttribute('style', 'width:120px; height:auto;');
-  
+
         const rightBox = document.createElement('div');
-        rightBox.setAttribute('style', 'text-align:right; font-size:12px; color:#333; line-height:1.3;');
+        rightBox.setAttribute(
+          'style',
+          'text-align:right; font-size:12px; color:#333; line-height:1.3;'
+        );
         rightBox.innerHTML = `
           <div><strong></strong>Taller automotriz 2H S.A</div>
           <div><strong>Tel:</strong> 62756427</div>
           <div><strong>Correo:</strong> taller2hrosario@gmail.com</div>
           <div><strong>Cédula Jurídica:</strong> 3-101930294</div>
           <div style="margin-top:6px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-          })}</div>
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        })}</div>
         `;
-  
+
         header.appendChild(logoImg);
         header.appendChild(rightBox);
         copia.insertBefore(header, copia.firstChild);
-  
+
         // Quitar controles/inputs del clon
         copia
-          .querySelectorAll('input, button, .boton-accion, .btn-descargar, .grupo-gasto-column, .buscar-proforma-barra')
+          .querySelectorAll(
+            'input, button, .boton-accion, .btn-descargar, .buscar-proforma-barra'
+          )
           .forEach((el) => el.remove());
-  
-        // Ocultar la columna de acciones en ambos historiales
+
+        // Ocultar la columna de acciones en historiales
         copia
           .querySelectorAll(
             '.historial-gastos td:last-child, .historial-gastos th:last-child, .historial-abonos td:last-child, .historial-abonos th:last-child'
           )
           .forEach((col) => (col.style.display = 'none'));
-  
+
         const opt = {
           margin: 0.5,
           filename: `Factura-Proforma-${numeroProforma}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
           jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-          // Indicar a html2pdf que use reglas CSS y evite cortar <tr>
           pagebreak: {
             mode: ['css', 'legacy'],
-            avoid: ['tr', '.no-split-row']
-          }
+            avoid: ['tr', '.no-split-row'],
+          },
         };
-  
+
         await html2pdf().set(opt).from(copia).save();
       }, 'Generando PDF…');
     } finally {
       setIsGeneratingPdf(false);
     }
   };
-  
 
   const onBuscarKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -663,7 +848,7 @@ const Factura = () => {
         />
 
         <div className="fecha-factura-centro">
-          Fecha:{' '}
+          Fecha{' '}
           {new Date().toLocaleDateString('es-CR', {
             year: 'numeric',
             month: '2-digit',
@@ -729,6 +914,7 @@ const Factura = () => {
                 <tr>
                   <th>Total Proforma</th>
                   <th>Gastos</th>
+                  <th>Productos</th>
                   <th>Total Final</th>
                   <th>Abonado</th>
                   <th>Saldo Pendiente</th>
@@ -738,6 +924,7 @@ const Factura = () => {
                 <tr>
                   <td>{formatCRC(proforma.total)}</td>
                   <td>{formatCRC(totalGastos)}</td>
+                  <td>{formatCRC(totalProductos)}</td>
                   <td>{formatCRC(totalFinal)}</td>
                   <td>{formatCRC(totalAbonado)}</td>
                   <td>{formatCRC(saldoPendiente)}</td>
@@ -745,8 +932,8 @@ const Factura = () => {
               </tbody>
             </table>
 
-            {/* Formularios para ingresar gastos */}
-            <div className="grupo-gasto-column">
+            {/* ===== Gasto ===== */}
+            <div className="grupo-gasto">
               <div className="grupo-gasto-inputs">
                 <label htmlFor="detalleGasto">Detalle del Gasto:</label>
                 <input
@@ -778,7 +965,7 @@ const Factura = () => {
               </button>
             </div>
 
-            {/* Abono + Tabla de Reparaciones */}
+            {/* ===== Abono + Columna derecha (Productos arriba, Reparaciones abajo) ===== */}
             <div className="factura-abono-y-reparaciones">
               {/* Izquierda: Abono */}
               <div>
@@ -809,53 +996,119 @@ const Factura = () => {
                 </div>
               </div>
 
-              {/* Derecha: Reparaciones */}
-              <div className="tabla-wrap">
-                <div className="tabla-headbar">
-                  <h3>Reparaciones</h3>
+              {/* Derecha: Productos (arriba) + Reparaciones (abajo) */}
+              <div className="col-right">
+                {/* Productos */}
+                <div className="grupo-producto">
+                  <div className="tabla-headbar">
+                    <h3>Productos</h3>
+                    <button
+                      type="button"
+                      className="btn btn--xs btn--auto"
+                      onClick={openPicker}
+                      disabled={!proforma?.id}
+                    >
+                      <FaBoxOpen /> Agregar producto
+                    </button>
+                  </div>
+
+                  <div className="tabla-wrap">
+                    <table className="tabla tabla--compact">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 140 }}>Código</th>
+                          <th>Descripción</th>
+                          <th style={{ width: 120 }} className="is-right">P. Unit.</th>
+                          <th style={{ width: 100 }} className="is-center">Cant.</th>
+                          <th style={{ width: 120 }} className="is-right">Subtotal</th>
+                          <th style={{ width: 90 }} className="is-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productos.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="empty">No hay productos agregados.</td>
+                          </tr>
+                        )}
+                        {productos.map((p) => (
+                          <tr key={p.id}>
+                            <td className="mono">{p.codigo}</td>
+                            <td>{p.descripcion}</td>
+                            <td className="is-right">{formatCRC(p.precioVenta)}</td>
+                            <td className="is-center">{Number(p.cantidad) || 0}</td>
+                            <td className="is-right">
+                              {formatCRC((Number(p.precioVenta) || 0) * (Number(p.cantidad) || 0))}
+                            </td>
+                            <td className="is-center">
+                              <button
+                                className="btn-icon btn-icon--danger"
+                                onClick={() => eliminarProducto(p)}
+                                title="Eliminar"
+                                aria-label="Eliminar producto"
+                                disabled={busy}
+                              >
+                                <FaTrashAlt />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
-                <table className="proforma-tabla" role="table" style={{ listStyle: 'none' }}>
-                  <thead>
-                    <tr role="row">
-                      <th role="columnheader" className="th-desc" style={{ textAlign: 'left' }}>
-                        Descripción
-                      </th>
-                      <th role="columnheader" className="th-monto" style={{ textAlign: 'right' }}>
-                        Monto
-                      </th>
-                    </tr>
-                  </thead>
+                {/* Reparaciones */}
+                <div className="tabla-wrap reparaciones-wrap">
+                  <div className="tabla-headbar">
+                    <h3>Reparaciones</h3>
+                  </div>
 
-                  <tbody style={{ listStyle: 'none', paddingLeft: 0 }}>
-                    {reparaciones.length > 0 ? (
-                      reparaciones.map((r, idx) => (
-                        <tr key={idx} role="row">
-                          <td className="td-desc" style={{ textAlign: 'left' }}>
-                            {r.concepto || '—'}
-                          </td>
-                          <td className="td-monto" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                            {formatCRC(r.precio)}
+                  <table className="proforma-tabla" role="table" style={{ listStyle: 'none' }}>
+                    <thead>
+                      <tr role="row">
+                        <th role="columnheader" className="th-desc" style={{ textAlign: 'left' }}>
+                          Descripción
+                        </th>
+                        <th role="columnheader" className="th-monto" style={{ textAlign: 'right' }}>
+                          Monto
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody style={{ listStyle: 'none', paddingLeft: 0 }}>
+                      {reparaciones.length > 0 ? (
+                        reparaciones.map((r, idx) => (
+                          <tr key={idx} role="row">
+                            <td className="td-desc" style={{ textAlign: 'left' }}>
+                              {r.concepto || '—'}
+                            </td>
+                            <td className="td-monto" style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              {formatCRC(r.precio)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={2} className="empty" style={{ textAlign: 'center' }}>
+                            Esta proforma no tiene reparaciones.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={2} className="empty" style={{ textAlign: 'center' }}>
-                          Esta proforma no tiene reparaciones.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            <button className="boton-accion btn-descargar" onClick={descargarPDF} disabled={busy}>
+            <button
+              className="boton-accion btn-descargar"
+              onClick={descargarPDF}
+              disabled={busy}
+            >
               {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
             </button>
 
-            {/* Historial de abonos con acciones (igual a gastos) */}
+            {/* Historial de abonos con acciones */}
             {abonos.length > 0 && (
               <div className="historial-abonos">
                 <h3>Historial de Abonos</h3>
@@ -868,8 +1121,8 @@ const Factura = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {abonos.map((ab, index) => (
-                      <tr key={ab.id || index}>
+                    {abonos.map((ab) => (
+                      <tr key={ab.id}>
                         <td>{ab.fecha}</td>
                         <td>
                           {editAbono && editAbono.id === ab.id ? (
@@ -890,16 +1143,16 @@ const Factura = () => {
                         <td>
                           {editAbono && editAbono.id === ab.id ? (
                             <>
-                              <button onClick={() => guardarEdicionAbono(ab.id)} disabled={busy}>
+                              <button onClick={() => guardarEdicionAbono(ab.id)} disabled={busy} title="Guardar">
                                 <FaSave />
                               </button>
-                              <button onClick={cancelarEdicionAbono} disabled={busy}>
+                              <button onClick={cancelarEdicionAbono} disabled={busy} title="Cancelar">
                                 <FaTimes />
                               </button>
                             </>
                           ) : (
                             <>
-                              <button onClick={() => editarAbono(ab)} disabled={busy}>
+                              <button onClick={() => editarAbono(ab)} disabled={busy} title="Editar">
                                 <FaEdit />
                               </button>
                               <button
@@ -907,6 +1160,7 @@ const Factura = () => {
                                 disabled={busy || deletingAbonoId === ab.id}
                                 className={deletingAbonoId === ab.id ? 'btn-eliminando' : ''}
                                 aria-busy={deletingAbonoId === ab.id}
+                                title="Eliminar"
                               >
                                 {deletingAbonoId === ab.id ? 'Eliminando…' : <FaTrashAlt />}
                               </button>
@@ -934,8 +1188,8 @@ const Factura = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {gastos.map((g, index) => (
-                      <tr key={g.id || index}>
+                    {gastos.map((g) => (
+                      <tr key={g.id}>
                         <td>{g.fecha}</td>
                         <td>
                           {editGasto && editGasto.id === g.id ? (
@@ -968,16 +1222,16 @@ const Factura = () => {
                         <td>
                           {editGasto && editGasto.id === g.id ? (
                             <>
-                              <button onClick={() => guardarEdicion(g.id)} disabled={busy}>
+                              <button onClick={() => guardarEdicion(g.id)} disabled={busy} title="Guardar">
                                 <FaSave />
                               </button>
-                              <button onClick={cancelarEdicion} disabled={busy}>
+                              <button onClick={cancelarEdicion} disabled={busy} title="Cancelar">
                                 <FaTimes />
                               </button>
                             </>
                           ) : (
                             <>
-                              <button onClick={() => editarGasto(g)} disabled={busy}>
+                              <button onClick={() => editarGasto(g)} disabled={busy} title="Editar">
                                 <FaEdit />
                               </button>
                               <button
@@ -985,6 +1239,7 @@ const Factura = () => {
                                 disabled={busy || deletingGastoId === g.id}
                                 className={deletingGastoId === g.id ? 'btn-eliminando' : ''}
                                 aria-busy={deletingGastoId === g.id}
+                                title="Eliminar"
                               >
                                 {deletingGastoId === g.id ? 'Eliminando…' : <FaTrashAlt />}
                               </button>
@@ -1017,6 +1272,127 @@ const Factura = () => {
           </div>
         )}
       </div>
+
+      {/* ===== Modal Picker Inventario ===== */}
+      {showPicker && (
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !pickerBusy) setShowPicker(false);
+          }}
+        >
+          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+            <div className="modal-icon">
+              <FaBoxOpen />
+            </div>
+            <h4 id="picker-title" className="modal-title">
+              Agregar producto del inventario
+            </h4>
+
+            {/* buscador */}
+            <div className="picker-search">
+              <FaSearch />
+              <input
+                placeholder="Buscar por código o descripción…"
+                value={pickerSearch}
+                onChange={(e) => {
+                  setPickerSearch(e.target.value);
+                  setPickerPage(1);
+                }}
+                disabled={pickerBusy}
+              />
+            </div>
+
+            <div className="picker-meta">
+              {filteredInv.length} resultado{filteredInv.length !== 1 ? 's' : ''}
+            </div>
+
+            <div className="picker-table-wrap">
+              <table className="picker-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 140 }}>Código</th>
+                    <th>Descripción</th>
+                    <th className="is-right" style={{ width: 140 }}>
+                      P. Venta
+                    </th>
+                    <th className="is-center" style={{ width: 120 }}>
+                      Disp.
+                    </th>
+                    <th className="is-center" style={{ width: 110 }}>
+                      Acción
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pickerRows.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="table-empty">
+                        Sin resultados
+                      </td>
+                    </tr>
+                  )}
+                  {pickerRows.map((it) => {
+                    const zero = (Number(it.cantidad) || 0) <= 0;
+                    const selected = selectedInv?.id === it.id;
+                    const pVenta = Number(it.precioVenta ?? it.precio ?? 0);
+                    return (
+                      <tr key={it.id} className={`${selected ? 'is-selected' : ''} ${zero ? 'is-zero' : ''}`}>
+                        <td className="mono">{it.codigo}</td>
+                        <td>{it.descripcion}</td>
+                        <td className="is-right">{formatCRC(pVenta)}</td>
+                        <td className="is-center">{Number(it.cantidad) || 0}</td>
+                        <td className="is-center">
+                          <button
+                            className="btn-pill"
+                            onClick={() => !zero && selectInv(it)}
+                            disabled={pickerBusy || zero}
+                          >
+                            Usar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Paginación del picker */}
+            <div className="picker-pagination">
+              <Pagination
+                currentPage={pickerPage}
+                totalItems={filteredInv.length}
+                itemsPerPage={pickerPerPage}
+                onPageChange={(p) => !pickerBusy && setPickerPage(p)}
+              />
+            </div>
+
+            {/* Cantidad y confirmación */}
+            <div className="picker-qty-row">
+              <label>
+                Cantidad a usar
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={qtyInput}
+                  onChange={(e) => setQtyInput(e.target.value.replace(/[^\d]/g, ''))}
+                  disabled={pickerBusy || !selectedInv}
+                />
+              </label>
+              <div className="modal-actions">
+                <button className="btn btn--ghost" onClick={() => setShowPicker(false)} disabled={pickerBusy}>
+                  Cancelar
+                </button>
+                <button className="btn" onClick={confirmarProducto} disabled={pickerBusy || !selectedInv}>
+                  {pickerBusy ? 'Agregando…' : 'Agregar producto'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
