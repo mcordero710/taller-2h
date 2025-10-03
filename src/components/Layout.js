@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { FaUsers, FaTools, FaFileAlt, FaSearch, FaFileInvoice, FaSignOutAlt, FaBoxes } from 'react-icons/fa';
+import { FaUsers, FaTools, FaFileAlt, FaSearch, FaFileInvoice, FaSignOutAlt, FaBoxes, FaCashRegister } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
@@ -64,6 +64,12 @@ const Layout = () => {
               <Link to="/inventario">
                 <FaBoxes className="menu-icon" />
                 <span>Inventario</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/caja">
+                <FaCashRegister className="menu-icon" />
+                <span>Flujo de caja</span>
               </Link>
             </li>
             <li></li>
