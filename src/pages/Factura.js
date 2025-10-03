@@ -398,9 +398,9 @@ const Factura = () => {
           // normaliza reparaciones
           const repars = Array.isArray(data.reparaciones)
             ? data.reparaciones.map((r) => ({
-                concepto: r.concepto ?? r.descripcion ?? '',
-                precio: Number(r.precio ?? r.monto ?? 0),
-              }))
+              concepto: r.concepto ?? r.descripcion ?? '',
+              precio: Number(r.precio ?? r.monto ?? 0),
+            }))
             : [];
           setReparaciones(repars);
 
@@ -806,40 +806,59 @@ const Factura = () => {
         const copia = original.cloneNode(true);
 
         // Marcar filas para evitar cortes
-        copia.querySelectorAll('table tr').forEach((tr) => tr.classList.add('no-split-row'));
+        copia.querySelectorAll(
+          'input, select, textarea, button, .boton-accion, .btn-descargar, .buscar-proforma-barra, .grupo-gasto, .factura-abono-y-reparaciones .buscar-proforma-barra'
+        ).forEach((el) => el.remove());
 
+        // Estilos forzados para PDF
         // Estilos forzados para PDF
         const styleEl = document.createElement('style');
         styleEl.textContent = `
-          .factura-pdf, .factura-pdf * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .factura-tabla-resumen thead th,
-          .historial-abonos thead th,
-          .historial-gastos thead th,
-          .proforma-tabla thead th {
-            background: #0f172a !important;
-            color: #ffffff !important;
-          }
-          table tr.no-split-row, table th, table td {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-          .factura-tabla-resumen thead,
-          .historial-abonos thead,
-          .historial-gastos thead,
-          .proforma-tabla thead {
-            display: table-header-group !important;
-          }
-          .factura-tabla-resumen tbody,
-          .historial-abonos tbody,
-          .historial-gastos tbody,
-          .proforma-tabla tbody {
-            display: table-row-group !important;
-          }
-        `;
+  .factura-pdf, .factura-pdf * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .factura-tabla-resumen thead th,
+  .historial-abonos thead th,
+  .historial-gastos thead th,
+  .proforma-tabla thead th {
+    background: #0f172a !important;
+    color: #ffffff !important;
+  }
+  table tr.no-split-row, table th, table td {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .factura-tabla-resumen thead,
+  .historial-abonos thead,
+  .historial-gastos thead,
+  .proforma-tabla thead {
+    display: table-header-group !important;
+  }
+  .factura-tabla-resumen tbody,
+  .historial-abonos tbody,
+  .historial-gastos tbody,
+  .proforma-tabla tbody {
+    display: table-row-group !important;
+  }
+
+  /* --- Ajustes específicos Productos en PDF --- */
+  /* Ocultar columna Acciones (última) */
+  .tabla thead th:last-child,
+  .tabla tbody td:last-child {
+    display: none !important;
+  }
+
+  /* Centrar P. Unit. (col 3) y Subtotal (col 5) */
+  .tabla thead th:nth-child(3),
+  .tabla tbody td:nth-child(3),
+  .tabla thead th:nth-child(5),
+  .tabla tbody td:nth-child(5) {
+    text-align: center !important;
+  }
+`;
         copia.insertBefore(styleEl, copia.firstChild);
+
 
         // Header con logo + datos
         const header = document.createElement('div');
@@ -864,10 +883,10 @@ const Factura = () => {
           <div><strong>Correo:</strong> taller2hrosario@gmail.com</div>
           <div><strong>Cédula Jurídica:</strong> 3-101930294</div>
           <div style="margin-top:6px;"><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-CR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-          })}</div>
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        })}</div>
         `;
 
         header.appendChild(logoImg);
