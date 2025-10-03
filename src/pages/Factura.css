@@ -51,8 +51,8 @@
 }
 
 /* ============================
-     Tabla resumen
-     ============================ */
+       Tabla resumen
+       ============================ */
 .factura-tabla-resumen {
   width: 100%;
   border-collapse: collapse;
@@ -89,13 +89,16 @@ table td,
 }
 
 /* ============================
-     Formularios de gasto / botones
-     ============================ */
+       Formularios de gasto / botones
+       ============================ */
 .grupo-gasto {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr auto;
+  /* antes: 1fr */
   gap: 10px;
-  margin: 10px 0 6px
+  margin: 10px 0 6px;
+  align-items: end;
+  /* alinea el botón con los inputs */
 }
 
 .grupo-gasto-inputs {
@@ -136,10 +139,10 @@ table td,
 }
 
 /* ============================
-     Layout (1 columna)
-     ============================ */
+       Layout (1 columna)
+       ============================ */
 
-/* Antes: 2 columnas con minmax() generaban “sangría” a la derecha.
+/* Antes: 2 columnas con minmax() generaban “sangría”.
      Ahora: una sola columna para que Productos/Reparaciones sean full-width. */
 .factura-abono-y-reparaciones {
   display: grid;
@@ -159,6 +162,14 @@ table td,
   font-weight: 600
 }
 
+/* INPUT + SELECT (método) + BOTÓN en una fila */
+.factura-abono-y-reparaciones .buscar-proforma-campos {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  /* antes: 1fr auto */
+  gap: 8px;
+}
+
 .factura-abono-y-reparaciones .buscar-proforma-campos select {
   height: 36px;
   min-width: 130px;
@@ -168,21 +179,20 @@ table td,
   background: #fff;
 }
 
-
 .factura-abono-y-reparaciones .buscar-proforma-campos input {
   height: 36px;
   min-width: 0
 }
 
-/* Contenedor derecho (ahora es el stack de tarjetas) */
+/* Contenedor derecho (stack de tarjetas) */
 .col-right {
   display: grid;
   gap: 12px
 }
 
 /* ============================
-     Card contenedor de tablas
-     ============================ */
+       Card contenedor de tablas
+       ============================ */
 .tabla-wrap {
   width: 100%;
   background: #fff;
@@ -265,14 +275,14 @@ table td,
   padding: 12px
 }
 
-/* Cuando haya muchas filas, que la tarjeta haga scroll interno (no la página completa) */
+/* Cuando haya muchas filas, que la tarjeta haga scroll interno */
 .col-right .tabla-wrap {
   max-height: clamp(320px, 48vh, 560px);
   overflow: auto;
   scroll-behavior: smooth
 }
 
-/* Botones */
+/* Botones secundarios */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -330,8 +340,8 @@ table td,
 }
 
 /* ============================
-     Tabla Reparaciones
-     ============================ */
+       Tabla Reparaciones
+       ============================ */
 .proforma-tabla {
   width: 100% !important;
   border-collapse: collapse !important;
@@ -389,8 +399,8 @@ table td,
 }
 
 /* ============================
-     Historiales
-     ============================ */
+       Historiales
+       ============================ */
 .historial-abonos,
 .historial-gastos {
   margin-top: 2rem
@@ -465,8 +475,8 @@ table td,
 }
 
 /* ============================
-     Toast confirm
-     ============================ */
+       Toast confirm
+       ============================ */
 .center-toast-container {
   position: fixed !important;
   top: 50% !important;
@@ -532,8 +542,8 @@ table td,
 }
 
 /* ============================
-     Nota / Firma
-     ============================ */
+       Nota / Firma
+       ============================ */
 .nota-final-cliente {
   margin-top: 2rem;
   font-size: .95rem;
@@ -544,8 +554,8 @@ table td,
 }
 
 /* ============================
-     PRINT
-     ============================ */
+       PRINT
+       ============================ */
 @media print {
 
   .boton-accion,
@@ -638,5 +648,14 @@ table td,
 @media (max-width:600px) {
   .col-right .tabla-wrap {
     max-height: none
+  }
+
+  .grupo-gasto {
+    grid-template-columns: 1fr;
+  }
+
+  .grupo-gasto .boton-accion {
+    width: 100%;
+    justify-self: stretch;
   }
 }
