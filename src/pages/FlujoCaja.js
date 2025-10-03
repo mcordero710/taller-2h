@@ -25,7 +25,7 @@ export default function FlujoDeCaja() {
     const [session, setSession] = useState(null);
     const [movs, setMovs] = useState([]);
 
-    // apertura
+    // apertura (siempre digitada)
     const [openingStr, setOpeningStr] = useState('');
 
     // egreso manual (sin método)
@@ -34,14 +34,14 @@ export default function FlujoDeCaja() {
     const [loading, setLoading] = useState(false);
 
     const loadSession = async (dk) => {
-        // 1) Sesión del día
+        // Sesión del día
         const q1 = query(collection(db, 'cash_sessions'), where('dateKey', '==', dk));
         const s1 = await getDocs(q1);
         let sess = null;
         if (!s1.empty) sess = { id: s1.docs[0].id, ...s1.docs[0].data() };
         setSession(sess);
 
-        // 2) Movimientos del día (con fallback si falta índice)
+        // Movimientos del día (con fallback sin índice)
         try {
             const q2 = query(
                 collection(db, 'cash_movements'),
@@ -62,7 +62,7 @@ export default function FlujoDeCaja() {
                     return at - bt;
                 });
                 setMovs(arr);
-                console.warn('⚠️ Falta índice compuesto (cash_movements: dateKey asc, createdAt asc). Usando orden en cliente.');
+                console.warn('⚠️ Falta índice (cash_movements: dateKey asc, createdAt asc). Ordenando en cliente.');
             } else {
                 throw e;
             }
@@ -71,19 +71,23 @@ export default function FlujoDeCaja() {
 
     useEffect(() => { loadSession(selectedDate); }, [selectedDate]);
 
+    // Totales y split por tipo
     const totals = useMemo(() => {
         const byType = { ingreso: 0, egreso: 0 };
         const byMethod = { efectivo: 0, sinpe: 0, transferencia: 0, tarjeta: 0 };
         movs.forEach(m => {
             if (m.type === 'ingreso') byType.ingreso += Number(m.amount) || 0;
             if (m.type === 'egreso') byType.egreso += Number(m.amount) || 0;
-            // solo sumará ingresos que tengan method, los egresos ahora no traen method
             if (byMethod[m.method] != null) byMethod[m.method] += Number(m.amount) || 0;
         });
         const opening = Number(session?.openingAmount || 0);
         const closingComputed = opening + byType.ingreso - byType.egreso;
         return { ...byType, byMethod, opening, closingComputed };
     }, [movs, session]);
+
+    // Listas separadas (para las dos tablas)
+    const ingresos = useMemo(() => movs.filter(m => m.type === 'ingreso'), [movs]);
+    const egresos = useMemo(() => movs.filter(m => m.type === 'egreso'), [movs]);
 
     const abrirCaja = async () => {
         const amount = Number(String(openingStr).replace(/[^\d.-]/g, '')) || 0;
@@ -130,7 +134,6 @@ export default function FlujoDeCaja() {
                 dateKey: selectedDate,
                 createdAt: serverTimestamp(),
                 type: 'egreso',
-                // method: (se omite en egresos)
                 amount,
                 concept: egresoDetalle,
                 refType: 'manual',
@@ -144,10 +147,9 @@ export default function FlujoDeCaja() {
     return (
         <div className="cash-page">
             <ToastContainer newestOnTop />
-
             <h2>Flujo de caja</h2>
 
-            {/* Calendario / selector de día */}
+            {/* Toolbar */}
             <div className="cash-toolbar">
                 <label>
                     Fecha
@@ -200,33 +202,70 @@ export default function FlujoDeCaja() {
                 </div>
             </div>
 
-            {/* Resumen por método (solo ingresos con method) */}
+            {/* Resumen por método */}
             <div className="card">
                 <h3>Resumen por método</h3>
                 <ul className="method-grid">
                     {METHODS.map(m => (
-                        <li key={m}><span>{m.toUpperCase()}</span><strong>{formatCRC(totals.byMethod[m])}</strong></li>
+                        <li key={m}>
+                            <span>{m.toUpperCase()}</span>
+                            <strong>{formatCRC(totals.byMethod[m])}</strong>
+                        </li>
                     ))}
                 </ul>
             </div>
 
-            {/* Movimientos del día */}
+            {/* ====== Tabla: INGRESOS ====== */}
             <div className="card">
-                <h3>Movimientos del día</h3>
+                <h3>Ingresos del día</h3>
                 <table className="movs">
                     <thead>
                         <tr>
-                            <th>Hora</th><th>Tipo</th><th>Método</th><th>Concepto</th><th>Monto</th>
+                            <th>Hora</th>
+                            <th>Tipo</th>
+                            <th>Método</th>
+                            <th>Concepto</th>
+                            <th>Monto</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {movs.length === 0 && <tr><td colSpan="5" className="empty">Sin movimientos</td></tr>}
-                        {movs.map(m => (
+                        {ingresos.length === 0 && (
+                            <tr><td colSpan="5" className="empty">Sin ingresos</td></tr>
+                        )}
+                        {ingresos.map(m => (
                             <tr key={m.id}>
                                 <td>{m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString() : '—'}</td>
-                                <td className={m.type}>{m.type.toUpperCase()}</td>
-                                <td>{m.type === 'egreso' ? '—' : (m.method?.toUpperCase() || '—')}</td>
+                                <td className="INGRESO">INGRESO</td>
+                                <td>{m.method?.toUpperCase() || '—'}</td>
                                 <td>{m.concept}</td>
+                                <td className="num">{formatCRC(m.amount)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* ====== Tabla: EGRESOS ====== */}
+            <div className="card">
+                <h3>Egresos del día</h3>
+                <table className="movs">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Tipo</th>
+                            <th>Concepto</th>
+                            <th>Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {egresos.length === 0 && (
+                            <tr><td colSpan="4" className="empty">Sin egresos</td></tr>
+                        )}
+                        {egresos.map(m => (
+                            <tr key={m.id}>
+                                <td>{m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString() : '—'}</td>
+                                <td className="EGRESO">EGRESO</td>
+                                <td>{m.concept || '—'}</td>
                                 <td className="num">{formatCRC(m.amount)}</td>
                             </tr>
                         ))}
