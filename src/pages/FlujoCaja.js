@@ -320,7 +320,7 @@ export default function FlujoDeCaja() {
                     </tbody>
                 </table>
 
-                {/* Botón fuera de la tabla */}
+                {/* Botón fuera de la tabla (HTML válido) */}
                 {session && !session.isClosed && (
                     <div className="cash-footer">
                         <button className="btn-close" onClick={confirmarCierreCaja} disabled={loading}>

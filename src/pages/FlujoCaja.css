@@ -498,3 +498,41 @@
     opacity: .6;
     cursor: not-allowed;
 }
+
+/* Botón Cerrar caja: más pequeño y centrado */
+/* Botón Cerrar caja: centrado y mismo tamaño que "Agregar" */
+.cash-footer {
+    display: flex;
+    justify-content: center;   /* centrado */
+    margin: 12px 0 2px;
+  }
+  
+  .btn-close {
+    /* igual que el botón Agregar */
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s, background .15s, border-color .15s, opacity .15s;
+    display: inline-flex;      /* evita que se estire */
+    align-items: center;
+    justify-content: center;
+    width: auto;               /* asegura que no ocupe 100% */
+    min-width: unset;
+  }
+  
+  .btn-close:hover {
+    transform: translateY(-1px);
+    background: #1f2937;
+    border-color: #1f2937;
+  }
+  
+  .btn-close:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+  }
+  
