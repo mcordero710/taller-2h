@@ -1,3 +1,4 @@
+// src/pages/FlujoDeCaja.js
 import React, { useEffect, useMemo, useState } from 'react';
 import './FlujoCaja.css';
 import { db } from '../firebase/firebase';
@@ -25,7 +26,7 @@ export default function FlujoDeCaja() {
     const [session, setSession] = useState(null);
     const [movs, setMovs] = useState([]);
 
-    // apertura (siempre digitada)
+    // apertura digitada
     const [openingStr, setOpeningStr] = useState('');
 
     // egreso manual (sin método)
@@ -41,7 +42,7 @@ export default function FlujoDeCaja() {
         if (!s1.empty) sess = { id: s1.docs[0].id, ...s1.docs[0].data() };
         setSession(sess);
 
-        // Movimientos del día (con fallback sin índice)
+        // Movimientos del día (con fallback si falta índice)
         try {
             const q2 = query(
                 collection(db, 'cash_movements'),
@@ -85,7 +86,7 @@ export default function FlujoDeCaja() {
         return { ...byType, byMethod, opening, closingComputed };
     }, [movs, session]);
 
-    // Listas separadas (para las dos tablas)
+    // Listas separadas
     const ingresos = useMemo(() => movs.filter(m => m.type === 'ingreso'), [movs]);
     const egresos = useMemo(() => movs.filter(m => m.type === 'egreso'), [movs]);
 
@@ -144,9 +145,57 @@ export default function FlujoDeCaja() {
         } finally { setLoading(false); }
     };
 
+    // 🔔 Confirmación usando EXACTAMENTE el mismo toast de Proforma
+    const confirmarCierreCaja = () => {
+        if (!session?.id || session.isClosed) return;
+
+        toast.info(
+            ({ closeToast }) => (
+                <div className="toast-confirm-container">
+                    <p className="toast-confirm-message">¿Estás seguro de cerrar caja?</p>
+                    <div className="toast-confirm-buttons">
+                        <button
+                            className="btn-confirm eliminar"
+                            onClick={async () => {
+                                await cerrarCaja();
+                                closeToast();
+                            }}
+                            disabled={loading}
+                        >
+                            Sí, cerrar
+                        </button>
+                        <button
+                            className="btn-confirm cancelar"
+                            onClick={closeToast}
+                            disabled={loading}
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            ),
+            {
+                autoClose: false,
+                closeOnClick: false,
+                draggable: false,
+                closeButton: false,
+                containerId: 'center-toast',
+                className: 'toast-confirm-wrapper',
+            }
+        );
+    };
+
     return (
         <div className="cash-page">
-            <ToastContainer newestOnTop />
+            {/* Igual que Proforma: multi-contenedor + mismo containerId */}
+            <ToastContainer
+                enableMultiContainer
+                containerId="center-toast"
+                className="center-toast-container"
+                newestOnTop
+                closeOnClick={false}
+            />
+
             <h2>Flujo de caja</h2>
 
             {/* Toolbar */}
@@ -174,7 +223,6 @@ export default function FlujoDeCaja() {
                         <span>Ingresos: <strong>{formatCRC(totals.ingreso)}</strong></span>
                         <span>Egresos: <strong>{formatCRC(totals.egreso)}</strong></span>
                         <span>Estimado cierre: <strong>{formatCRC(totals.closingComputed)}</strong></span>
-                        {!session.isClosed && <button onClick={cerrarCaja} disabled={loading}>Cerrar caja</button>}
                     </div>
                 )}
             </div>
@@ -271,6 +319,15 @@ export default function FlujoDeCaja() {
                         ))}
                     </tbody>
                 </table>
+
+                {/* Botón fuera de la tabla */}
+                {session && !session.isClosed && (
+                    <div className="cash-footer">
+                        <button className="btn-close" onClick={confirmarCierreCaja} disabled={loading}>
+                            Cerrar caja
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

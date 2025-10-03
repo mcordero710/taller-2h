@@ -341,3 +341,160 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ===== Pie y botón pequeño de cierre ===== */
+.cash-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin: 10px 0 2px;
+}
+
+.btn-close {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+    font-weight: 800;
+    letter-spacing: .2px;
+    cursor: pointer;
+    transition: transform .15s, background .15s, border-color .15s, opacity .15s;
+}
+
+.btn-close:hover {
+    transform: translateY(-1px);
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.btn-close:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* ===== Toast de confirmación ===== */
+.toast-confirm-container {
+    display: grid;
+    gap: 10px;
+    min-width: 280px;
+}
+
+.toast-confirm-message {
+    margin: 0;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.toast-confirm-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-confirm {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--ink);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.btn-confirm.cerrar {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+}
+
+.btn-confirm.cerrar:hover {
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.btn-confirm.cancelar:hover {
+    background: #f3f4f6;
+}
+
+.btn-confirm:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* ===== Toast de confirmación (limpio, sin icono) ===== */
+.confirm-toast {
+    background: transparent;
+    /* usamos nuestra tarjeta interna */
+    box-shadow: none;
+    padding: 0;
+}
+
+.confirm-toast .Toastify__toast-icon {
+    display: none !important;
+}
+
+.confirm-toast .Toastify__close-button {
+    display: none !important;
+}
+
+.confirm-toast .Toastify__toast-body {
+    margin: 0;
+    padding: 0;
+}
+
+/* Tarjeta interna */
+.confirm-toast__card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    min-width: 320px;
+    max-width: 92vw;
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
+}
+
+.confirm-toast__title {
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 12px;
+}
+
+.confirm-toast__actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* Botones del toast */
+.btn-confirm {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--ink);
+}
+
+.btn-confirm--primary {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+}
+
+.btn-confirm--primary:hover {
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.btn-confirm--ghost:hover {
+    background: #f3f4f6;
+}
+
+.btn-confirm:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
