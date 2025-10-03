@@ -65,6 +65,38 @@ const parseMoney = (str) => {
   return Number.isFinite(n) ? n : 0;
 };
 
+/* ===== Caja: helpers globales ===== */
+const PAYMENT_METHODS = [
+  { value: 'efectivo', label: 'Efectivo' },
+  { value: 'sinpe', label: 'SINPE' },
+  { value: 'transferencia', label: 'Transferencia' },
+  { value: 'tarjeta', label: 'Tarjeta' },
+];
+
+const dateKeyFromNow = () => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+// Crea sesión si no existe (apertura del día)
+const ensureTodaySession = async (openingAmount = 50000) => {
+  const today = dateKeyFromNow();
+  const qy = query(collection(db, 'cash_sessions'), where('dateKey', '==', today));
+  const snap = await getDocs(qy);
+  if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() };
+
+  const ref = await addDoc(collection(db, 'cash_sessions'), {
+    dateKey: today,
+    openingAmount,
+    openingAt: serverTimestamp(),
+    isClosed: false,
+  });
+  return { id: ref.id, dateKey: today, openingAmount, isClosed: false };
+};
+
 const Factura = () => {
   const [numeroProforma, setNumeroProforma] = useState('');
   const [proforma, setProforma] = useState(null);
@@ -73,6 +105,7 @@ const Factura = () => {
   // Abonos
   const [abonoStr, setAbonoStr] = useState(''); // input mostrado
   const [abonos, setAbonos] = useState([]);
+  const [abonoMethod, setAbonoMethod] = useState('efectivo'); // 👈 método de pago
 
   // Gastos
   const [gastos, setGastos] = useState([]);
@@ -178,24 +211,23 @@ const Factura = () => {
         orderBy('fecha', 'asc')
       );
       const snap = await getDocs(qy);
-      setProductos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setProductos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     } catch (e) {
       const msg = String(e?.message || '');
       if (e?.code === 'failed-precondition' || msg.includes('index')) {
         // Reintenta SIN orderBy y ordena en cliente
-        const qy2 = query(
-          collection(db, 'factura_items'),
-          where('proformaId', '==', proformaId)
-        );
+        const qy2 = query(collection(db, 'factura_items'), where('proformaId', '==', proformaId));
         const snap2 = await getDocs(qy2);
-        const arr = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+        const arr = snap2.docs.map((d) => ({ id: d.id, ...d.data() }));
         arr.sort((a, b) => {
           const as = a?.fecha?.seconds ?? 0;
           const bs = b?.fecha?.seconds ?? 0;
           return as - bs;
         });
         setProductos(arr);
-        console.warn('Falta índice compuesto (proformaId asc, fecha asc) para factura_items. Usando orden en cliente.');
+        console.warn(
+          'Falta índice compuesto (proformaId asc, fecha asc) para factura_items. Usando orden en cliente.'
+        );
       } else {
         console.error('Error cargarProductos:', e);
         throw e;
@@ -373,11 +405,7 @@ const Factura = () => {
           setReparaciones(repars);
 
           setProforma(data);
-          await Promise.all([
-            cargarAbonos(docRef.id),
-            cargarGastos(docRef.id),
-            cargarProductos(docRef.id),
-          ]);
+          await Promise.all([cargarAbonos(docRef.id), cargarGastos(docRef.id), cargarProductos(docRef.id)]);
         } else {
           setProforma(null);
           setAbonos([]);
@@ -449,15 +477,37 @@ const Factura = () => {
     try {
       setIsSavingAbono(true);
       await withLoading(async () => {
+        // 1) Asegura apertura del día
+        const session = await ensureTodaySession(50000);
+
+        // 2) Crea abono con método
         const nuevoAbono = {
           proformaId: proforma.id,
           monto, // número (puede tener decimales)
+          method: abonoMethod, // 👈 nuevo
           fecha: new Date().toLocaleDateString(),
+          dateKey: dateKeyFromNow(),
+          createdAt: serverTimestamp(),
         };
-        await addDoc(collection(db, 'abonos'), nuevoAbono);
+        const abRef = await addDoc(collection(db, 'abonos'), nuevoAbono);
+
+        // 3) Movimiento de caja (ingreso)
+        await addDoc(collection(db, 'cash_movements'), {
+          sessionId: session.id,
+          dateKey: dateKeyFromNow(),
+          createdAt: serverTimestamp(),
+          type: 'ingreso',
+          method: abonoMethod,
+          amount: monto,
+          concept: `Abono factura ${proforma?.numero ?? ''}`.trim(),
+          refType: 'abono',
+          refId: abRef.id,
+          proformaNumero: proforma?.numero ?? null,
+        });
+
         await cargarAbonos(proforma.id);
         setAbonoStr('');
-        toast.success('Abono registrado exitosamente', { autoClose: 2500 });
+        toast.success('Abono registrado y reflejado en caja', { autoClose: 2500 });
       }, 'Registrando abono…');
     } finally {
       setIsSavingAbono(false);
@@ -645,10 +695,24 @@ const Factura = () => {
     try {
       setIsUpdatingAbono(true);
       await withLoading(async () => {
+        // 1) Actualiza abono
         const abonoRef = doc(db, 'abonos', abonoId);
         await updateDoc(abonoRef, { monto });
+
+        // 2) Sincroniza movimiento vinculado
+        const qy = query(
+          collection(db, 'cash_movements'),
+          where('refType', '==', 'abono'),
+          where('refId', '==', abonoId)
+        );
+        const snap = await getDocs(qy);
+        if (!snap.empty) {
+          const movRef = doc(db, 'cash_movements', snap.docs[0].id);
+          await updateDoc(movRef, { amount: monto });
+        }
+
         setEditAbono(null);
-        toast.success('Abono actualizado exitosamente', { autoClose: 2500 });
+        toast.success('Abono actualizado (caja ajustada)', { autoClose: 2500 });
         await cargarAbonos(proforma.id);
       }, 'Actualizando abono…');
     } finally {
@@ -662,10 +726,24 @@ const Factura = () => {
       setIsDeletingAbono(true);
       await withLoading(async () => {
         await nextFrame();
+
+        // 1) Elimina abono
         const abonoRef = doc(db, 'abonos', abonoId);
         await deleteDoc(abonoRef);
+
+        // 2) Elimina movimientos vinculados
+        const qy = query(
+          collection(db, 'cash_movements'),
+          where('refType', '==', 'abono'),
+          where('refId', '==', abonoId)
+        );
+        const snap = await getDocs(qy);
+        for (const d of snap.docs) {
+          await deleteDoc(doc(db, 'cash_movements', d.id));
+        }
+
         await cargarAbonos(proforma.id);
-        toast.success('Abono eliminado exitosamente', { autoClose: 2500 });
+        toast.success('Abono eliminado (caja ajustada)', { autoClose: 2500 });
       }, 'Eliminando abono…');
     } finally {
       setIsDeletingAbono(false);
@@ -728,40 +806,59 @@ const Factura = () => {
         const copia = original.cloneNode(true);
 
         // Marcar filas para evitar cortes
-        copia.querySelectorAll('table tr').forEach((tr) => tr.classList.add('no-split-row'));
+        copia.querySelectorAll(
+          'input, select, textarea, button, .boton-accion, .btn-descargar, .buscar-proforma-barra, .grupo-gasto, .factura-abono-y-reparaciones .buscar-proforma-barra'
+        ).forEach((el) => el.remove());
 
+        // Estilos forzados para PDF
         // Estilos forzados para PDF
         const styleEl = document.createElement('style');
         styleEl.textContent = `
-          .factura-pdf, .factura-pdf * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .factura-tabla-resumen thead th,
-          .historial-abonos thead th,
-          .historial-gastos thead th,
-          .proforma-tabla thead th {
-            background: #0f172a !important;
-            color: #ffffff !important;
-          }
-          table tr.no-split-row, table th, table td {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-          .factura-tabla-resumen thead,
-          .historial-abonos thead,
-          .historial-gastos thead,
-          .proforma-tabla thead {
-            display: table-header-group !important;
-          }
-          .factura-tabla-resumen tbody,
-          .historial-abonos tbody,
-          .historial-gastos tbody,
-          .proforma-tabla tbody {
-            display: table-row-group !important;
-          }
-        `;
+  .factura-pdf, .factura-pdf * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .factura-tabla-resumen thead th,
+  .historial-abonos thead th,
+  .historial-gastos thead th,
+  .proforma-tabla thead th {
+    background: #0f172a !important;
+    color: #ffffff !important;
+  }
+  table tr.no-split-row, table th, table td {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .factura-tabla-resumen thead,
+  .historial-abonos thead,
+  .historial-gastos thead,
+  .proforma-tabla thead {
+    display: table-header-group !important;
+  }
+  .factura-tabla-resumen tbody,
+  .historial-abonos tbody,
+  .historial-gastos tbody,
+  .proforma-tabla tbody {
+    display: table-row-group !important;
+  }
+
+  /* --- Ajustes específicos Productos en PDF --- */
+  /* Ocultar columna Acciones (última) */
+  .tabla thead th:last-child,
+  .tabla tbody td:last-child {
+    display: none !important;
+  }
+
+  /* Centrar P. Unit. (col 3) y Subtotal (col 5) */
+  .tabla thead th:nth-child(3),
+  .tabla tbody td:nth-child(3),
+  .tabla thead th:nth-child(5),
+  .tabla tbody td:nth-child(5) {
+    text-align: center !important;
+  }
+`;
         copia.insertBefore(styleEl, copia.firstChild);
+
 
         // Header con logo + datos
         const header = document.createElement('div');
@@ -798,9 +895,7 @@ const Factura = () => {
 
         // Quitar controles/inputs del clon
         copia
-          .querySelectorAll(
-            'input, button, .boton-accion, .btn-descargar, .buscar-proforma-barra'
-          )
+          .querySelectorAll('input, button, .boton-accion, .btn-descargar, .buscar-proforma-barra')
           .forEach((el) => el.remove());
 
         // Ocultar la columna de acciones en historiales
@@ -985,6 +1080,21 @@ const Factura = () => {
                       disabled={saldoPendiente <= 0 || busy}
                       style={{ textAlign: 'left' }}
                     />
+                    {/* Método de pago */}
+                    <select
+                      value={abonoMethod}
+                      onChange={(e) => setAbonoMethod(e.target.value)}
+                      disabled={saldoPendiente <= 0 || busy}
+                      aria-label="Método de pago"
+                      style={{ height: 36 }}
+                    >
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+
                     <button
                       className="boton-accion"
                       onClick={ingresarAbono}
@@ -1018,16 +1128,26 @@ const Factura = () => {
                         <tr>
                           <th style={{ width: 140 }}>Código</th>
                           <th>Descripción</th>
-                          <th style={{ width: 120 }} className="is-right">P. Unit.</th>
-                          <th style={{ width: 100 }} className="is-center">Cant.</th>
-                          <th style={{ width: 120 }} className="is-right">Subtotal</th>
-                          <th style={{ width: 90 }} className="is-center">Acciones</th>
+                          <th style={{ width: 120 }} className="is-right">
+                            P. Unit.
+                          </th>
+                          <th style={{ width: 100 }} className="is-center">
+                            Cant.
+                          </th>
+                          <th style={{ width: 120 }} className="is-right">
+                            Subtotal
+                          </th>
+                          <th style={{ width: 90 }} className="is-center">
+                            Acciones
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {productos.length === 0 && (
                           <tr>
-                            <td colSpan={6} className="empty">No hay productos agregados.</td>
+                            <td colSpan={6} className="empty">
+                              No hay productos agregados.
+                            </td>
                           </tr>
                         )}
                         {productos.map((p) => (
@@ -1100,11 +1220,7 @@ const Factura = () => {
               </div>
             </div>
 
-            <button
-              className="boton-accion btn-descargar"
-              onClick={descargarPDF}
-              disabled={busy}
-            >
+            <button className="boton-accion btn-descargar" onClick={descargarPDF} disabled={busy}>
               {isGeneratingPdf ? 'Generando PDF…' : 'Descargar Factura'}
             </button>
 
@@ -1257,9 +1373,9 @@ const Factura = () => {
               <>
                 <div className="nota-final-cliente">
                   <p>
-                    <strong>Nota:</strong> Al firmar esta factura, el cliente confirma que ha recibido el vehículo conforme
-                    y acepta que <strong>una vez retirado del taller, no se ofrece garantía por daños posteriores</strong>
-                    que no estén relacionados con los servicios prestados. Se recomienda revisar el vehículo antes de su entrega.
+                    <strong>Nota:</strong> Al firmar esta factura, el cliente confirma que ha recibido el vehículo conforme y
+                    acepta que <strong>una vez retirado del taller, no se ofrece garantía por daños posteriores</strong> que
+                    no estén relacionados con los servicios prestados. Se recomienda revisar el vehículo antes de su entrega.
                   </p>
                 </div>
 
@@ -1327,9 +1443,7 @@ const Factura = () => {
                 <tbody>
                   {pickerRows.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="table-empty">
-                        Sin resultados
-                      </td>
+                      <td colSpan={5} className="table-empty">Sin resultados</td>
                     </tr>
                   )}
                   {pickerRows.map((it) => {
@@ -1343,11 +1457,7 @@ const Factura = () => {
                         <td className="is-right">{formatCRC(pVenta)}</td>
                         <td className="is-center">{Number(it.cantidad) || 0}</td>
                         <td className="is-center">
-                          <button
-                            className="btn-pill"
-                            onClick={() => !zero && selectInv(it)}
-                            disabled={pickerBusy || zero}
-                          >
+                          <button className="btn-pill" onClick={() => !zero && selectInv(it)} disabled={pickerBusy || zero}>
                             Usar
                           </button>
                         </td>

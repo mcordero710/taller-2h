@@ -15,11 +15,14 @@
   max-width: 1200px;
   margin: auto;
   padding: 2rem;
+  padding-top: 4.25rem;
+  /* espacio para el botón fijo */
   background: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, .1);
   position: relative;
+  /* referencia para el botón absoluto */
 }
 
 /* Encabezado / cliente */
@@ -93,9 +96,12 @@ table td,
      ============================ */
 .grupo-gasto {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr auto;
+  /* antes: 1fr */
   gap: 10px;
-  margin: 10px 0 6px
+  margin: 10px 0 6px;
+  align-items: end;
+  /* alinea el botón con los inputs */
 }
 
 .grupo-gasto-inputs {
@@ -139,7 +145,7 @@ table td,
      Layout (1 columna)
      ============================ */
 
-/* Antes: 2 columnas con minmax() generaban “sangría” a la derecha.
+/* Antes: 2 columnas con minmax().
      Ahora: una sola columna para que Productos/Reparaciones sean full-width. */
 .factura-abono-y-reparaciones {
   display: grid;
@@ -159,10 +165,21 @@ table td,
   font-weight: 600
 }
 
+/* INPUT + SELECT (método) + BOTÓN en una fila */
 .factura-abono-y-reparaciones .buscar-proforma-campos {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px
+  grid-template-columns: 1fr auto auto;
+  /* antes: 1fr auto */
+  gap: 8px;
+}
+
+.factura-abono-y-reparaciones .buscar-proforma-campos select {
+  height: 36px;
+  min-width: 130px;
+  padding: .5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
 }
 
 .factura-abono-y-reparaciones .buscar-proforma-campos input {
@@ -170,7 +187,7 @@ table td,
   min-width: 0
 }
 
-/* Contenedor derecho (ahora es el stack de tarjetas) */
+/* Contenedor derecho (stack de tarjetas) */
 .col-right {
   display: grid;
   gap: 12px
@@ -261,14 +278,14 @@ table td,
   padding: 12px
 }
 
-/* Cuando haya muchas filas, que la tarjeta haga scroll interno (no la página completa) */
+/* Cuando haya muchas filas, que la tarjeta haga scroll interno */
 .col-right .tabla-wrap {
   max-height: clamp(320px, 48vh, 560px);
   overflow: auto;
   scroll-behavior: smooth
 }
 
-/* Botones */
+/* Botones secundarios */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -326,6 +343,65 @@ table td,
 }
 
 /* ============================
+     Botón "Descargar Factura"
+     ============================ */
+.btn-descargar {
+  position: absolute;
+  top: 12px;
+  /* dentro del wrapper */
+  right: 12px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  /* mismo look & feel que los otros botones */
+  background: #111827;
+  color: #fff;
+  border: 1px solid #111827;
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-height: 40px;
+  font-weight: 700;
+
+  /* forzar tamaño correcto por si algún reset le pone width 100% */
+  width: auto !important;
+  min-width: 0 !important;
+
+  cursor: pointer;
+  transition: background-color .2s, transform .2s;
+  z-index: 10;
+}
+
+.btn-descargar:hover {
+  background: #1abc9c;
+  border-color: #1abc9c;
+  transform: scale(1.05);
+}
+
+/* Ocultar en impresión */
+@media print {
+  .btn-descargar {
+    display: none !important;
+  }
+}
+
+/* En pantallas pequeñas que no tape la UI */
+@media (max-width: 720px) {
+  .factura-wrapper {
+    padding-top: 3.5rem;
+  }
+
+  .btn-descargar {
+    top: 10px;
+    right: 10px;
+    height: 36px;
+    padding: 8px 12px;
+    border-radius: 10px;
+  }
+}
+
+/* ============================
      Tabla Reparaciones
      ============================ */
 .proforma-tabla {
@@ -367,6 +443,7 @@ table td,
 .proforma-tabla tbody td {
   padding: 10px 14px !important;
   border-top: 1px solid #f1f5f9 !important;
+  /* <- fix del typo */
   vertical-align: middle !important
 }
 
@@ -544,22 +621,31 @@ table td,
      ============================ */
 @media print {
 
+  /* Oculta controles/inputs y botones en PDF */
   .boton-accion,
   input,
   button,
+  select,
   .buscar-proforma-barra,
   .grupo-gasto,
+  .grupo-gasto-inputs,
+  .grupo-gasto-inputs label,
+  /* <- oculta los labels Detalle/Monto */
+  label[for="detalleGasto"],
+  /* <- por si usas for/id explícito */
+  label[for="montoGasto"],
+  /* <- oculta ambos labels también */
   .btn-descargar,
   .toast-confirm-wrapper,
   .center-toast-container {
-    display: none !important
+    display: none !important;
   }
 
   .factura-pdf {
     padding: 1.5rem;
     font-size: 12px;
     color: #000;
-    font-family: Arial, sans-serif
+    font-family: Arial, sans-serif;
   }
 
   .factura-tabla-resumen,
@@ -567,7 +653,7 @@ table td,
   .historial-gastos table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 1.5rem
+    margin-bottom: 1.5rem;
   }
 
   .factura-tabla-resumen th,
@@ -578,14 +664,7 @@ table td,
   .historial-gastos td {
     border: 1px solid #333;
     padding: 6px 10px;
-    text-align: center
-  }
-
-  .historial-gastos td button,
-  .historial-gastos td input,
-  .historial-abonos td button,
-  .historial-abonos td input {
-    display: none !important
+    text-align: center;
   }
 
   .factura-tabla-resumen thead th,
@@ -595,21 +674,21 @@ table td,
     color: #000 !important;
     border-color: #333 !important;
     text-transform: none;
-    letter-spacing: 0
+    letter-spacing: 0;
   }
 
   .factura-tabla-resumen thead,
   .historial-abonos thead,
   .historial-gastos thead,
   .proforma-tabla thead {
-    display: table-header-group !important
+    display: table-header-group !important;
   }
 
   .factura-tabla-resumen tbody,
   .historial-abonos tbody,
   .historial-gastos tbody,
   .proforma-tabla tbody {
-    display: table-row-group !important
+    display: table-row-group !important;
   }
 
   table tr,
@@ -617,9 +696,10 @@ table td,
   table td,
   .no-split-row {
     break-inside: avoid !important;
-    page-break-inside: avoid !important
+    page-break-inside: avoid !important;
   }
 }
+
 
 /* Numeración tabular para columnas numéricas */
 .tabla .is-right,
@@ -632,6 +712,15 @@ table td,
 /* Responsivo básico */
 @media (max-width:600px) {
   .col-right .tabla-wrap {
-    max-height: none
+    max-height: none;
+  }
+
+  .grupo-gasto {
+    grid-template-columns: 1fr;
+  }
+
+  .grupo-gasto .boton-accion {
+    width: 100%;
+    justify-self: stretch;
   }
 }
