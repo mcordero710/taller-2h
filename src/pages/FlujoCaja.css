@@ -503,11 +503,12 @@
 /* Botón Cerrar caja: centrado y mismo tamaño que "Agregar" */
 .cash-footer {
     display: flex;
-    justify-content: center;   /* centrado */
+    justify-content: center;
+    /* centrado */
     margin: 12px 0 2px;
-  }
-  
-  .btn-close {
+}
+
+.btn-close {
     /* igual que el botón Agregar */
     height: 42px;
     padding: 0 18px;
@@ -518,21 +519,112 @@
     font-weight: 800;
     cursor: pointer;
     transition: transform .15s, background .15s, border-color .15s, opacity .15s;
-    display: inline-flex;      /* evita que se estire */
+    display: inline-flex;
+    /* evita que se estire */
     align-items: center;
     justify-content: center;
-    width: auto;               /* asegura que no ocupe 100% */
+    width: auto;
+    /* asegura que no ocupe 100% */
     min-width: unset;
+}
+
+.btn-close:hover {
+    transform: translateY(-1px);
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.btn-close:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+
+/* Estado deshabilitado para inputs y botón del formulario de egreso */
+.form-row input:disabled {
+    background: #f3f4f6;
+    /* gris claro */
+    color: #9ca3af;
+    /* texto gris */
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+    box-shadow: none;
+    filter: grayscale(10%);
+}
+
+.form-row button:disabled {
+    background: #9ca3af;
+    /* gris medio */
+    border-color: #9ca3af;
+    color: #ffffff;
+    opacity: .75;
+    cursor: not-allowed;
+    transform: none !important;
+    /* sin “hover lift” */
+    box-shadow: none;
+}
+
+/* (Opcional) Atenuar toda la tarjeta “Registrar salida (egreso)”
+     cuando su botón Agregar esté deshabilitado.
+     Requiere soporte de :has() (Chrome/Edge/Safari modernos). */
+.card:has(.form-row button:disabled) {
+    opacity: .85;
+}
+
+/* (Opcional) desactivar efecto hover cuando el botón está deshabilitado */
+.form-row button:disabled:hover {
+    background: #9ca3af;
+    border-color: #9ca3af;
+}
+
+/* === Abrir caja compacto (mismo tamaño que Cerrar caja) === */
+.apertura {
+    display: grid;
+    grid-template-columns: max-content 140px max-content; /* label | input | botón */
+    gap: 12px;
+    align-items: center;
   }
   
-  .btn-close:hover {
+  .apertura input {
+    height: 40px;
+    width: 140px;            /* mismo ancho del track central */
+    text-align: right;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+  }
+  
+  /* botón NO se estira: usa su propio ancho y se alinea a la derecha */
+  .apertura > button {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s, background .15s, border-color .15s;
+    justify-self: end;        /* clave */
+    width: auto;              /* clave */
+    min-width: unset;
+    white-space: nowrap;      /* evita saltos de línea */
+  }
+  
+  .apertura > button:hover {
     transform: translateY(-1px);
     background: #1f2937;
     border-color: #1f2937;
   }
   
-  .btn-close:disabled {
-    opacity: .6;
-    cursor: not-allowed;
+  /* opcional: en pantallas chicas, que todo baje a una columna sin estirarse */
+  @media (max-width: 640px) {
+    .apertura {
+      grid-template-columns: 1fr;
+    }
+    .apertura > button {
+      justify-self: start; /* o center si prefieres */
+    }
   }
   
