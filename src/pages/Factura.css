@@ -724,3 +724,52 @@ table td,
     justify-self: stretch;
   }
 }
+
+/* === FIX definitivo: barra superior "Número de Proforma" (igual a prod) === */
+.factura-wrapper .buscar-proforma-barra {
+  margin: 8px 0 18px;
+}
+
+.factura-wrapper .buscar-proforma-campos {
+  display: grid;
+  grid-template-columns: 260px 160px;
+  /* <- input y botón compactos */
+  gap: 12px;
+  align-items: center;
+  width: max-content;
+  /* no se estira a todo el ancho */
+}
+
+.factura-wrapper .buscar-proforma-campos input {
+  width: 260px;
+  /* tamaño fijo como prod */
+  height: 36px;
+  padding: .5rem .6rem;
+  border: 1px solid #cfd4dc;
+  border-radius: 6px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.factura-wrapper .buscar-proforma-campos .boton-accion {
+  width: 160px;
+  /* tamaño fijo como prod */
+  height: 36px;
+  min-width: 160px;
+  border-radius: 6px;
+}
+
+/* Responsivo: apila en móviles */
+@media (max-width: 640px) {
+  .factura-wrapper .buscar-proforma-campos {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .factura-wrapper .buscar-proforma-campos input,
+  .factura-wrapper .buscar-proforma-campos .boton-accion {
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+  }
+}
