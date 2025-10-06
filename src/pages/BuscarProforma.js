@@ -1,213 +1,220 @@
-import React, { useState, useEffect } from 'react';
-import { db } from '../firebase/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { useNavigate, useLocation } from 'react-router-dom'; // 👈 NUEVO
-import { toast } from 'react-toastify';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './BuscarProforma.css';
+
+import { db } from '../firebase/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
+
+import { toast } from 'react-toastify';
+import Pagination from '../components/Pagination/Pagination';
 import { useLoading } from '../components/ui/LoadingContext';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+import { FiSearch, FiX, FiEdit2 } from 'react-icons/fi';
+
+const ITEMS_PER_PAGE = 10;
+
+const convertirFecha = (fechaStr) => {
+  // soporta "m/d/yyyy" o "mm/dd/yyyy"; si no hay fecha válida, devuelve epoch
+  if (!fechaStr || !String(fechaStr).includes('/')) return new Date(0);
+  const [mes, dia, anio] = String(fechaStr).split('/');
+  const m = String(mes).padStart(2, '0');
+  const d = String(dia).padStart(2, '0');
+  return new Date(`${anio}-${m}-${d}T00:00:00`);
+};
 
 const BuscarProforma = () => {
-  const [buscar, setBuscar] = useState('');
   const [proformas, setProformas] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const { show, hide, withLoading } = useLoading();
+  const firstLoadRef = useRef(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const { withLoading } = useLoading();
 
-  // 👇 NUEVO: si venimos de DetalleProforma, restaurar estado
+  // Restaurar estado (volver desde detalle)
   useEffect(() => {
-    const restored = location.state?.restored;
-    if (restored) {
-      setBuscar(restored.buscar || '');
-      setProformas(Array.isArray(restored.proformas) ? restored.proformas : []);
+    const restored = location.state?.backTo;
+    if (restored?.route === '/buscar-proforma') {
+      setSearchTerm(restored.buscar || '');
+      setCurrentPage(restored.page || 1);
     }
   }, [location.state]);
 
-  // Garantiza que el overlay aparezca en pantalla antes de ejecutar la query
-  const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+  // Suscripción a todas las proformas
+  useEffect(() => {
+    show('Cargando proformas…');
 
-  const handleBuscar = async () => {
-    const term = (buscar || '').trim();
-    if (!term) return;
-
-    // Armar query según cédula (9 dígitos) o número de proforma
-    let q;
-    if (/^\d{9}$/.test(term)) {
-      q = query(collection(db, 'proformas'), where('cliente.cedula', '==', term));
-    } else {
-      const numero = parseInt(term, 10);
-      if (Number.isNaN(numero)) {
-        toast.info('Ingrese una cédula (9 dígitos) o un número de proforma válido.', {
-          position: 'top-center',
-          autoClose: 2500,
-          hideProgressBar: true,
+    const unsub = onSnapshot(
+      collection(db, 'proformas'),
+      (snap) => {
+        const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        // ordenar por fecha descendente y luego por número
+        data.sort((a, b) => {
+          const f = convertirFecha(b.fecha) - convertirFecha(a.fecha);
+          if (f !== 0) return f;
+          return (b.numero || 0) - (a.numero || 0);
         });
-        return;
-      }
-      q = query(collection(db, 'proformas'), where('numero', '==', numero));
-    }
+        setProformas(data);
 
-    try {
-      setIsSearching(true);
-      await withLoading(async () => {
-        // ⬇️ Deja que se pinte el overlay antes de consultar
-        await nextFrame();
-
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          const fetchedProformas = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          // Ordenar por fecha (esperada mm/dd/yyyy o m/d/yyyy)
-          const convertirFecha = (fechaStr) => {
-            if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
-            const [mes, dia, anio] = fechaStr.split('/');
-            return new Date(
-              `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
-            );
-          };
-
-          const proformasOrdenadas = fetchedProformas.sort(
-            (a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha)
-          );
-
-          setProformas(proformasOrdenadas);
-        } else {
-          setProformas([]);
-          toast.info('No existe proforma para los datos ingresados', {
-            position: 'top-center',
-            autoClose: 2500,
-            closeOnClick: true,
-            pauseOnHover: false,
-            draggable: false,
-            closeButton: false,
-            hideProgressBar: true,
-          });
+        if (firstLoadRef.current) {
+          hide();
+          firstLoadRef.current = false;
         }
-      }, 'Buscando proformas…');
-    } catch (err) {
-      console.error('Error al buscar proformas:', err);
-      toast.error('Ocurrió un error al buscar. Intenta nuevamente.');
-    } finally {
-      setIsSearching(false);
-    }
+      },
+      (err) => {
+        console.error('Error al cargar proformas:', err);
+        toast.error('No se pudieron cargar las proformas.');
+        hide();
+      }
+    );
+
+    return () => unsub();
+  }, [show, hide]);
+
+  // Filtro por término (número, cédula, nombre, apellido, placa)
+  const filtered = useMemo(() => {
+    const t = searchTerm.trim().toLowerCase();
+    if (!t) return proformas;
+
+    return proformas.filter((p) => {
+      const numero = String(p.numero ?? '').toLowerCase();
+      const cedula = String(p?.cliente?.cedula ?? '').toLowerCase();
+      const nombre = String(p?.cliente?.nombre ?? '').toLowerCase();
+      const apellido = String(p?.cliente?.apellido ?? '').toLowerCase();
+      const placa = String(p?.vehiculo?.placa ?? '').toLowerCase();
+
+      return (
+        numero.includes(t) ||
+        cedula.includes(t) ||
+        nombre.includes(t) ||
+        apellido.includes(t) ||
+        placa.includes(t)
+      );
+    });
+  }, [proformas, searchTerm]);
+
+  // Paginación
+  const indexOfLast = currentPage * ITEMS_PER_PAGE;
+  const current = filtered.slice(indexOfLast - ITEMS_PER_PAGE, indexOfLast);
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setCurrentPage(1);
   };
 
-  const handleVerProforma = async (proforma) => {
+  const openDetalle = async (proforma) => {
     await withLoading(async () => {
-      await nextFrame();
       navigate('/detalle-proforma', {
         state: {
           proforma,
           backTo: {
-            // 👇 Si tu ruta real del buscador es distinta, cámbiala aquí
             route: '/buscar-proforma',
-            buscar,
-            proformas,
+            buscar: searchTerm,
+            page: currentPage,
           },
         },
       });
     }, 'Abriendo proforma…');
   };
 
-  // ✅ Solo dígitos (sin limitar a 9 para permitir números de proforma largos)
-  const handleBuscarChange = (e) => {
-    const onlyDigits = e.target.value.replace(/\D/g, '');
-    setBuscar(onlyDigits);
-  };
-
-  // ✅ Permitir Enter para buscar y atajos (Ctrl/Cmd + V/C/X/A)
-  const handleBuscarKeyDown = (e) => {
-    const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
-    const isShortcut =
-      (e.ctrlKey || e.metaKey) &&
-      ['a', 'c', 'x', 'v'].includes(e.key.toLowerCase());
-
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleBuscar();
-      return;
-    }
-
-    if (isShortcut) return; // permitir pegar/copiar/cortar/seleccionar todo
-
-    // bloquear cualquier otra tecla que no sea dígito o control
-    if (!/^\d$/.test(e.key) && !allowed.includes(e.key)) {
-      e.preventDefault();
-    }
-  };
-
-  // ✅ Sanea pegado (paste) desde menú contextual o atajo
-  const handleBuscarPaste = (e) => {
-    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
-    const sanitized = text.replace(/\D/g, ''); // quitar espacios, guiones, etc.
-    e.preventDefault();
-    setBuscar(sanitized);
-  };
-
   return (
-    <div className="buscar-proforma-page">
-      <div className="buscar-proforma-wrapper" aria-busy={isSearching}>
-        <h2 className="buscar-proforma-header">Buscar Proforma</h2>
+    <div className="proformas-page">
+      <div className="proformas-card">
+        {/* Header */}
+        <header className="proformas-header">
+          <div>
+            <h2>Proformas</h2>
+            <p className="subtitle">Consulta todas las proformas del sistema.</p>
+          </div>
+          {/* (Sin botón Agregar) */}
+        </header>
 
-        <div className="buscar-proforma-barra">
-          <label htmlFor="campoBuscar" className="buscar-proforma-label">
-            Digite el número de cédula o el número de proforma que desea consultar
-          </label>
-          <div className="buscar-proforma-campos">
+        {/* Toolbar */}
+        <div className="toolbar">
+          <div className="search">
+            <FiSearch className="search-icon" aria-hidden />
             <input
-              id="campoBuscar"
+              className="search-input"
               type="text"
-              inputMode="numeric"
-              pattern="\d*"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              value={buscar}
-              onChange={handleBuscarChange}
-              onKeyDown={handleBuscarKeyDown}
-              onPaste={handleBuscarPaste}
-              disabled={isSearching}
-
+              placeholder="Buscar por número, cédula, cliente, placa…"
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             />
-            <button onClick={handleBuscar} disabled={isSearching}>
-              {isSearching ? 'Buscando…' : 'Buscar'}
-            </button>
+            {searchTerm && (
+              <button className="search-clear" onClick={clearSearch} aria-label="Limpiar búsqueda">
+                <FiX />
+              </button>
+            )}
+          </div>
+
+          <div className="counter">
+            {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
           </div>
         </div>
 
-        {proformas.length > 0 && (
+        {/* Tabla */}
+        <div className="table-wrap">
           <table className="tabla-proformas">
             <thead>
               <tr>
-                <th>Número de Proforma</th>
+                <th>Número</th>
                 <th>Cédula</th>
                 <th>Cliente</th>
                 <th>Fecha</th>
                 <th>Placa</th>
-                <th>Acción</th>
+                <th className="th-actions">
+                  <span className="th-actions-text">Acciones</span>
+                </th>
               </tr>
             </thead>
+
             <tbody>
-              {proformas.map((proforma) => (
-                <tr key={proforma.id}>
-                  <td>{proforma.numero}</td>
-                  <td>{proforma.cliente?.cedula || '—'}</td>
-                  <td>{`${proforma.cliente?.nombre || ''} ${proforma.cliente?.apellido || ''}`.trim()}</td>
-                  <td>{proforma.fecha || '—'}</td>
-                  <td>{proforma.vehiculo?.placa || '—'}</td>
-                  <td>
-                    <button onClick={() => handleVerProforma(proforma)} disabled={isSearching}>
-                      Ver / Editar
-                    </button>
-                  </td>
+              {current.map((p) => {
+                const cliente = `${p?.cliente?.nombre || ''} ${p?.cliente?.apellido || ''}`.trim();
+                return (
+                  <tr
+                    key={p.id}
+                    onDoubleClick={() => openDetalle(p)}
+                    style={{ cursor: 'pointer' }}
+                    title="Doble clic para ver/editar"
+                  >
+                    <td>{p.numero ?? '—'}</td>
+                    <td>{p?.cliente?.cedula || '—'}</td>
+                    <td>{cliente || '—'}</td>
+                    <td>{p.fecha || '—'}</td>
+                    <td>{p?.vehiculo?.placa || '—'}</td>
+                    <td className="td-actions">
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        onClick={() => openDetalle(p)}
+                        aria-label="Ver / Editar"
+                        title="Ver / Editar"
+                      >
+                        <FiEdit2 />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {current.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="empty">Sin resultados.</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
-        )}
+        </div>
+
+        {/* Paginación */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filtered.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </div>
   );
