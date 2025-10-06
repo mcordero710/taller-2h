@@ -10,8 +10,6 @@ import { ToastContainer, toast } from 'react-toastify';
 import html2pdf from 'html2pdf.js';
 import logo from '../assets/logo.png';
 
-const METHODS = ['efectivo', 'sinpe', 'transferencia', 'tarjeta'];
-
 const dateKey = (d) => {
     const dt = d instanceof Date ? d : new Date(d);
     const yyyy = dt.getFullYear();
