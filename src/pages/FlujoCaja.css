@@ -1,0 +1,766 @@
+/* =========================
+   Page
+   ========================= */
+.cash-page {
+    --bg: #f6f7fb;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --primary: #111827;
+    --primary-ink: #fff;
+    --accent: #0ea5e9;
+    --success: #16a34a;
+    --danger: #ef4444;
+    --ring: rgba(2, 132, 199, .35);
+    --border: #e5e7eb;
+    --card: #ffffff;
+
+    min-height: 100svh;
+    padding: 28px;
+    background:
+        radial-gradient(1800px 800px at 0% -10%, #eaf2ff 0%, transparent 40%) no-repeat,
+        radial-gradient(1200px 600px at 100% 0%, #f5f5ff 0%, transparent 45%) no-repeat,
+        var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    position: relative;
+    /* ancla para el botón absoluto */
+}
+
+.cash-page h2 {
+    font-size: clamp(1.4rem, 1.2rem + 1vw, 2rem);
+    font-weight: 800;
+    letter-spacing: .2px;
+    margin: 0 0 10px;
+}
+
+/* =========================
+     Toolbar (fecha + estado)
+     ========================= */
+.cash-toolbar {
+    display: grid;
+    gap: 12px;
+    margin: 4px 0 18px;
+}
+
+.cash-toolbar>label {
+    display: grid;
+    gap: 6px;
+    width: min(420px, 100%);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: .92rem;
+}
+
+.cash-toolbar input[type="date"] {
+    height: 42px;
+    padding: 0 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--ink);
+    outline: none;
+    transition: box-shadow .15s, border-color .15s;
+}
+
+.cash-toolbar input[type="date"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--ring);
+}
+
+/* Estado / Apertura inline */
+.estado,
+.apertura {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(2, 6, 23, .05);
+}
+
+.estado span,
+.apertura span {
+    font-size: .95rem;
+}
+
+.estado strong {
+    font-weight: 800;
+}
+
+/* Botón Cerrar/Abrir caja */
+.estado button,
+.apertura button {
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .15s, background .15s, border-color .15s;
+}
+
+.estado button:hover,
+.apertura button:hover {
+    transform: translateY(-1px);
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.apertura input {
+    height: 40px;
+    width: 120px;
+    text-align: right;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    outline: none;
+    background: var(--card);
+}
+
+.apertura input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--ring);
+}
+
+/* Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .2px;
+}
+
+.badge.open {
+    background: #e8f7ef;
+    color: var(--success);
+    border: 1px solid #b7e6c9;
+}
+
+.badge.closed {
+    background: #feecec;
+    color: var(--danger);
+    border: 1px solid #f9caca;
+}
+
+/* =========================
+     Cards base
+     ========================= */
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin: 12px 0;
+    box-shadow: 0 8px 20px rgba(2, 6, 23, .04), 0 2px 6px rgba(2, 6, 23, .06);
+}
+
+.card h3 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+/* =========================
+     Form egreso
+     ========================= */
+.form-row {
+    display: grid;
+    grid-template-columns: 1.5fr 0.7fr auto;
+    gap: 10px;
+}
+
+.form-row input {
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    outline: none;
+    background: #fff;
+    transition: box-shadow .15s, border-color .15s;
+}
+
+.form-row input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--ring);
+}
+
+.form-row button {
+    height: 42px;
+    padding: 0 18px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+    border-radius: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s, background .15s, border-color .15s;
+}
+
+.form-row button:hover {
+    transform: translateY(-1px);
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+/* =========================
+     Tabla de movimientos
+     ========================= */
+.movs {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.movs thead th {
+    background: var(--primary);
+    color: var(--primary-ink);
+    text-align: left;
+    padding: 10px 12px;
+    font-size: .9rem;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* ⭐ Centrar la columna de montos (encabezado + celdas) */
+.movs thead th:last-child {
+    text-align: center;
+}
+
+.movs tbody td:last-child {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.movs .num {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.movs tbody td {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    background: #fff;
+}
+
+.movs tbody tr:nth-child(odd) td {
+    background: #fbfcff;
+}
+
+.movs .INGRESO {
+    color: var(--success);
+    font-weight: 900;
+    letter-spacing: .3px;
+}
+
+.movs .EGRESO {
+    color: var(--danger);
+    font-weight: 900;
+    letter-spacing: .3px;
+}
+
+.empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 16px;
+}
+
+/* =========================
+     Responsivo
+     ========================= */
+@media (max-width: 980px) {
+    .form-row {
+        grid-template-columns: 1fr 1fr auto;
+    }
+}
+
+@media (max-width: 720px) {
+    .cash-page {
+        padding: 18px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 420px) {}
+
+/* =========================
+     Botón Cerrar caja (centrado)
+     ========================= */
+.cash-footer {
+    display: flex;
+    justify-content: center;
+    margin: 12px 0 2px;
+}
+
+.btn-close {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s, background .15s, border-color .15s, opacity .15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: unset;
+}
+
+.btn-close:hover {
+    transform: translateY(-1px);
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.btn-close:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* ===== Toast de confirmación ===== */
+.toast-confirm-container {
+    display: grid;
+    gap: 10px;
+    min-width: 280px;
+}
+
+.toast-confirm-message {
+    margin: 0;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.toast-confirm-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-confirm {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--ink);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.btn-confirm.cerrar {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+}
+
+.btn-confirm.cerrar:hover {
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.btn-confirm.cancelar:hover {
+    background: #f3f4f6;
+}
+
+.btn-confirm:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* ===== Toast limpio ===== */
+.confirm-toast {
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+}
+
+.confirm-toast .Toastify__toast-icon {
+    display: none !important;
+}
+
+.confirm-toast .Toastify__close-button {
+    display: none !important;
+}
+
+.confirm-toast .Toastify__toast-body {
+    margin: 0;
+    padding: 0;
+}
+
+.confirm-toast__card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    min-width: 320px;
+    max-width: 92vw;
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.12);
+}
+
+.confirm-toast__title {
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 12px;
+}
+
+.confirm-toast__actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btn-confirm--primary {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+}
+
+.btn-confirm--primary:hover {
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+.btn-confirm--ghost:hover {
+    background: #f3f4f6;
+}
+
+/* ===== Estados deshabilitados egreso ===== */
+.form-row input:disabled {
+    background: #f3f4f6;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+    box-shadow: none;
+    filter: grayscale(10%);
+}
+
+.form-row button:disabled {
+    background: #9ca3af;
+    border-color: #9ca3af;
+    color: #ffffff;
+    opacity: .75;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none;
+}
+
+.card:has(.form-row button:disabled) {
+    opacity: .85;
+}
+
+.form-row button:disabled:hover {
+    background: #9ca3af;
+    border-color: #9ca3af;
+}
+
+/* === Abrir caja compacto === */
+.apertura {
+    display: grid;
+    grid-template-columns: max-content 140px max-content;
+    /* label | input | botón */
+    gap: 12px;
+    align-items: center;
+}
+
+.apertura input {
+    height: 40px;
+    width: 140px;
+    text-align: right;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+}
+
+.apertura>button {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 12px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--primary-ink);
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s, background .15s, border-color .15s;
+    justify-self: end;
+    width: auto;
+    min-width: unset;
+    white-space: nowrap;
+}
+
+.apertura>button:hover {
+    transform: translateY(-1px);
+    background: #1f2937;
+    border-color: #1f2937;
+}
+
+@media (max-width: 640px) {
+    .apertura {
+        grid-template-columns: 1fr;
+    }
+
+    .apertura>button {
+        justify-self: start;
+    }
+}
+
+/* === Botón "Descargar cierre" (Cash) === */
+.cash-page .btn-descargar {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    background: var(--primary);
+    color: var(--primary-ink);
+    border: 1px solid var(--primary);
+    border-radius: 12px;
+    padding: 10px 14px;
+    min-height: 40px;
+    font-weight: 700;
+
+    width: auto !important;
+    min-width: 0 !important;
+
+    cursor: pointer;
+    transition: background-color .2s, transform .2s;
+    z-index: 10;
+}
+
+.cash-page .btn-descargar:hover {
+    background: #1abc9c;
+    border-color: #1abc9c;
+    transform: scale(1.05);
+}
+
+@media (max-width: 720px) {
+    .cash-page .btn-descargar {
+        top: 6px;
+        right: 6px;
+        height: 36px;
+        padding: 8px 12px;
+        border-radius: 10px;
+    }
+}
+
+/* =========================
+     PRINT — Flujo de caja
+     ========================= */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 12mm;
+    }
+
+    html,
+    body,
+    .cash-page {
+        background: #fff !important;
+    }
+
+    .cash-page {
+        padding: 0 !important;
+    }
+
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #d1d5db !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* Ocultar UI interactiva */
+    .btn-descargar,
+    .cash-footer,
+    .form-row,
+    .apertura>button,
+    .cash-toolbar input[type="date"],
+    .Toastify__toast-container,
+    .Toastify__toast,
+    .toast-confirm-wrapper,
+    .center-toast-container {
+        display: none !important;
+    }
+
+    .cash-toolbar {
+        margin: 0 0 8px !important;
+    }
+
+    .estado,
+    .apertura {
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+
+    .movs thead th {
+        background: #0f172a !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .movs thead {
+        display: table-header-group !important;
+    }
+
+    .movs tbody {
+        display: table-row-group !important;
+    }
+
+    table tr,
+    table th,
+    table td,
+    .no-split-row {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    .badge.open,
+    .badge.closed {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        border-color: #d1d5db !important;
+    }
+
+    .movs thead th,
+    .movs tbody td {
+        padding: 8px 10px !important;
+    }
+
+    h2 {
+        margin-top: 0 !important;
+    }
+}
+
+/* ===== Resumen por método: KPIs compactos ===== */
+.method-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.method-kpi {
+    --h: 210;
+    /* hue por defecto, cada item lo puede sobrescribir inline */
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: inset 0 -2px 0 rgba(2, 6, 23, .04);
+}
+
+.mkpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.mkpi-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.mkpi-icon {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.mkpi-label {
+    letter-spacing: .2px;
+}
+
+.mkpi-amount {
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+}
+
+.mkpi-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #eef2f7;
+    overflow: hidden;
+}
+
+.mkpi-bar__fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg,
+            hsl(var(--h) 80% 45%) 0%,
+            hsl(var(--h) 85% 40%) 100%);
+    transition: width .35s ease;
+}
+
+.mkpi-footer {
+    margin-top: 6px;
+    font-size: .8rem;
+    color: var(--muted);
+    font-weight: 800;
+}
+
+/* línea total */
+.method-total-line {
+    margin-top: 10px;
+    text-align: right;
+    font-weight: 700;
+}
+
+/* Print: bordes sobrios, sin degradados para nitidez */
+@media print {
+    .method-kpi {
+        box-shadow: none !important;
+        background: #fff !important;
+        border: 1px solid #d1d5db !important;
+    }
+
+    .mkpi-bar__fill {
+        background: #111827 !important;
+    }
+}
+
+/* Accesibilidad: reduce motion */
+@media (prefers-reduced-motion: reduce) {
+    .mkpi-bar__fill {
+        transition: none;
+    }
+}
+
+/* Identificador para poder ocultarla en impresión */
+.card-egreso {}
+
+/* PRINT */
+@media print {
+  /* Ocultar label de fecha y la tarjeta completa de egreso */
+  .cash-toolbar > label,
+  .card-egreso {
+    display: none !important;
+  }
+}

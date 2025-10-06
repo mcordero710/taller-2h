@@ -31,7 +31,7 @@ import { useLoading } from '../components/ui/LoadingContext';
 import Pagination from '../components/Pagination/Pagination';
 
 /* ===== Helpers de formato ===== */
-const LOCALE_NUMERIC = 'es-ES'; // 100.000,00
+const LOCALE_NUMERIC = 'es-ES';
 
 const formatNumber = (n) =>
   new Intl.NumberFormat(LOCALE_NUMERIC, {
@@ -81,20 +81,12 @@ const dateKeyFromNow = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-// Crea sesión si no existe (apertura del día)
-const ensureTodaySession = async (openingAmount = 50000) => {
+/* === NUEVO: leer sesión del día, no crearla === */
+const getTodaySession = async () => {
   const today = dateKeyFromNow();
   const qy = query(collection(db, 'cash_sessions'), where('dateKey', '==', today));
   const snap = await getDocs(qy);
-  if (!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() };
-
-  const ref = await addDoc(collection(db, 'cash_sessions'), {
-    dateKey: today,
-    openingAmount,
-    openingAt: serverTimestamp(),
-    isClosed: false,
-  });
-  return { id: ref.id, dateKey: today, openingAmount, isClosed: false };
+  return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
 };
 
 const Factura = () => {
@@ -103,19 +95,19 @@ const Factura = () => {
   const [cliente, setCliente] = useState(null);
 
   // Abonos
-  const [abonoStr, setAbonoStr] = useState(''); // input mostrado
+  const [abonoStr, setAbonoStr] = useState('');
   const [abonos, setAbonos] = useState([]);
-  const [abonoMethod, setAbonoMethod] = useState('efectivo'); // 👈 método de pago
+  const [abonoMethod, setAbonoMethod] = useState('efectivo');
 
   // Gastos
   const [gastos, setGastos] = useState([]);
   const [detalleGasto, setDetalleGasto] = useState('');
-  const [montoGastoStr, setMontoGastoStr] = useState(''); // input mostrado
+  const [montoGastoStr, setMontoGastoStr] = useState('');
 
   // Edición de gasto
   const [editGasto, setEditGasto] = useState(null);
   const [newDetalle, setNewDetalle] = useState('');
-  const [newMontoStr, setNewMontoStr] = useState(''); // input mostrado en edición
+  const [newMontoStr, setNewMontoStr] = useState('');
 
   // Edición de abono
   const [editAbono, setEditAbono] = useState(null);
@@ -123,7 +115,7 @@ const Factura = () => {
 
   const [reparaciones, setReparaciones] = useState([]);
 
-  // info del vehículo (como en Proforma)
+  // info del vehículo
   const [vehiculo, setVehiculo] = useState({
     placa: '',
     marca: '',
@@ -132,7 +124,7 @@ const Factura = () => {
     color: '',
   });
 
-  // flags para deshabilitar controles
+  // flags
   const [isSearching, setIsSearching] = useState(false);
   const [isSavingGasto, setIsSavingGasto] = useState(false);
   const [isUpdatingGasto, setIsUpdatingGasto] = useState(false);
@@ -146,8 +138,7 @@ const Factura = () => {
   const [deletingGastoId, setDeletingGastoId] = useState(null);
   const [deletingAbonoId, setDeletingAbonoId] = useState(null);
 
-  // ===== Productos de inventario en factura =====
-  // Cada item: { id, proformaId, invId, codigo, descripcion, precioVenta, cantidad, fecha }
+  // Productos
   const [productos, setProductos] = useState([]);
 
   // Picker de inventario
@@ -176,9 +167,9 @@ const Factura = () => {
   useEffect(() => {
     if (proforma) {
       if (proforma.clienteId) {
-        cargarCliente(proforma.clienteId); // cliente como referencia
+        cargarCliente(proforma.clienteId);
       } else if (proforma.cliente && proforma.cliente.nombre && proforma.cliente.cedula) {
-        setCliente(proforma.cliente); // cliente embebido
+        setCliente(proforma.cliente);
       } else {
         setCliente(null);
       }
@@ -204,7 +195,6 @@ const Factura = () => {
   /* ===== Productos de factura: CRUD ===== */
   const cargarProductos = async (proformaId) => {
     try {
-      // intento con orderBy (requiere índice compuesto)
       const qy = query(
         collection(db, 'factura_items'),
         where('proformaId', '==', proformaId),
@@ -215,7 +205,6 @@ const Factura = () => {
     } catch (e) {
       const msg = String(e?.message || '');
       if (e?.code === 'failed-precondition' || msg.includes('index')) {
-        // Reintenta SIN orderBy y ordena en cliente
         const qy2 = query(collection(db, 'factura_items'), where('proformaId', '==', proformaId));
         const snap2 = await getDocs(qy2);
         const arr = snap2.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -225,9 +214,7 @@ const Factura = () => {
           return as - bs;
         });
         setProductos(arr);
-        console.warn(
-          'Falta índice compuesto (proformaId asc, fecha asc) para factura_items. Usando orden en cliente.'
-        );
+        console.warn('Falta índice compuesto (proformaId asc, fecha asc) para factura_items. Usando orden en cliente.');
       } else {
         console.error('Error cargarProductos:', e);
         throw e;
@@ -386,7 +373,7 @@ const Factura = () => {
           const docRef = snapshot.docs[0];
           const data = { id: docRef.id, ...docRef.data() };
 
-          // normaliza vehículo (soporta proformas viejas sin "modelo")
+          // normaliza vehículo
           setVehiculo({
             placa: data.vehiculo?.placa || '',
             marca: data.vehiculo?.marca || '',
@@ -427,7 +414,7 @@ const Factura = () => {
   const cargarAbonos = async (proformaId) => {
     const qy = query(collection(db, 'abonos'), where('proformaId', '==', proformaId));
     const snapshot = await getDocs(qy);
-    const resultados = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })); // incluye id
+    const resultados = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     setAbonos(resultados);
   };
 
@@ -438,7 +425,7 @@ const Factura = () => {
     setGastos(resultados);
   };
 
-  // Totales (incluye productos)
+  // Totales
   const totalAbonado = abonos.reduce((sum, a) => sum + (Number(a.monto) || 0), 0);
   const totalGastos = gastos.reduce((sum, g) => sum + (Number(g.monto) || 0), 0);
   const totalProductos = productos.reduce(
@@ -477,14 +464,22 @@ const Factura = () => {
     try {
       setIsSavingAbono(true);
       await withLoading(async () => {
-        // 1) Asegura apertura del día
-        const session = await ensureTodaySession(50000);
+        // 1) Verifica que la caja de hoy esté abierta
+        const session = await getTodaySession();
+        if (!session) {
+          toast.error('Primero abre la caja del día en "Flujo de caja".');
+          return;
+        }
+        if (session.isClosed) {
+          toast.warn('La caja del día está cerrada. No se pueden registrar abonos.');
+          return;
+        }
 
         // 2) Crea abono con método
         const nuevoAbono = {
           proformaId: proforma.id,
-          monto, // número (puede tener decimales)
-          method: abonoMethod, // 👈 nuevo
+          monto,
+          method: abonoMethod,
           fecha: new Date().toLocaleDateString(),
           dateKey: dateKeyFromNow(),
           createdAt: serverTimestamp(),
@@ -514,7 +509,7 @@ const Factura = () => {
     }
   };
 
-  /* ====== GASTO (ingreso) ====== */
+  /* ====== GASTO ====== */
   const onGastoFocus = () => {
     if (montoGastoStr === '') return;
     const n = parseMoney(montoGastoStr);
@@ -546,7 +541,7 @@ const Factura = () => {
         const nuevoGasto = {
           proformaId: proforma.id,
           detalle: detalleGasto,
-          monto, // número
+          monto,
           fecha: new Date().toLocaleDateString(),
         };
         await addDoc(collection(db, 'gastos'), nuevoGasto);
@@ -560,7 +555,7 @@ const Factura = () => {
     }
   };
 
-  /* ====== EDICIÓN DE GASTO ====== */
+  /* ====== EDICIÓN GASTO ====== */
   const editarGasto = (gasto) => {
     if (!gasto || !gasto.id) {
       toast.error('ID de gasto no válido', { autoClose: 2500 });
@@ -661,7 +656,7 @@ const Factura = () => {
     );
   };
 
-  /* ====== EDICIÓN / ELIMINACIÓN DE ABONO ====== */
+  /* ====== EDICIÓN / ELIMINACIÓN ABONO ====== */
   const editarAbono = (abono) => {
     if (!abono || !abono.id) {
       toast.error('ID de abono no válido', { autoClose: 2500 });
@@ -805,12 +800,13 @@ const Factura = () => {
       await withLoading(async () => {
         const copia = original.cloneNode(true);
 
-        // Marcar filas para evitar cortes
-        copia.querySelectorAll(
-          'input, select, textarea, button, .boton-accion, .btn-descargar, .buscar-proforma-barra, .grupo-gasto, .factura-abono-y-reparaciones .buscar-proforma-barra'
-        ).forEach((el) => el.remove());
+        // quitar controles
+        copia
+          .querySelectorAll(
+            'input, select, textarea, button, .boton-accion, .btn-descargar, .buscar-proforma-barra, .grupo-gasto, .factura-abono-y-reparaciones .buscar-proforma-barra'
+          )
+          .forEach((el) => el.remove());
 
-        // Estilos forzados para PDF
         // Estilos forzados para PDF
         const styleEl = document.createElement('style');
         styleEl.textContent = `
@@ -842,7 +838,7 @@ const Factura = () => {
     display: table-row-group !important;
   }
 
-  /* --- Ajustes específicos Productos en PDF --- */
+  /* --- Ajustes Productos en PDF --- */
   /* Ocultar columna Acciones (última) */
   .tabla thead th:last-child,
   .tabla tbody td:last-child {
@@ -858,7 +854,6 @@ const Factura = () => {
   }
 `;
         copia.insertBefore(styleEl, copia.firstChild);
-
 
         // Header con logo + datos
         const header = document.createElement('div');
@@ -888,17 +883,11 @@ const Factura = () => {
           day: '2-digit',
         })}</div>
         `;
-
         header.appendChild(logoImg);
         header.appendChild(rightBox);
         copia.insertBefore(header, copia.firstChild);
 
-        // Quitar controles/inputs del clon
-        copia
-          .querySelectorAll('input, button, .boton-accion, .btn-descargar, .buscar-proforma-barra')
-          .forEach((el) => el.remove());
-
-        // Ocultar la columna de acciones en historiales
+        // Ocultar columnas Acciones en historiales
         copia
           .querySelectorAll(
             '.historial-gastos td:last-child, .historial-gastos th:last-child, .historial-abonos td:last-child, .historial-abonos th:last-child'
@@ -1060,7 +1049,7 @@ const Factura = () => {
               </button>
             </div>
 
-            {/* ===== Abono + Columna derecha (Productos arriba, Reparaciones abajo) ===== */}
+            {/* ===== Abono + Columna derecha ===== */}
             <div className="factura-abono-y-reparaciones">
               {/* Izquierda: Abono */}
               <div>
@@ -1106,7 +1095,7 @@ const Factura = () => {
                 </div>
               </div>
 
-              {/* Derecha: Productos (arriba) + Reparaciones (abajo) */}
+              {/* Derecha: Productos + Reparaciones */}
               <div className="col-right">
                 {/* Productos */}
                 <div className="grupo-producto">
