@@ -23,6 +23,38 @@ const formatMoney = (n) =>
 const formatInt = (n) =>
   new Intl.NumberFormat(LOCALE_NUMERIC, { maximumFractionDigits: 0 }).format(Math.floor(Number(n) || 0));
 
+// ========= Helpers globales =========
+
+// Reparaciones vacías: true si no hay items o todos son texto en blanco
+const isEmptyReparaciones = (arr) => {
+  if (!Array.isArray(arr) || arr.length === 0) return true;
+  return arr.every(r => {
+    const t = (r?.texto ?? r?.concepto ?? r?.descripcion ?? r?.detalle ?? '').toString().trim();
+    return t.length === 0;
+  });
+};
+
+// Parser tolerante de fechas: dd/mm/yyyy, mm/dd/yyyy, yyyy-mm-dd
+const convertirFecha = (fechaStr) => {
+  if (!fechaStr) return new Date(0);
+  const s = String(fechaStr).trim();
+
+  // ISO simple
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(s);
+
+  // dd/mm/yyyy o mm/dd/yyyy → detecta por el primer número > 12
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    const [a, b, y] = s.split('/').map(x => parseInt(x, 10));
+    const d = (a > 12) ? a : b;   // si el primero es >12, es día
+    const m = (a > 12) ? b : a;   // el otro es mes
+    return new Date(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+  }
+
+  // último recurso
+  const dflt = new Date(s);
+  return isNaN(dflt.getTime()) ? new Date(0) : dflt;
+};
+
 const OrdenesDeTrabajo = () => {
   const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 
@@ -138,12 +170,6 @@ const OrdenesDeTrabajo = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [showFinishConfirm, showPicker]);
 
-  const convertirFecha = (fechaStr) => {
-    if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
-    const [mes, dia, anio] = fechaStr.split('/');
-    return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
-  };
-
   const setReparacionesDesdeProforma = (p) => {
     const items = Array.isArray(p.reparaciones) ? p.reparaciones : [];
     const mapped = items
@@ -170,7 +196,10 @@ const OrdenesDeTrabajo = () => {
   // ===== Última OT por placa =====
   const loadUltimaOT = async (placaUpper, opts = {}) => {
     const preserveProforma = !!opts.preserveProforma;
-    setOtId(null); setCono(''); setReparaciones([]); setMateriales([]);
+    const preserveReparaciones = !!opts.preserveReparaciones; // 👈 NUEVO
+    setOtId(null); setCono('');
+    if (!preserveReparaciones) setReparaciones([]);
+    setMateriales([]);
     try {
       let snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('placa', '==', placaUpper)));
       if (snapOT.empty) snapOT = await getDocs(query(collection(db, 'ordenes_trabajo'), where('vehiculo.placa', '==', placaUpper)));
@@ -195,9 +224,33 @@ const OrdenesDeTrabajo = () => {
         if (top.proformaNumero !== undefined && top.proformaNumero !== null) setProformaNumero(String(top.proformaNumero));
         else if (!preserveProforma) setProformaNumero('');
 
-        setReparaciones(Array.isArray(top.reparaciones) ? top.reparaciones.map((r, i) => ({ id: `${top.id}-${i}`, texto: r.texto || String(r) })) : []);
-        setMaterialesDesdeOT(top);
+        // Reparaciones desde OT o (fallback) desde su proforma si está vacío
+        if (!preserveReparaciones) {
+          const repsOT = Array.isArray(top.reparaciones)
+            ? top.reparaciones.map((r, i) => ({ id: `${top.id}-${i}`, texto: (r?.texto ?? String(r)).trim() }))
+            : [];
 
+          if (isEmptyReparaciones(repsOT) && top.proformaNumero != null) {
+            try {
+              const pfNumber = Number(top.proformaNumero);
+              let snapP = await getDocs(query(collection(db, 'proformas'), where('numero', '==', pfNumber)));
+              if (snapP.empty) snapP = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(pfNumber))));
+              if (!snapP.empty) {
+                const proformas = snapP.docs.map(d => ({ id: d.id, ...d.data() }))
+                  .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
+                setReparacionesDesdeProforma(proformas[0]);
+              } else {
+                setReparaciones(repsOT);
+              }
+            } catch {
+              setReparaciones(repsOT);
+            }
+          } else {
+            setReparaciones(repsOT);
+          }
+        }
+
+        setMaterialesDesdeOT(top);
         await refrescarConosDisponibles(top.numeroCono || null);
       } else {
         setWhitelistCono(null);
@@ -215,12 +268,6 @@ const OrdenesDeTrabajo = () => {
     let snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', proformaNum)));
     if (snap.empty) snap = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(proformaNum))));
     if (snap.empty) return null;
-
-    const convertirFecha = (fechaStr) => {
-      if (!fechaStr || !fechaStr.includes('/')) return new Date(0);
-      const [mes, dia, anio] = fechaStr.split('/');
-      return new Date(`${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`);
-    };
 
     let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
@@ -270,14 +317,19 @@ const OrdenesDeTrabajo = () => {
           }));
         }
 
-        setReparaciones(
-          Array.isArray(otEncontrada.reparaciones)
-            ? otEncontrada.reparaciones.map((r, i) => ({
-              id: `${otEncontrada.id}-${i}`,
-              texto: (r?.texto ?? String(r)).trim()
-            }))
-            : []
-        );
+        // Fallback clave: si la OT no trae reparaciones útiles, usar las de la proforma
+        const repsOT = Array.isArray(otEncontrada.reparaciones)
+          ? otEncontrada.reparaciones.map((r, i) => ({
+            id: `${otEncontrada.id}-${i}`,
+            texto: (r?.texto ?? String(r)).trim()
+          }))
+          : [];
+
+        if (isEmptyReparaciones(repsOT)) {
+          setReparacionesDesdeProforma(p);
+        } else {
+          setReparaciones(repsOT);
+        }
 
         setMaterialesDesdeOT(otEncontrada);
         await refrescarConosDisponibles(otEncontrada?.numeroCono || null);
@@ -292,10 +344,11 @@ const OrdenesDeTrabajo = () => {
       setWhitelistCono(null);
       await refrescarConosDisponibles(null);
 
-      // Si además existe una OT previa por placa, puedes precargar sus datos,
-      // pero conservando reparaciones de la proforma como plantilla:
+      // Si además existe una OT previa por placa, precargar sus datos, pero conservar reparaciones de la proforma
       if (placaDoc) {
-        await loadUltimaOT(placaDoc, { preserveProforma: true });
+        await loadUltimaOT(placaDoc, { preserveProforma: true, preserveReparaciones: true }); // 👈 FIX
+        // reafirmamos por si algún efecto tocó el estado
+        setReparacionesDesdeProforma(p);
       }
     }
 
@@ -326,9 +379,32 @@ const OrdenesDeTrabajo = () => {
         color: ot.vehiculo?.color || '',
       });
       if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
-      setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
-      setMaterialesDesdeOT(ot);
 
+      // Posible fallback desde su proforma si la OT no tiene reparaciones
+      const repsOT = Array.isArray(ot.reparaciones)
+        ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: (r?.texto ?? String(r)).trim() }))
+        : [];
+
+      if (isEmptyReparaciones(repsOT) && ot.proformaNumero != null) {
+        try {
+          const pfNumber = Number(ot.proformaNumero);
+          let snapP = await getDocs(query(collection(db, 'proformas'), where('numero', '==', pfNumber)));
+          if (snapP.empty) snapP = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(pfNumber))));
+          if (!snapP.empty) {
+            const proformas = snapP.docs.map(d => ({ id: d.id, ...d.data() }))
+              .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
+            setReparacionesDesdeProforma(proformas[0]);
+          } else {
+            setReparaciones(repsOT);
+          }
+        } catch {
+          setReparaciones(repsOT);
+        }
+      } else {
+        setReparaciones(repsOT);
+      }
+
+      setMaterialesDesdeOT(ot);
       await refrescarConosDisponibles(ot.numeroCono || null);
       return { origen: 'ot' };
     }
@@ -392,9 +468,32 @@ const OrdenesDeTrabajo = () => {
       color: ot.vehiculo?.color || '',
     });
     if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
-    setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
-    setMaterialesDesdeOT(ot);
 
+    // Fallback desde proforma si OT vacía
+    const repsOT2 = Array.isArray(ot.reparaciones)
+      ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: (r?.texto ?? String(r)).trim() }))
+      : [];
+
+    if (isEmptyReparaciones(repsOT2) && ot.proformaNumero != null) {
+      try {
+        const pfNumber2 = Number(ot.proformaNumero);
+        let snapP = await getDocs(query(collection(db, 'proformas'), where('numero', '==', pfNumber2)));
+        if (snapP.empty) snapP = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(pfNumber2))));
+        if (!snapP.empty) {
+          const pros = snapP.docs.map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
+          setReparacionesDesdeProforma(pros[0]);
+        } else {
+          setReparaciones(repsOT2);
+        }
+      } catch {
+        setReparaciones(repsOT2);
+      }
+    } else {
+      setReparaciones(repsOT2);
+    }
+
+    setMaterialesDesdeOT(ot);
     await refrescarConosDisponibles(ot.numeroCono || null);
     return { origen: 'otPorProforma' };
   }
@@ -438,9 +537,31 @@ const OrdenesDeTrabajo = () => {
       color: ot.vehiculo?.color || '',
     });
     if (ot.proformaNumero != null) setProformaNumero(String(ot.proformaNumero));
-    setReparaciones(Array.isArray(ot.reparaciones) ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: r.texto || String(r) })) : []);
-    setMaterialesDesdeOT(ot);
 
+    // Fallback desde proforma si OT vacía
+    const repsOT = Array.isArray(ot.reparaciones)
+      ? ot.reparaciones.map((r, i) => ({ id: `${ot.id}-${i}`, texto: (r?.texto ?? String(r)).trim() }))
+      : [];
+    if (isEmptyReparaciones(repsOT) && ot.proformaNumero != null) {
+      try {
+        const pfNum = Number(ot.proformaNumero);
+        let snapP = await getDocs(query(collection(db, 'proformas'), where('numero', '==', pfNum)));
+        if (snapP.empty) snapP = await getDocs(query(collection(db, 'proformas'), where('numero', '==', String(pfNum))));
+        if (!snapP.empty) {
+          const pros = snapP.docs.map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => convertirFecha(b.fecha) - convertirFecha(a.fecha));
+          setReparacionesDesdeProforma(pros[0]);
+        } else {
+          setReparaciones(repsOT);
+        }
+      } catch {
+        setReparaciones(repsOT);
+      }
+    } else {
+      setReparaciones(repsOT);
+    }
+
+    setMaterialesDesdeOT(ot);
     await refrescarConosDisponibles(ot.numeroCono || null);
     return { origen: 'otPorCono' };
   };
