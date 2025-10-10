@@ -607,7 +607,7 @@ const Proforma = () => {
             <span className="fecha-mini">Fecha: {fecha || new Date().toLocaleDateString()}</span>
           </div>
 
-        <div className="buscar-proforma">
+          <div className="buscar-proforma">
             <label htmlFor="buscarProforma">Buscar Proforma</label>
             <input
               id="buscarProforma"
