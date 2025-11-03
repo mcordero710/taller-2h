@@ -14,14 +14,14 @@ import DetalleProforma from './pages/DetalleProforma';
 import Factura from './pages/Factura';
 import OrdenesDeTrabajo from './pages/OrdenesDeTrabajo';
 import Inventario from './pages/Inventario';
-import FlujoCaja from './pages/FlujoCaja'; 
+import FlujoCaja from './pages/FlujoCaja';
+import Servicios from './pages/Servicios'; // 👈 NUEVO
 
 import { LoadingProvider } from './components/ui/LoadingContext';
 import './components/ui/Loader.css';
 
-/* ✅ SOLO UNA VEZ estos imports */
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase/firebase';   // <- OJO a la ruta correcta
+import { auth } from './firebase/firebase';
 
 // 🔐 Wrapper que exige sesión
 function RequireAuth({ children }) {
@@ -55,8 +55,13 @@ root.render(
           <Route path="factura" element={<Factura />} />
           <Route path="ordenes" element={<OrdenesDeTrabajo />} />
           <Route path="inventario" element={<Inventario />} />
-          <Route path="caja" element={<FlujoCaja />} /> 
+          <Route path="caja" element={<FlujoCaja />} />
+          <Route path="servicios" element={<Servicios />} /> {/* 👈 NUEVA RUTA */}
+          {/* atajo: si entra a / redirige a clientes (ya autenticado) */}
+          <Route path="" element={<Navigate to="/clientes" replace />} />
         </Route>
+
+        {/* visitantes no logueados caen a login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

@@ -908,7 +908,7 @@ const OrdenesDeTrabajo = () => {
                   <div className="input-icon">
                     <FaSearch className="icon-left" />
                     <input
-                      id="placa" placeholder="Ej: ABC123" value={placa}
+                      id="placa" placeholder="" value={placa}
                       onChange={(e) => setPlaca(e.target.value.toUpperCase())}
                       onKeyDown={onEnterBuscar} disabled={loadingVehiculo}
                     />
@@ -921,7 +921,7 @@ const OrdenesDeTrabajo = () => {
                   <div className="input-icon">
                     <FaHashtag className="icon-left" />
                     <input
-                      id="conoBuscar" inputMode="numeric" pattern="\d*" placeholder="Ej: 27"
+                      id="conoBuscar" inputMode="numeric" pattern="\d*" placeholder=""
                       value={conoBuscar} onChange={(e) => setConoBuscar(e.target.value.replace(/[^\d]/g, ''))}
                       onKeyDown={onEnterBuscar} disabled={loadingVehiculo}
                     />
@@ -931,7 +931,7 @@ const OrdenesDeTrabajo = () => {
                 <div className="field" style={{ maxWidth: 200 }}>
                   <label htmlFor="proforma">Nº Proforma</label>
                   <input
-                    id="proforma" inputMode="numeric" pattern="\d*" placeholder="Ej: 1024"
+                    id="proforma" inputMode="numeric" pattern="\d*" placeholder=""
                     value={proformaNumero} onChange={(e) => setProformaNumero(e.target.value.replace(/[^\d]/g, ''))}
                     onKeyDown={onEnterBuscar} disabled={loadingVehiculo}
                   />

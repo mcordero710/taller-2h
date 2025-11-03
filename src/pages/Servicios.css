@@ -1,0 +1,312 @@
+/* Layout general */
+.servicios-page .serv-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.servicios-page h2 {
+    margin: 0 0 4px;
+}
+
+.servicios-page .head-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+    margin-bottom: 16px;
+}
+
+.card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.card-body {
+    padding: 18px 20px;
+}
+
+/* Inputs “bonitos” */
+.field label {
+    font-size: 12px;
+    color: #334155;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.field input {
+    height: 44px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ee;
+    border-radius: 12px;
+    background: #f8fafc;
+    outline: none;
+}
+
+.field input:focus {
+    background: #fff;
+    border-color: #94a3b8;
+}
+
+/* Grid agregar */
+.add-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 16px;
+    align-items: end;
+}
+
+/* Input group Monto + Agregar */
+.input-group {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #dbe3ee;
+    border-radius: 14px;
+    padding: 4px;
+}
+
+.ig-prefix {
+    padding: 0 10px;
+    color: #475569;
+    font-weight: 600;
+}
+
+.ig-input {
+    flex: 1;
+    height: 36px;
+    border: none;
+    background: transparent;
+    text-align: right;
+    padding: 0 10px;
+    outline: none;
+}
+
+.ig-btn {
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #0f172a;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.ig-btn:hover {
+    filter: brightness(1.06);
+}
+
+/* Tabla */
+.tabla {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.tabla thead th {
+    background: #0f172a;
+    color: #fff;
+    text-align: left;
+    padding: 10px 12px;
+}
+
+.tabla tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.table-empty {
+    text-align: center;
+    color: #64748b;
+}
+
+.is-right {
+    text-align: right;
+}
+
+.is-center {
+    text-align: center;
+}
+
+.idx {
+    color: #475569;
+}
+
+/* Edición inline */
+.input-inline {
+    width: 100%;
+    height: 36px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+
+.input-inline--money {
+    text-align: right;
+}
+
+/* Botones */
+.btn {
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn:hover {
+    filter: brightness(1.05);
+}
+
+.btn--ghost {
+    background: #fff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+}
+
+.btn--ghost:hover {
+    background: #f8fafc;
+}
+
+.btn--subtle {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.btn--subtle:hover {
+    background: #e2e8f0;
+}
+
+.btn-icon {
+    border: none;
+    background: transparent;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.btn-icon--ghost:hover {
+    background: #f1f5f9;
+}
+
+.btn-icon--danger {
+    color: #b91c1c;
+}
+
+.btn-icon--danger:hover {
+    background: #fee2e2;
+}
+
+/* Impresión */
+.print-root {
+    display: none;
+}
+
+@media print {
+
+    .layout .sidebar,
+    .serv-head,
+    .card,
+    .btn,
+    .btn-icon,
+    .toast-confirm-wrapper,
+    .center-toast-container {
+        display: none !important;
+    }
+
+    .print-root {
+        display: block;
+    }
+
+    .pr-title {
+        font-size: 20px;
+        margin: 0 0 6px;
+    }
+
+    .pr-meta {
+        margin: 0 0 10px;
+        color: #475569;
+    }
+
+    .pr-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .pr-table th,
+    .pr-table td {
+        border: 1px solid #cbd5e1;
+        padding: 6px 8px;
+    }
+
+    .pr-table th:nth-child(3),
+    .pr-table td:nth-child(3) {
+        text-align: right;
+    }
+}
+
+/* ====== Servicios: campo Monto compacto ====== */
+.servicios .field--monto {
+    /* como en OrdenesDeTrabajo: input estrecho */
+    max-width: 220px;          /* ajústalo a tu gusto: 180–260 px */
+    min-width: 180px;
+  }
+  
+  @media (max-width: 520px) {
+    .servicios .field--monto {
+      max-width: 100%;
+    }
+  }
+  
+  .servicios .money-wrap {
+    position: relative;
+    width: 100%;
+  }
+  
+  .servicios .money-prefix {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .servicios .money-input {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 12px 10px 28px; /* espacio para la '₡' */
+    outline: none;
+    text-align: right;          /* números alineados a la derecha */
+    font-variant-numeric: tabular-nums;
+    transition: box-shadow .15s, border-color .15s;
+    background: #fff;
+  }
+  
+  .servicios .money-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+  }
+  
+  /* Columna monto en tabla: derecha y números tabulares */
+  .servicios .tabla-servicios td.col-monto,
+  .servicios .tabla-servicios th.col-monto {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  

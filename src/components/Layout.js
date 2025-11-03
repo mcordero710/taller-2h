@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { FaUsers, FaTools, FaFileAlt, FaSearch, FaFileInvoice, FaSignOutAlt, FaBoxes, FaCashRegister } from 'react-icons/fa';
+import { FaUsers, FaTools, FaFileAlt, FaSearch, FaFileInvoice, FaSignOutAlt, FaBoxes, FaCashRegister, FaConciergeBell } from 'react-icons/fa'; // 👈 agregado FaConciergeBell
 import { ToastContainer, toast } from 'react-toastify';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
@@ -72,11 +72,15 @@ const Layout = () => {
                 <span>Flujo de caja</span>
               </Link>
             </li>
-            <li></li>
+            <li>
+              <Link to="/servicios">
+                <FaConciergeBell className="menu-icon" />
+                <span>Servicios</span>
+              </Link>
+            </li>
           </ul>
         </nav>
 
-        {/* --- Cerrar sesión al fondo --- */}
         <div className="sidebar-logout">
           <button className="logout-link" onClick={handleLogout}>
             <FaSignOutAlt className="menu-icon menu-icon--sm" />
