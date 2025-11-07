@@ -1,20 +1,37 @@
 // src/pages/Servicios.jsx
 import React, { useEffect, useState } from 'react';
 import './Servicios.css';
-import { FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaPrint, FaBroom } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import html2pdf from 'html2pdf.js';
+import { FaPrint } from 'react-icons/fa';
+import { FiX, FiPlus } from 'react-icons/fi';
 import { db } from '../firebase/firebase';
 import {
-    collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc, serverTimestamp
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
 } from 'firebase/firestore';
-import { useLoading } from '../components/ui/LoadingContext';
 
-const LOCALE_NUMERIC = 'es-ES';
-const fmtMoney = (n) =>
-    new Intl.NumberFormat(LOCALE_NUMERIC, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-        .format(Number(n) || 0);
+export default function Servicios() {
+  // ==== Estado ====
+  const [descripcion, setDescripcion] = useState('');
+  const [montoStr, setMontoStr] = useState('');
+  const [servicios, setServicios] = useState([]); // <- IMPORTANTE: array vacío
 
-const parseMoney = (s) => {
+  // ==== Helpers de formato ====
+  const LOCALE_NUMERIC = 'es-CR';
+  const formatNumber = (n) =>
+    new Intl.NumberFormat(LOCALE_NUMERIC, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    }).format(Number(n) || 0);
+  const formatearCRC = (n) => `₡${formatNumber(n)}`;
+  const parseMoney = (s) => {
     if (s == null) return 0;
     const raw = String(s).replace(/[^\d.,-]/g, '').trim();
     if (!raw) return 0;
@@ -22,267 +39,171 @@ const parseMoney = (s) => {
     const lastDot = raw.lastIndexOf('.');
     let norm = raw;
     if (lastComma > -1 && lastDot > -1) {
-        norm = lastComma > lastDot ? raw.replace(/\./g, '').replace(',', '.') : raw.replace(/,/g, '');
+      norm = lastComma > lastDot ? raw.replace(/\./g, '').replace(',', '.') : raw.replace(/,/g, '');
     } else if (lastComma > -1) {
-        norm = raw.replace(/\./g, '').replace(',', '.');
+      norm = raw.replace(/\./g, '').replace(',', '.');
     } else {
-        norm = raw.replace(/,/g, '');
+      norm = raw.replace(/,/g, '');
     }
     const n = parseFloat(norm);
     return Number.isFinite(n) ? n : 0;
-};
+  };
 
-const Servicios = () => {
-    const { withLoading } = useLoading();
+  // ==== Cargar listado en vivo ====
+  useEffect(() => {
+    const qy = query(collection(db, 'servicios'), orderBy('createdAt', 'asc'));
+    const unsub = onSnapshot(qy, (snap) => {
+      const rows = snap.docs.map((d, i) => ({ id: d.id, idx: i + 1, ...d.data() }));
+      setServicios(rows || []); // <- siempre array
+    });
+    return () => unsub();
+  }, []);
 
-    // Form
-    const [desc, setDesc] = useState('');
-    const [montoStr, setMontoStr] = useState('0,00');
+  // ==== Acciones ====
+  const limpiar = () => {
+    setDescripcion('');
+    setMontoStr('');
+  };
 
-    // Listado
-    const [items, setItems] = useState([]);
-    const [editingId, setEditingId] = useState(null);
-    const [editDesc, setEditDesc] = useState('');
-    const [editMontoStr, setEditMontoStr] = useState('');
+  const agregarServicio = async () => {
+    const monto = parseMoney(montoStr);
+    if (!descripcion.trim() || !monto) return;
+    await addDoc(collection(db, 'servicios'), {
+      descripcion: descripcion.trim(),
+      monto,
+      createdAt: serverTimestamp(),
+    });
+    limpiar();
+  };
 
-    const colRef = collection(db, 'servicios_catalogo');
+  const eliminarServicio = async (id) => {
+    if (!id) return;
+    await deleteDoc(doc(db, 'servicios', id));
+  };
 
-    const load = async () => {
-        const snap = await getDocs(query(colRef, orderBy('descripcion')));
-        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setItems(rows);
-    };
-    useEffect(() => { load(); }, []);
+  // ==== PDF ====
+  const imprimirServicios = async () => {
+    const original = document.getElementById('servicios-pdf');
+    if (!original) return;
+    const copia = original.cloneNode(true);
+    copia.querySelectorAll('input, button, .acciones-top, .fila-agregar').forEach((el) => el.remove());
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+      .servicios-root, .servicios-root * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .tabla-servicios thead th { background:#0f172a !important; color:#fff !important; }
+      .tabla-servicios thead { display: table-header-group !important; }
+      .tabla-servicios tbody { display: table-row-group !important; }
+      table tr, table th, table td { break-inside: avoid !important; page-break-inside: avoid !important; }
+    `;
+    copia.insertBefore(styleEl, copia.firstChild);
 
-    const resetForm = () => { setDesc(''); setMontoStr('0,00'); };
-    const clearScreen = () => { resetForm(); setItems([]); setEditingId(null); setEditDesc(''); setEditMontoStr(''); };
+    await html2pdf()
+      .set({
+        margin: 0.5,
+        filename: 'Servicios.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] },
+      })
+      .from(copia)
+      .save();
+  };
 
-    const add = async () => {
-        const d = (desc || '').trim();
-        const m = parseMoney(montoStr);
-        if (!d) return toast.info('Escribe una descripción.');
-        if (m <= 0) return toast.info('Ingresa un monto mayor a 0.');
-        try {
-            await withLoading(async () => {
-                await addDoc(colRef, {
-                    descripcion: d,
-                    monto: m,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-            }, 'Guardando servicio…');
-            toast.success('Servicio agregado.');
-            resetForm();
-            load();
-        } catch (e) {
-            console.error(e);
-            toast.error('No se pudo guardar.');
-        }
-    };
+  // ==== Render ====
+  const rows = Array.isArray(servicios) ? servicios : [];
+  const totalFilas = rows.length;
 
-    const startEdit = (row) => {
-        setEditingId(row.id);
-        setEditDesc(row.descripcion || '');
-        setEditMontoStr(fmtMoney(row.monto || 0));
-    };
-    const cancelEdit = () => { setEditingId(null); setEditDesc(''); setEditMontoStr(''); };
-
-    const saveEdit = async (id) => {
-        const d = (editDesc || '').trim();
-        const m = parseMoney(editMontoStr);
-        if (!d || m <= 0) return;
-        try {
-            await withLoading(async () => {
-                await updateDoc(doc(db, 'servicios_catalogo', id), {
-                    descripcion: d,
-                    monto: m,
-                    updatedAt: serverTimestamp()
-                });
-            }, 'Actualizando…');
-            toast.success('Servicio actualizado.');
-            cancelEdit();
-            load();
-        } catch (e) {
-            console.error(e);
-            toast.error('No se pudo actualizar.');
-        }
-    };
-
-    const delRow = async (id) => {
-        try {
-            await withLoading(async () => {
-                await deleteDoc(doc(db, 'servicios_catalogo', id));
-            }, 'Eliminando…');
-            toast.success('Servicio eliminado.');
-            load();
-        } catch (e) {
-            console.error(e);
-            toast.error('No se pudo eliminar.');
-        }
-    };
-
-    // Imprimir (no limpia automáticamente para evitar hoja en blanco)
-    const imprimir = () => {
-        if (items.length === 0) { toast.info('No hay servicios para imprimir.'); return; }
-        window.print();
-    };
-
-    return (
-        <div className="servicios-page servicios">
-            <header className="serv-head">
-                <div>
-                    <h2>Servicios</h2>
-                    <p>Catálogo de servicios con campos <strong>Descripción</strong> y <strong>Monto</strong>.</p>
-                </div>
-                <div className="head-actions">
-                    <button className="btn btn--ghost" onClick={imprimir}>
-                        <FaPrint className="mr-6" /> Imprimir / Guardar PDF
-                    </button>
-                    <button className="btn btn--subtle" onClick={clearScreen}>
-                        <FaBroom className="mr-6" /> Limpiar
-                    </button>
-                </div>
-            </header>
-
-            {/* Agregar */}
-            <section className="card">
-                <div className="card-header"><h3>Agregar servicio</h3></div>
-                <div className="card-body">
-                    <div className="add-vertical">
-                        {/* Descripción */}
-                        <div className="field">
-                            <label>Descripción</label>
-                            <input
-                                value={desc}
-                                onChange={(e) => setDesc(e.target.value)}
-                            />
-                        </div>
-
-                        {/* Monto (compacto) */}
-                        <div className="field field--monto">
-                            <label>Monto</label>
-                            <div className="money-wrap">
-                                <span className="money-prefix">₡</span>
-                                <input
-                                    className="money-input"
-                                    type="text"
-                                    inputMode="decimal"
-                                    placeholder="0,00"
-                                    value={montoStr}
-                                    onFocus={(e) => {
-                                        const n = parseMoney(e.target.value);
-                                        setMontoStr(n.toFixed(2).replace('.', ','));
-                                    }}
-                                    onChange={(e) => setMontoStr(e.target.value)}
-                                    onBlur={(e) => setMontoStr(fmtMoney(parseMoney(e.target.value)))}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Botón Agregar */}
-                        <div className="actions-right">
-                            <button className="btn btn--sm" onClick={add}>
-                                <FaPlus className="mr-6" /> Agregar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Listado */}
-            <section className="card">
-                <div className="card-header"><h3>Listado</h3></div>
-                <div className="card-body">
-                    <table className="tabla tabla--bluehead tabla-servicios">
-                        <thead>
-                            <tr>
-                                <th style={{ width: 80 }}>#</th>
-                                <th>Descripción</th>
-                                <th className="col-monto" style={{ width: 160 }}>Monto</th>
-                                <th className="is-center" style={{ width: 120 }}>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.length === 0 && (
-                                <tr><td colSpan={4} className="table-empty">No hay resultados.</td></tr>
-                            )}
-                            {items.map((r, idx) => (
-                                <tr key={r.id}>
-                                    <td className="idx">{idx + 1}</td>
-                                    <td>
-                                        {editingId === r.id ? (
-                                            <input
-                                                className="input-inline"
-                                                value={editDesc}
-                                                onChange={(e) => setEditDesc(e.target.value)}
-                                                autoFocus
-                                            />
-                                        ) : r.descripcion}
-                                    </td>
-                                    <td className="col-monto">
-                                        {editingId === r.id ? (
-                                            <input
-                                                className="input-inline input-inline--money"
-                                                value={editMontoStr}
-                                                onChange={(e) => setEditMontoStr(e.target.value)}
-                                                onFocus={(e) => {
-                                                    const n = parseMoney(e.target.value);
-                                                    setEditMontoStr(n.toFixed(2).replace('.', ','));
-                                                }}
-                                                onBlur={(e) => setEditMontoStr(fmtMoney(parseMoney(e.target.value)))}
-                                            />
-                                        ) : `₡${fmtMoney(r.monto)}`}
-                                    </td>
-                                    <td className="is-center">
-                                        {editingId === r.id ? (
-                                            <>
-                                                <button className="btn-icon btn-icon--ghost" onClick={() => saveEdit(r.id)} title="Guardar"><FaSave /></button>
-                                                <button className="btn-icon btn-icon--ghost" onClick={cancelEdit} title="Cancelar"><FaTimes /></button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <button className="btn-icon btn-icon--ghost" onClick={() => startEdit(r)} title="Editar"><FaEdit /></button>
-                                                <button className="btn-icon btn-icon--danger" onClick={() => delRow(r.id)} title="Eliminar"><FaTrash /></button>
-                                            </>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            {/* Sección oculta para impresión */}
-            <div className="print-root">
-                <h1 className="pr-title">Catálogo de servicios</h1>
-                <div className="pr-meta">
-                    {new Date().toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                </div>
-                <table className="pr-table">
-                    <thead>
-                        <tr>
-                            <th style={{ width: 48 }}>#</th>
-                            <th>Descripción</th>
-                            <th style={{ width: 160 }}>Monto</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {items.map((r, i) => (
-                            <tr key={r.id}>
-                                <td>{i + 1}</td>
-                                <td>{r.descripcion}</td>
-                                <td>₡{fmtMoney(r.monto)}</td>
-                            </tr>
-                        ))}
-                        {items.length === 0 && (
-                            <tr><td colSpan={3}>— Sin servicios —</td></tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+  // wrapper
+  return (
+    <div className="servicios-root">
+      <div className="container">
+        <div className="acciones-top">
+          <button className="btn btn--sm" onClick={imprimirServicios}>
+            <FaPrint /> Imprimir / Guardar PDF
+          </button>
+          <button className="btn btn--sm btn--ghost" onClick={limpiar}>
+            <FiX /> Limpiar
+          </button>
         </div>
-    );
-};
 
-export default Servicios;
+        <h2 className="titulo">Servicios</h2>
+        <p className="sub">
+          Catálogo de servicios con campos <strong>Descripción</strong> y <strong>Monto</strong>.
+        </p>
+
+        <div id="servicios-pdf">
+          <div className="card">
+            <h3>Agregar servicio</h3>
+            <div className="fila-agregar">
+              <label>
+                Descripción
+                <input
+                  className="input"
+                  placeholder="Ej. lavado, pulido…"
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                />
+              </label>
+              <label>
+                Monto
+                <input
+                  className="input"
+                  inputMode="decimal"
+                  placeholder="₡0,00"
+                  value={montoStr}
+                  onChange={(e) => setMontoStr(e.target.value)}
+                />
+              </label>
+              <button className="btn btn--sm btn--primary" onClick={agregarServicio}>
+                <FiPlus /> Agregar
+              </button>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Listado</h3>
+            <table className="tabla-servicios">
+              <thead>
+                <tr>
+                  <th style={{ width: 64 }}>#</th>
+                  <th>Descripción</th>
+                  <th style={{ width: 180 }}>Monto</th>
+                  <th style={{ width: 100 }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((s, i) => (
+                  <tr key={s.id}>
+                    <td className="is-center">{i + 1}</td>
+                    <td>{s.descripcion}</td>
+                    <td className="is-right tabular">{formatearCRC(s.monto)}</td>
+                    <td className="is-center">
+                      <button
+                        className="btn-icon btn-icon--danger"
+                        onClick={() => eliminarServicio(s.id)}
+                        title="Eliminar"
+                      >
+                        🗑️
+                        {/* Si prefieres ícono: <FiX /> o un trash de react-icons */}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {totalFilas === 0 && (
+                  <tr>
+                    <td colSpan={4} className="empty">
+                      Sin servicios
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+}
